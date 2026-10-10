@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 13+: permiso en tiempo de ejecución para mostrar notificaciones push (T142). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      La app usa Firebase Analytics pero no muestra ni atribuye publicidad. Firebase declara estos
+      permisos por defecto; se quitan para no pedir el ID de publicidad ni la atribución de
+      Privacy Sandbox. Analytics, Crashlytics y FCM siguen funcionando (sin ID de publicidad).
+      Debe coincidir con la declaración "Seguridad de los datos" de Play.
+    -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
 
     <application
         android:name=".UrbanBladeApplication"
