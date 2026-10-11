@@ -188,6 +188,17 @@ responsabilidad).
     `UrbanMetricCard` angostas el texto no cabe al lado del ícono y la palabra se parte
     ("Entrad / as" a 360 dp, visto en Movimientos de inventario el 10-oct). `UrbanMetricCard`
     es para dos por fila.
+17. **El dorado es énfasis, no relleno.** Regla que salió de la auditoría (P2-3) y se aplicó el
+    10-oct-2026: **lo que se repite en cada fila deja de ser dorado** —categorías, precios de una
+    lista, saldos, "+puntos"— y el dorado se queda en la **acción**, el **estado activo** (pestaña,
+    chip, día), el **héroe o dato único de la pantalla**, los **tonos semánticos** (Stock bajo,
+    VIP) y los **iconos**. Las cajas de icono llevan fondo neutro (`CardAlt`); los chevrones que
+    solo dicen "hay más" van en `Muted`. Antes de pintar algo de dorado, preguntarse: ¿esto se
+    repite por fila? Si sí, va en `Ink` o `Muted`.
+18. **La acción principal del acceso va anclada abajo.** `AuthScaffold` tiene dos columnas: el
+    contenido se desplaza y el pie no, así que con el teclado abierto el `imePadding` sube el
+    botón en vez de dejarlo debajo del formulario (auditoría P1-7). Los enlaces secundarios se
+    quedan en el contenido.
 16. **La familia de acceso comparte `AuthScaffold` y el registro va en DOS pasos.** Encabezado
     compartido: marca compacta, eyebrow, título (**máximo dos líneas**, para que no empuje el
     formulario con el tamaño de fuente al máximo) y subtítulo; la mascota solo aparece cuando
