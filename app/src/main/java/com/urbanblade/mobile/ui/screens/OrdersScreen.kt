@@ -238,7 +238,8 @@ private fun OrderCard(order: OrderRow, staff: Boolean, busy: Boolean, onCancel: 
                 Text("Total", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
                 order.metodoPago?.let { Text("Pagado con $it", style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted) }
             }
-            Text(money(order.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = UrbanColors.Gold)
+            // Un pedido por tarjeta: el total se distingue por tamaño y peso, no por color.
+            Text(money(order.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
         }
         if (order.estado == "pendiente") {
             Spacer(Modifier.height(12.dp))

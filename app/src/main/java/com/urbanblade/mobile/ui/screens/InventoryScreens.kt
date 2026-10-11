@@ -205,7 +205,8 @@ private fun InventoryProductCard(
                 Spacer(Modifier.width(10.dp))
             }
             Column(Modifier.weight(1f)) {
-                product.categoria?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold) }
+                // La categoría se repite en cada tarjeta: en gris, no en dorado (auditoría P2-3).
+                product.categoria?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted) }
                 Text(product.nombre, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     "${product.stockActual} disponibles · mínimo ${product.stockMinimo}",
@@ -214,7 +215,8 @@ private fun InventoryProductCard(
                 )
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("${UrbanFormat.money(product.precioVenta)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                // El precio también se repite por fila; el dorado queda para la acción de la tarjeta.
+                Text("${UrbanFormat.money(product.precioVenta)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
                 when {
                     product.lowStock -> SimpleStatusPill("stock bajo", UrbanColors.Danger)
                     product.pendingRestock -> SimpleStatusPill("reposición pendiente", UrbanColors.Warning)
