@@ -35,10 +35,10 @@ jobs:
           java-version: "21"
 
       # El repo no versiona gradlew: se usa la misma versión que gradle-wrapper.properties.
-      - name: Gradle 8.13
+      - name: Gradle 9.6.0
         uses: gradle/actions/setup-gradle@v6
         with:
-          gradle-version: "8.13"
+          gradle-version: "9.6.0"
 
       - name: Lint
         run: gradle :app:lintDebug --console=plain
