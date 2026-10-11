@@ -125,6 +125,10 @@ fun LoginScreen(
                 icon = Icons.AutoMirrored.Filled.ArrowForward,
                 modifier = Modifier.fillMaxWidth()
             )
+            Spacer(Modifier.height(8.dp))
+            // El camino alterno viaja con el botón: así el hueco de arriba se lee como aire y no
+            // como un botón suelto al fondo.
+            SwitchAuthRow(prompt = "¿Eres nuevo?", action = "Crea tu cuenta", onClick = onRegister)
         }
     ) {
         StaggerIn(1) {
@@ -181,9 +185,6 @@ fun LoginScreen(
         }
         AnimatedVisibility(visible = error != null) {
             error?.let { UrbanErrorBanner(it) }
-        }
-        StaggerIn(6) {
-            SwitchAuthRow(prompt = "¿Eres nuevo?", action = "Crea tu cuenta", onClick = onRegister)
         }
     }
 }
@@ -254,6 +255,10 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            if (step == 0 && onLogin != null) {
+                Spacer(Modifier.height(8.dp))
+                SwitchAuthRow(prompt = "¿Ya tienes cuenta?", action = "Inicia sesión", onClick = onLogin)
+            }
         }
     ) {
         StaggerIn(0) {
@@ -304,11 +309,6 @@ fun RegisterScreen(
                     error = if (emailTouched && email.isNotBlank() && !emailValid) "Escribe un correo válido." else null,
                     onBlur = { emailTouched = true }
                 )
-            }
-            if (onLogin != null) {
-                StaggerIn(6) {
-                    SwitchAuthRow(prompt = "¿Ya tienes cuenta?", action = "Inicia sesión", onClick = onLogin)
-                }
             }
         } else {
             StaggerIn(1) {
