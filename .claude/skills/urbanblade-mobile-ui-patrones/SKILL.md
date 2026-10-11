@@ -201,7 +201,9 @@ responsabilidad).
 18. **La acción principal del acceso va anclada abajo.** `AuthScaffold` tiene dos columnas: el
     contenido se desplaza y el pie no, así que con el teclado abierto el `imePadding` sube el
     botón en vez de dejarlo debajo del formulario (auditoría P1-7). Los enlaces secundarios se
-    quedan en el contenido.
+    **viajan con el botón, dentro del pie** ("¿Eres nuevo? Crea tu cuenta" debajo de
+    "Entrar a UrbanBlade"): sueltos en el contenido, el botón anclado quedaba flotando solo al fondo
+    de la pantalla.
 16. **La familia de acceso comparte `AuthScaffold` y el registro va en DOS pasos.** Encabezado
     compartido: marca compacta, eyebrow, título (**máximo dos líneas**, para que no empuje el
     formulario con el tamaño de fuente al máximo) y subtítulo; la mascota solo aparece cuando
