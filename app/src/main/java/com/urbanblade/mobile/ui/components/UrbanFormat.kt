@@ -48,4 +48,32 @@ object UrbanFormat {
     }.getOrDefault(hhmm)
 
     fun count(n: Int, one: String, many: String): String = if (n == 1) "1 $one" else "$n $many"
+
+    /**
+     * Dinero en pesos con centavos: mismo texto que `money()` de frontend-urban
+     * (`app/utils/serviceFlow.ts`). Tickets, adeudos y detalles de pago.
+     *
+     * Antes cada pantalla traía su propia copia: once en total, unas con centavos y otras sin
+     * ellos, con `Locale` distinto (`%,.2f`, `%,.0f`, `%.0f`) y sin proteger contra NaN.
+     */
+    fun money(value: Double?): String = "$" + String.format(es, "%,.2f", safe(value))
+
+    /** Dinero sin centavos, para cifras grandes (KPI, ejes de gráfica): `fmtMoney()` de `chartTheme.ts`. */
+    fun moneyShort(value: Double?): String = "$" + String.format(es, "%,.0f", safe(value))
+
+    /** "12.6%": el porcentaje ya calculado, con un decimal por omisión. */
+    fun percent(value: Double?, decimals: Int = 1): String = String.format(es, "%.${decimals}f%%", safe(value))
+
+    /**
+     * Cambio relativo contra el periodo anterior, en puntos porcentuales (12.6 = +12.6 %).
+     * Devuelve `null` cuando no se puede calcular (faltan datos o el periodo anterior es 0):
+     * ahí la pantalla no muestra variación en vez de inventar un "+100 %".
+     */
+    fun delta(current: Double?, previous: Double?): Double? {
+        if (current == null || previous == null) return null
+        if (!current.isFinite() || !previous.isFinite() || previous == 0.0) return null
+        return (current - previous) / kotlin.math.abs(previous) * 100.0
+    }
+
+    private fun safe(value: Double?): Double = if (value != null && value.isFinite()) value else 0.0
 }

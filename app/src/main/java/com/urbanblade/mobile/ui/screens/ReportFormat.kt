@@ -3,6 +3,7 @@ package com.urbanblade.mobile.ui.screens
 import com.google.gson.JsonElement
 import java.time.LocalDate
 import java.util.Locale
+import com.urbanblade.mobile.ui.components.UrbanFormat
 
 /** Rangos rápidos del reporte; "Todo" no manda fechas y deja que el servidor use su rango por defecto. */
 enum class ReportRange(val label: String) {
@@ -39,7 +40,7 @@ fun shortDateLabel(label: String): String = runCatching {
 fun formatChartValue(value: Double, unit: String?): String {
     val locale = Locale("es", "MX")
     return if (unit.equals("MXN", ignoreCase = true)) {
-        "$" + String.format(locale, "%,.0f", value)
+        UrbanFormat.moneyShort(value)
     } else {
         String.format(locale, if (value == value.toLong().toDouble()) "%,.0f" else "%,.1f", value) +
             (unit?.takeIf { it.isNotBlank() }?.let { " $it" } ?: "")
@@ -56,7 +57,7 @@ fun formatCell(key: String, value: JsonElement?): String {
     return when {
         primitive.isBoolean -> if (primitive.asBoolean) "Sí" else "No"
         primitive.isNumber && moneyKeys.any { key.contains(it) } ->
-            "$" + String.format(Locale("es", "MX"), "%,.2f", primitive.asDouble)
+            UrbanFormat.money(primitive.asDouble)
         primitive.isNumber -> primitive.asString
         else -> primitive.asString.ifBlank { "—" }
     }

@@ -31,6 +31,7 @@ import com.urbanblade.mobile.ui.components.UrbanErrorBanner
 import com.urbanblade.mobile.ui.components.UrbanFieldLabel
 import com.urbanblade.mobile.ui.components.UrbanKeyValue
 import com.urbanblade.mobile.ui.components.UrbanPrimaryButton
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.AppointmentsViewModel
 
@@ -63,7 +64,7 @@ internal fun ChargeSheet(appt: AppointmentRow, vm: AppointmentsViewModel, onDism
                 Spacer(Modifier.height(8.dp))
                 UrbanKeyValue("Cliente", appt.client?.user?.name ?: "—")
                 Spacer(Modifier.height(8.dp))
-                UrbanKeyValue("Precio", price?.let { "$" + "%.0f".format(it) } ?: "—")
+                UrbanKeyValue("Precio", price?.let { UrbanFormat.moneyShort(it) } ?: "—")
             }
             Column {
                 UrbanFieldLabel("Método de pago")

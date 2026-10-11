@@ -22,12 +22,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urbanblade.mobile.data.model.BarberScheduleDay
 import com.urbanblade.mobile.data.model.SystemServiceStatus
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.*
 
 // ── Métricas del negocio ─────────────────────────────────────────────────
 
-private fun metricsMoney(value: Double) = "$" + "%,.0f".format(value)
+private fun metricsMoney(value: Double) = UrbanFormat.moneyShort(value)
 
 @Composable
 fun AdminMetricsScreen(onBack: () -> Unit, vm: AdminMetricsViewModel = viewModel()) {
@@ -292,7 +293,7 @@ fun RafflesScreen(onBack: () -> Unit, vm: RafflesViewModel = viewModel()) {
                     listOf(
                         Triple("Total", raffles.stats.total.toString(), UrbanColors.Ink),
                         Triple("Reclamados", raffles.stats.reclamados.toString(), UrbanColors.Success),
-                        Triple("Vigentes", raffles.stats.vigentes.toString(), UrbanColors.Gold)
+                        Triple("Vigentes", raffles.stats.vigentes.toString(), UrbanColors.Ink)
                     )
                 )
             }
@@ -533,7 +534,7 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
                 UrbanPremiumCard(Modifier.fillMaxWidth()) {
                     Text("TOTAL REGISTRADO", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
                     Text(
-                        "$" + "%,.2f".format(preview.esperadoTotal),
+                        UrbanFormat.money(preview.esperadoTotal),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = UrbanColors.Ink
@@ -544,11 +545,11 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.weight(1f)) {
                             Text("Efectivo esperado", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
-                            Text("$" + "%,.2f".format(preview.efectivoEsperado), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
+                            Text(UrbanFormat.money(preview.efectivoEsperado), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
                         }
                         Column(Modifier.weight(1f)) {
                             Text("Propinas", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
-                            Text("$" + "%,.2f".format(preview.propinas), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
+                            Text(UrbanFormat.money(preview.propinas), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
                         }
                     }
                 }
@@ -563,7 +564,7 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
                         byMethod.forEachIndexed { index, (method, amount) ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(METODO_LABEL[method] ?: method.replaceFirstChar { c -> c.uppercase() }, color = UrbanColors.Muted)
-                                Text("$" + "%,.2f".format(amount), fontWeight = FontWeight.SemiBold)
+                                Text(UrbanFormat.money(amount), fontWeight = FontWeight.SemiBold)
                             }
                             if (index < byMethod.lastIndex) HorizontalDivider(Modifier.padding(vertical = 8.dp), color = UrbanColors.Line)
                         }
@@ -583,12 +584,12 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
                     UrbanCard(Modifier.fillMaxWidth()) {
                         Text("Caja ya cerrada hoy", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
                         Spacer(Modifier.height(8.dp))
-                        UrbanKeyValue("Efectivo contado", "\$${"%.2f".format(cierre.efectivoContado)}")
+                        UrbanKeyValue("Efectivo contado", "${UrbanFormat.money(cierre.efectivoContado)}")
                         val diff = cierre.diferencia
                         val (diffText, diffTone) = when {
                             kotlin.math.abs(diff) < 0.005 -> "Cuadró" to UrbanColors.Success
-                            diff > 0 -> "Sobran $" + "%,.2f".format(diff) to UrbanColors.Warning
-                            else -> "Faltan $" + "%,.2f".format(-diff) to UrbanColors.Danger
+                            diff > 0 -> "Sobran " + UrbanFormat.money(diff) to UrbanColors.Warning
+                            else -> "Faltan " + UrbanFormat.money(-diff) to UrbanColors.Danger
                         }
                         Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Diferencia", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Muted)
@@ -617,7 +618,7 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
-                            "Esperado en efectivo: $" + "%,.2f".format(preview.efectivoEsperado),
+                            "Esperado en efectivo: " + UrbanFormat.money(preview.efectivoEsperado),
                             style = MaterialTheme.typography.bodySmall,
                             color = UrbanColors.Muted,
                             modifier = Modifier.padding(top = 6.dp)
@@ -653,7 +654,7 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
         AlertDialog(
             onDismissRequest = { showConfirm = false },
             title = { Text("¿Cerrar la caja de hoy?") },
-            text = { Text("Se registrará \$${"%.2f".format(contado)} como efectivo contado. Esta acción no se puede deshacer.") },
+            text = { Text("Se registrará ${UrbanFormat.money(contado)} como efectivo contado. Esta acción no se puede deshacer.") },
             confirmButton = {
                 TextButton(onClick = {
                     showConfirm = false

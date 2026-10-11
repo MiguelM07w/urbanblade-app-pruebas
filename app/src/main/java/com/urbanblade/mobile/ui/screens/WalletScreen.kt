@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urbanblade.mobile.data.model.*
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.BookingPayMethod
 import com.urbanblade.mobile.ui.viewmodel.WalletViewModel
@@ -41,7 +42,7 @@ import com.urbanblade.mobile.ui.viewmodel.WalletViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WalletScreen(onBack: () -> Unit, vm: WalletViewModel = viewModel()) {
+fun WalletScreen(onBack: () -> Unit, onBook: () -> Unit, vm: WalletViewModel = viewModel()) {
     val data by vm.data.collectAsState()
     val loading by vm.loading.collectAsState()
     val busy by vm.busy.collectAsState()
@@ -100,7 +101,7 @@ fun WalletScreen(onBack: () -> Unit, vm: WalletViewModel = viewModel()) {
 
         when {
             error != null && data.loyalty == null && !loading -> item {
-                UrbanMascotState(UrbanStateKind.ERROR, "No pudimos cargar tu wallet", error, "Reintentar") { vm.load() }
+                UrbanMascotState(UrbanStateKind.ERROR, "No pudimos cargar tus beneficios", error, "Reintentar") { vm.load() }
             }
             loading && data.loyalty == null -> item { UrbanSkeletonList(2) }
             else -> {
@@ -122,7 +123,7 @@ fun WalletScreen(onBack: () -> Unit, vm: WalletViewModel = viewModel()) {
                         item { LevelLadder(loyalty) }
                     }
                     item { UrbanSectionTitle("Tus puntos", "Cómo se ganan y en qué los usas.") }
-                    item { PointsCard(loyalty) }
+                    item { PointsCard(loyalty, onBook) }
                 }
 
                 val membership = data.membership
@@ -150,8 +151,8 @@ fun WalletScreen(onBack: () -> Unit, vm: WalletViewModel = viewModel()) {
                     item {
                         UrbanAttentionRow(
                             Icons.Default.Redeem,
-                            "Aún no tienes paquetes ni gift cards",
-                            "Pregunta en recepción por los paquetes de servicios y las gift cards.",
+                            "Aún no tienes paquetes ni tarjetas regalo",
+                            "Pregunta en recepción por los paquetes de servicios y las tarjetas regalo.",
                             UrbanColors.Gold
                         )
                     }
@@ -161,7 +162,7 @@ fun WalletScreen(onBack: () -> Unit, vm: WalletViewModel = viewModel()) {
                         items(data.packages, key = { it.id }) { PackageCard(it) }
                     }
                     if (data.giftCards.isNotEmpty()) {
-                        item { UrbanSectionTitle("Mis gift cards", null) }
+                        item { UrbanSectionTitle("Mis tarjetas regalo", null) }
                         items(data.giftCards, key = { it.code }) { GiftCardRow(it) }
                     }
                 }
@@ -311,7 +312,7 @@ private fun LevelLadder(loyalty: ClientLoyalty) {
 
 /** Cómo se ganan los puntos, cómo se canjean y los últimos movimientos. */
 @Composable
-private fun PointsCard(loyalty: ClientLoyalty) {
+private fun PointsCard(loyalty: ClientLoyalty, onBook: () -> Unit) {
     UrbanCard(Modifier.fillMaxWidth()) {
         if (loyalty.earnRules.isNotEmpty()) {
             Text("Cómo ganarlos", style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
@@ -319,7 +320,7 @@ private fun PointsCard(loyalty: ClientLoyalty) {
             loyalty.earnRules.forEach { rule ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(rule.descripcion, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Muted, modifier = Modifier.weight(1f))
-                    Text("+${rule.puntos}", style = MaterialTheme.typography.titleSmall, color = UrbanColors.Gold)
+                    Text("+${rule.puntos}", style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
                 }
             }
             loyalty.maxRedeemPct?.let {
@@ -338,6 +339,9 @@ private fun PointsCard(loyalty: ClientLoyalty) {
         Spacer(Modifier.height(6.dp))
         if (loyalty.recentTransactions.isEmpty()) {
             Text("Aún no tienes movimientos. Tu primera cita completada suma puntos.", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+            Spacer(Modifier.height(10.dp))
+            // Un vacío con salida: la acción que suma los primeros puntos (auditoría P1-4).
+            UrbanOutlineButton("Reservar cita", onBook, Modifier.fillMaxWidth(), Icons.Default.ContentCut)
         } else {
             loyalty.recentTransactions.forEach { tx ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -358,7 +362,7 @@ private fun MembershipPlanCard(plan: MembershipPlan, busy: Boolean, onSubscribe:
     UrbanCard(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(44.dp).clip(CircleShape).background(UrbanColors.Gold.copy(alpha = 0.14f)),
+                Modifier.size(44.dp).clip(CircleShape).background(UrbanColors.CardAlt),
                 contentAlignment = Alignment.Center
             ) { Icon(Icons.Default.CardMembership, null, tint = UrbanColors.Gold) }
             Spacer(Modifier.width(12.dp))
@@ -370,7 +374,7 @@ private fun MembershipPlanCard(plan: MembershipPlan, busy: Boolean, onSubscribe:
                     color = UrbanColors.Gold
                 )
             }
-            Text("\$${"%.0f".format(plan.precioMensual)}/mes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("${UrbanFormat.moneyShort(plan.precioMensual)}/mes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
         planExtraBenefit(plan)?.let {
             Spacer(Modifier.height(8.dp))
@@ -412,7 +416,7 @@ private fun MembershipCheckoutSheet(
             Spacer(Modifier.height(6.dp))
             Text(plan.nombre, style = MaterialTheme.typography.headlineMedium, color = UrbanColors.Ink)
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("\$${"%.0f".format(plan.precioMensual)}", style = MaterialTheme.typography.displaySmall, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(plan.precioMensual)}", style = MaterialTheme.typography.displaySmall, color = UrbanColors.Gold)
                 Text(" /mes", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Muted, modifier = Modifier.padding(bottom = 6.dp))
             }
             Spacer(Modifier.height(10.dp))
@@ -450,7 +454,7 @@ private fun MembershipCheckoutSheet(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Hoy pagas", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
-                Text("\$${"%,.2f".format(plan.precioMensual)} MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink, fontWeight = FontWeight.Bold)
+                Text(UrbanFormat.money(plan.precioMensual) + " MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink, fontWeight = FontWeight.Bold)
             }
             UrbanPrimaryButton(
                 text = "Pagar y activar",
@@ -492,7 +496,7 @@ private fun MembershipCard(membership: MyMembership, busy: Boolean, onCancel: ()
             Column(Modifier.weight(1f)) {
                 Text(membership.plan?.nombre ?: "Membresía", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "\$${"%.0f".format(membership.plan?.precioMensual ?: 0.0)}/mes · ${membership.plan?.descuentoPct?.toInt() ?: 0}% dto.",
+                    "${UrbanFormat.moneyShort(membership.plan?.precioMensual ?: 0.0)}/mes · ${membership.plan?.descuentoPct?.toInt() ?: 0}% dto.",
                     style = MaterialTheme.typography.bodySmall,
                     color = UrbanColors.Muted
                 )
@@ -542,9 +546,9 @@ private fun GiftCardRow(card: GiftCard) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(card.code, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Saldo inicial: \$${"%.0f".format(card.montoInicial)}", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                Text("Saldo inicial: ${UrbanFormat.moneyShort(card.montoInicial)}", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
-            Text("\$${"%.0f".format(card.saldo)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+            Text("${UrbanFormat.moneyShort(card.saldo)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
         }
     }
 }

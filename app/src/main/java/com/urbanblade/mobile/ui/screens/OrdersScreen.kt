@@ -68,8 +68,8 @@ import com.urbanblade.mobile.ui.viewmodel.ORDER_PAYMENT_METHODS
 import com.urbanblade.mobile.ui.viewmodel.OrderFilter
 import com.urbanblade.mobile.ui.viewmodel.OrdersViewModel
 
-private fun money(value: Double) = "$" + String.format(java.util.Locale("es", "MX"), "%,.2f", value)
-private fun moneyShort(value: Double) = "$" + String.format(java.util.Locale("es", "MX"), "%,.0f", value)
+private fun money(value: Double) = UrbanFormat.money(value)
+private fun moneyShort(value: Double) = UrbanFormat.moneyShort(value)
 
 /** Pedidos de la tienda: el personal los gestiona (entregar, cobrar, cancelar); el cliente sigue los suyos. */
 @Composable
@@ -238,7 +238,8 @@ private fun OrderCard(order: OrderRow, staff: Boolean, busy: Boolean, onCancel: 
                 Text("Total", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
                 order.metodoPago?.let { Text("Pagado con $it", style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted) }
             }
-            Text(money(order.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = UrbanColors.Gold)
+            // Un pedido por tarjeta: el total se distingue por tamaño y peso, no por color.
+            Text(money(order.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
         }
         if (order.estado == "pendiente") {
             Spacer(Modifier.height(12.dp))

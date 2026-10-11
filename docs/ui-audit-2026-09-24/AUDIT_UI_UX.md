@@ -1,3 +1,6 @@
+> **Estado (10-oct-2026):** los hallazgos de este documento ya se corrigieron y verificaron en el S25.
+> El detalle, con evidencia y lo que queda pendiente, está en [design-qa-2026-10-10.md](design-qa-2026-10-10.md).
+
 # Auditoría UI/UX — UrbanBladeMobile
 
 Fecha: 24 de septiembre de 2026  

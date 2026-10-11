@@ -75,7 +75,7 @@ import com.urbanblade.mobile.ui.viewmodel.OffersAdminViewModel
 
 private enum class OffersTab(val label: String) { Membresias("Membresías"), Paquetes("Paquetes") }
 
-private fun money(value: Double) = "$" + "%.0f".format(value)
+private fun money(value: Double) = UrbanFormat.moneyShort(value)
 
 /** Membresías mensuales y paquetes prepagados: crear, editar y activar o desactivar. */
 @Composable

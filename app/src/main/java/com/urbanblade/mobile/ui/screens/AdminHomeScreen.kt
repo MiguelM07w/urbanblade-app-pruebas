@@ -60,8 +60,14 @@ import com.google.gson.JsonObject
 import com.urbanblade.mobile.data.model.AuthUser
 import com.urbanblade.mobile.ui.components.UrbanDashboardChart
 import com.urbanblade.mobile.ui.components.chartSeries
+import com.urbanblade.mobile.ui.components.UrbanAttentionRow
 import com.urbanblade.mobile.ui.components.UrbanAvatar
 import com.urbanblade.mobile.ui.components.UrbanCard
+import com.urbanblade.mobile.ui.components.UrbanHeroCard
+import com.urbanblade.mobile.ui.components.UrbanHeroLabel
+import com.urbanblade.mobile.ui.components.UrbanHeroStat
+import com.urbanblade.mobile.ui.components.UrbanStatCard
+import com.urbanblade.mobile.ui.components.UrbanTrendPill
 import com.urbanblade.mobile.ui.components.UrbanErrorBanner
 import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.components.UrbanInfoBanner
@@ -82,8 +88,6 @@ private fun JsonObject?.number(key: String): Double? =
 
 private fun JsonObject?.text(key: String): String? =
     this?.get(key)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
-
-private fun money(value: Double) = "\$" + String.format(Locale("es", "MX"), "%,.0f", value)
 
 /**
  * Inicio del administrador: cómo va el negocio hoy, qué requiere su atención y accesos directos a
@@ -131,6 +135,7 @@ fun AdminHomeScreen(
             }
             kpis != null -> {
                 item { TodayPulseCard(kpis, state.occupancyRate) }
+                item { MonthKpis(kpis) }
                 // Resumen del día con IA local: carga aparte, no frena el inicio.
                 item { com.urbanblade.mobile.ui.components.AiBriefingCard() }
 
@@ -138,7 +143,7 @@ fun AdminHomeScreen(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (state.pendingPayments > 0) {
-                            AttentionRow(
+                            UrbanAttentionRow(
                                 icon = Icons.Default.Payments,
                                 text = UrbanFormat.count(state.pendingPayments, "pago por verificar", "pagos por verificar"),
                                 subtitle = "Citas completadas · Revisa y confirma",
@@ -147,7 +152,7 @@ fun AdminHomeScreen(
                             )
                         }
                         if (lowStock > 0) {
-                            AttentionRow(
+                            UrbanAttentionRow(
                                 icon = Icons.Default.Inventory2,
                                 text = UrbanFormat.count(lowStock, "producto con stock bajo", "productos con stock bajo"),
                                 subtitle = "Es momento de reabastecer",
@@ -166,7 +171,7 @@ fun AdminHomeScreen(
 
         // Las mismas gráficas principales que el dashboard web (mismos datos de /dashboard).
         state.data.chartSeries("incomeChart")?.let { income ->
-            item { UrbanDashboardChart("Ingresos por semana", "Últimas 8 semanas", income, format = ::money) }
+            item { UrbanDashboardChart("Ingresos por semana", "Últimas 8 semanas", income, format = UrbanFormat::moneyShort) }
         }
         state.data.chartSeries("servicesChart")?.let { services ->
             item { UrbanDashboardChart("Servicios más pedidos", "Citas por servicio", services, categories = true) }
@@ -190,179 +195,68 @@ private fun TodayPulseCard(kpis: JsonObject, occupancyRate: Int?) {
     val incomeWeek = kpis.number("income_week")
     val appointmentsWeek = kpis.number("appointments_week")?.toInt()
 
-    val shape = MaterialTheme.shapes.large
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .border(1.dp, UrbanColors.Gold.copy(alpha = 0.45f), shape)
-    ) {
-        Image(
-            painter = painterResource(R.drawable.auth_barbershop_background),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
-        )
-        Box(
-            Modifier
-                .matchParentSize()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(UrbanColors.Background.copy(alpha = 0.95f), UrbanColors.Background.copy(alpha = 0.85f), UrbanColors.Background.copy(alpha = 0.65f))
-                    )
-                )
-        )
-        Column(Modifier.padding(18.dp)) {
-            Text(
-                "INGRESOS DE HOY",
-                style = MaterialTheme.typography.labelMedium,
-                color = UrbanColors.Gold,
-                modifier = Modifier.semantics { heading() }
-            )
+    // Misma tarjeta héroe del patrón compartido (UrbanHeroCard), no una copia local con la foto
+    // y el velo: así el velo sigue el tema activo y no hay que repetir la pintura.
+    UrbanHeroCard {
+        UrbanHeroLabel("Ingresos de hoy")
+        Spacer(Modifier.height(6.dp))
+        Text(UrbanFormat.moneyShort(incomeToday), style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
+        kpis.number("income_growth")?.let { growth ->
             Spacer(Modifier.height(6.dp))
-            Text(money(incomeToday), style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
-            kpis.number("income_growth")?.let { growth ->
-                Spacer(Modifier.height(4.dp))
-                TrendPill("vs. mes pasado", growth)
-            }
-            Spacer(Modifier.height(18.dp))
-            HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
-            Spacer(Modifier.height(14.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                PulseMetric("Citas hoy", appointmentsToday.toString(), Icons.Default.CalendarMonth, Modifier.weight(1f))
-                PulseMetric("Ocupación", occupancyRate?.let { "$it%" } ?: "—", Icons.Default.People, Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                buildString {
-                    append("Esta semana: ")
-                    append(incomeWeek?.let { money(it) } ?: "—")
-                    if (appointmentsWeek != null) append(" · ${UrbanFormat.count(appointmentsWeek, "cita", "citas")}")
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = UrbanColors.Muted,
+            UrbanTrendPill(delta = growth, suffix = "vs. mes pasado")
+        }
+        Spacer(Modifier.height(18.dp))
+        HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            UrbanHeroStat("Citas hoy", appointmentsToday.toString(), Icons.Default.CalendarMonth, Modifier.weight(1f))
+            UrbanHeroStat("Ocupación", occupancyRate?.let { "$it%" } ?: "—", Icons.Default.People, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            buildString {
+                append("Esta semana: ")
+                append(incomeWeek?.let { UrbanFormat.moneyShort(it) } ?: "—")
+                if (appointmentsWeek != null) append(" · ${UrbanFormat.count(appointmentsWeek, "cita", "citas")}")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = UrbanColors.Muted,
+        )
+    }
+}
+
+/**
+ * Lo del mes con el KPI del kit (el mismo que la web usa como UiStatCard).
+ *
+ * Va sin variación a propósito: el `income_growth` que manda barber es el crecimiento de *hoy*
+ * contra el mismo día del mes pasado, no el del mes; ponerlo aquí afirmaría un dato falso. El kit ya
+ * cubre ese caso (delta = null → solo el valor y su leyenda). Reemplaza a MonthGrid, que estaba en el
+ * archivo sin que nadie lo llamara, y a TopBarberCard, que tampoco se usaba.
+ */
+@Composable
+private fun MonthKpis(kpis: JsonObject) {
+    val monthIncome = kpis.number("income_month")
+    val monthAppointments = kpis.number("appointments_month")?.toInt()
+    if (monthIncome == null && monthAppointments == null) return
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        monthIncome?.let {
+            UrbanStatCard(
+                label = "Ingresos del mes",
+                value = UrbanFormat.moneyShort(it),
+                caption = "Este mes",
+                icon = Icons.Default.AccountBalanceWallet,
+                modifier = Modifier.weight(1f)
             )
         }
-    }
-}
-
-@Composable
-private fun PulseMetric(label: String, value: String, icon: ImageVector, modifier: Modifier = Modifier) {
-    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(UrbanColors.Gold.copy(alpha = 0.18f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(19.dp))
-        }
-        Spacer(Modifier.width(9.dp))
-        Column {
-            Text(value, style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
-            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-        }
-    }
-}
-
-@Composable
-private fun TrendPill(label: String, percent: Double?) {
-    if (percent == null) return
-    val up = percent >= 0
-    val tone = if (up) UrbanColors.Success else UrbanColors.Danger
-    Surface(shape = RoundedCornerShape(50), color = tone.copy(alpha = 0.14f)) {
-        Row(
-            Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                if (up) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
-                null,
-                tint = tone,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                "$label ${if (up) "+" else "−"}${String.format(Locale("es", "MX"), "%.1f", abs(percent))}%",
-                style = MaterialTheme.typography.labelMedium,
-                color = tone
+        monthAppointments?.let {
+            UrbanStatCard(
+                label = "Citas del mes",
+                value = it.toString(),
+                caption = "Este mes",
+                icon = Icons.Default.CalendarMonth,
+                modifier = Modifier.weight(1f)
             )
         }
-    }
-}
-
-@Composable
-private fun AttentionRow(
-    icon: ImageVector,
-    text: String,
-    subtitle: String,
-    tone: Color,
-    onClick: () -> Unit
-) {
-    UrbanCard(Modifier.fillMaxWidth(), onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(tone.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, null, tint = tone, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(text, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-            }
-            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted)
-        }
-    }
-}
-
-@Composable
-private fun MonthGrid(kpis: JsonObject) {
-    val cells = buildList {
-        kpis.number("income_month")?.let { add(Triple("Ingresos del mes", money(it), Icons.Default.AccountBalanceWallet)) }
-        kpis.number("appointments_month")?.let { add(Triple("Citas del mes", it.toInt().toString(), Icons.Default.CalendarMonth)) }
-        kpis.number("new_clients")?.let { add(Triple("Clientes nuevos", it.toInt().toString(), Icons.Default.People)) }
-        kpis.number("recurring_clients")?.let { add(Triple("Clientes recurrentes", it.toInt().toString(), Icons.Default.People)) }
-    }
-    if (cells.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        cells.chunked(2).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { (label, value, icon) ->
-                    UrbanMetricCard(label = label, value = value, icon = icon, modifier = Modifier.weight(1f))
-                }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun TopBarberCard(name: String, total: Double?) {
-    UrbanCard(Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(UrbanColors.Gold.copy(alpha = 0.13f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.EmojiEvents, null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Barbero destacado del mes", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-                Text(name, style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
-            }
-            total?.takeIf { it > 0 }?.let {
-                Text(money(it), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
-            }
-        }
+        if (monthIncome == null || monthAppointments == null) Spacer(Modifier.weight(1f))
     }
 }

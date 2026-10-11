@@ -145,6 +145,73 @@ responsabilidad).
 9. **Validar** con `gradle :app:testDebugUnitTest` e instalar con `:app:installDebug`.
    Git por rama y PR según `git-commit-conventions`; el mensaje va en español con el ID de
    la tarea y sin línea `Co-Authored-By`.
+   Sin `gradlew` en el repo (lo agrega T141): el build se corre desde el panel Gradle de
+   Android Studio, o con el Gradle 9.6.0 que ya está en `%USERPROFILE%\.gradle\wrapper\dists`
+   (y el JBR de Android Studio como `JAVA_HOME`).
+10. **No todo mapeo de estado es `statusStyle`.** `statusStyle()` (`UrbanStatus.kt`) manda
+    para los estados de cita, pago, pedido y gift card: si una pantalla los vuelve a traducir
+    (el calendario de citas lo hacía con su propia tabla de colores, corregido el 10-oct), se
+    corrige ahí. Pero **no** son `statusStyle` la severidad de Insights (`positive` /
+    `warning` / `negative`), la salud de infraestructura (`up` / `down`), las acciones de
+    auditoría (`created` / `updated` / `deleted`), los términos de la lista de espera
+    (`En espera`, `Avisada`) ni las etiquetas de sección en plural (`Confirmadas`): tienen su
+    propio vocabulario a propósito, y migrarlas cambiaría el texto o el color que el usuario ya
+    conoce.
+11. **Un solo formato de dinero y de porcentaje**: `UrbanFormat.money` / `moneyShort` /
+    `percent` / `delta`. Ninguna pantalla define su propio `money()` — el 10-oct-2026 había
+    once copias con `%,.0f`, `%,.2f` y `%.0f`. Cifras grandes (KPI, ejes de gráfica):
+    `moneyShort`; tickets y adeudos: `money`.
+    **Excepciones a propósito** (no "unificar"): los ejes y etiquetas de gráfica
+    (`UrbanCharts`, `DashboardCharts`) usan números sin `$`; los porcentajes, calificaciones
+    y horas siguen con `%.0f` / `%.1f`; y **los campos donde se escribe un precio**
+    (`OffersAdminScreen`, `ServicesAdminScreen`) no llevan separador de miles, porque el
+    texto se manda al servidor tal cual.
+12. **Filas compactas solo cuando el elemento es una fila de verdad.** `UrbanRow` /
+    `UrbanRowGroup` (`UrbanDataTable.kt`) son para listas de título + contexto ([meta]) +
+    estado o acción. **No** se convierten en fila las tarjetas que traen estructura propia:
+    `OrderCard` (folio, líneas con subtotales, total y botones), `InventoryProductCard`
+    (imagen, barra de stock, acciones) o la lista de clientes (avatar, pill de segmento,
+    monto y conteo de citas) — migrarlas pierde información. Revisado el 10-oct-2026 sobre
+    las cuatro listas de operación: solo Movimientos de inventario y Lista de espera
+    calificaron.
+13. **Estados vacíos: uno por caso, no tres variantes sueltas.** `UrbanEmptyState` (Nava, la
+    pantalla o sección principal, con acción opcional), `UrbanMascotState(ERROR, …)` (Bruno,
+    con "Reintentar") y `UrbanInlineEmpty` (bloque secundario dentro de una lista, compacto).
+    `UrbanEmptyState` delega en `UrbanMascotState`, así que **no hay lógica duplicada** y no
+    hace falta migrar las llamadas directas que ya existen. Un vacío que admite una acción real
+    no se deja como mensaje pasivo.
+    Aplicado el 11-oct-2026: en Beneficios, "Movimientos recientes" sin datos ofrece
+    **"Reservar cita"** con `UrbanOutlineButton` —de contorno, para no competir con el CTA de la
+    pantalla— y la acción se pasa por parámetro desde la navegación.
+14. **El estado deshabilitado tiene que verse.** El botón apagado sigue siendo gris con borde
+    (el dorado apagado se leía como botón roto), pero con `CardAlt` y la tinta al 75 %: sobre
+    `Card` el botón se perdía en el fondo y la auditoría del 24-sep lo reportó como "parece
+    defectuoso". Igual en `UrbanPrimaryButton`, `AuthPrimaryButton` y el enviar de Bladebot.
+15. **Tres números o más en fila: `UrbanStatStrip`, no `UrbanMetricCard`.** Con tres
+    `UrbanMetricCard` angostas el texto no cabe al lado del ícono y la palabra se parte
+    ("Entrad / as" a 360 dp, visto en Movimientos de inventario el 10-oct). `UrbanMetricCard`
+    es para dos por fila.
+17. **El dorado es énfasis, no relleno.** Regla que salió de la auditoría (P2-3) y se aplicó el
+    10-oct-2026: **lo que se repite en cada fila deja de ser dorado** —categorías, precios de una
+    lista, saldos, "+puntos"— y el dorado se queda en la **acción**, el **estado activo** (pestaña,
+    chip, día), el **héroe o dato único de la pantalla**, los **tonos semánticos** (Stock bajo,
+    VIP) y los **iconos**. Las cajas de icono llevan fondo neutro (`CardAlt`); los chevrones que
+    solo dicen "hay más" van en `Muted`. Antes de pintar algo de dorado, preguntarse: ¿esto se
+    repite por fila? Si sí, va en `Ink` o `Muted`.
+18. **La acción principal del acceso va anclada abajo.** `AuthScaffold` tiene dos columnas: el
+    contenido se desplaza y el pie no, así que con el teclado abierto el `imePadding` sube el
+    botón en vez de dejarlo debajo del formulario (auditoría P1-7). Los enlaces secundarios se
+    **viajan con el botón, dentro del pie** ("¿Eres nuevo? Crea tu cuenta" debajo de
+    "Entrar a UrbanBlade"): sueltos en el contenido, el botón anclado quedaba flotando solo al fondo
+    de la pantalla.
+16. **La familia de acceso comparte `AuthScaffold` y el registro va en DOS pasos.** Encabezado
+    compartido: marca compacta, eyebrow, título (**máximo dos líneas**, para que no empuje el
+    formulario con el tamaño de fuente al máximo) y subtítulo; la mascota solo aparece cuando
+    comunica algo (error o correo enviado). El registro pide primero los datos (consentimiento +
+    Google + nombre + correo) y después la contraseña; la flecha de la barra **vuelve al paso 1**,
+    no fuera de la pantalla, y el avance se indica con "Paso X de 2". No volver al formulario
+    único de cuatro campos (auditoría del 24-sep: "demasiado larga y densa"). En la bienvenida la
+    mascota queda en 220 dp, no en 300.
 
 ## 8. Kit de controles, dashboards y gráficas (plan del 26-sep-2026)
 
@@ -160,9 +227,11 @@ request de Retrofit quedan idénticos.
 |---|---|---|
 | `UrbanSwitch` / `UrbanSwitchRow(title, subtitle, checked, onCheckedChange)` | Hecho (26-sep) | Los 9 `Switch` sueltos: `AccountKit`, `AdminModuleScreens`, `BarbersAdminScreen` (2), `OffersAdminScreen` (2), `ServicesAdminScreen` (2), `SettingsScreen`. Fila completa tocable, pista dorada encendida, `Role.Switch` para TalkBack. |
 | `UrbanChoiceTiles(options, selected, onSelect)` con `UrbanChoice(value, title, subtitle, icon)` | Hecho (26-sep) | Los mosaicos de la "Propuesta A" (25-sep) de `BookingPayment` pasaron al kit sin cambiar su aspecto, y ahora también se usan al pagar una cita en `AppointmentsScreen` (antes eran dos botones sin estado seleccionado). Los `FilterChip` de propina y filtros se quedan (son filtros, no métodos). |
-| `UrbanStatCard` con variación | 2 | KPI de los inicios por rol (valor + "+12 % vs mes pasado"). |
+| `UrbanStatCard` + `UrbanTrendPill` (`UrbanStatCard.kt`) | Hecho (10-oct) | KPI de los inicios por rol: etiqueta, valor y variación contra el periodo anterior ("+12.6 % vs mes pasado"). La variación no siempre es verde —más cancelaciones es rojo, con `positiveIsGood`— y si no hay periodo anterior no se inventa: se muestra el texto de `caption` y nada más. |
 | `UrbanDashboardChart` + `chartSeries()` (`DashboardCharts.kt`) | Hecho (26-sep) | Gráfica principal en cada inicio con los mismos datos de GET /dashboard que la web: admin (ingresos por semana, servicios), recepción (citas por hora), barbero (su semana, sus servicios). `spanishChartLabel()` traduce "Mon"/"03 Aug" que barber manda en inglés. La dona de `UrbanCharts` ahora usa tonos del oro. El cliente no lleva gráfica: su inicio es para reservar. |
-| Tabla/lista compacta | 3 | Listas de pagos, inventario y clientes: fila con badge de estado y acción al final. |
+| `UrbanRow` + `UrbanRowGroup` + `UrbanRowDivider` (`UrbanDataTable.kt`) | Hecho (10-oct) | Tabla/lista compacta: filas con separador dentro de una sola tarjeta, con badge de estado y cifra o acción al final. Es la conclusión P0 de la auditoría ("reducir el uso de tarjetas; usar filas y separadores para listas") y reemplaza las tarjetas-por-elemento. Para listas largas, `UrbanRow` y `UrbanRowDivider` dentro del LazyColumn de la pantalla. |
+
+- `UrbanFormat.money()` / `moneyShort()` / `percent()` / `delta()` (`UrbanFormat.kt`): **todo** dinero y porcentaje de la app. Había once copias locales de `money()` con formatos distintos (%,.0f, %,.2f, %.0f, con y sin `Locale`); el texto es el mismo de `money()` y `fmtMoney()` de la web. Al tocar una pantalla, migrar su copia a estas. `delta()` devuelve `null` cuando no hay con qué comparar, nunca un "+100 %".
 
 Validar igual que siempre (sección 7, punto 9) y revisar cada pantalla tocada en el S25
 en al menos un tema oscuro y en "Libreta".

@@ -136,7 +136,7 @@ fun cardBrandLabel(brand: String): String = when (brand.lowercase()) {
 
 fun cardExpiryLabel(card: SavedCard): String = "Vence %02d/%02d".format(card.expMonth, card.expYear % 100)
 
-private fun money(value: Double) = "\$" + "%,.0f".format(value)
+private fun money(value: Double) = UrbanFormat.moneyShort(value)
 
 /**
  * Paso de pago de la reserva, igual que la web: propina, total estimado y
@@ -486,24 +486,4 @@ private fun styleCardWidget(widget: CardMultilineWidget, colors: CardFormColors)
         }
     }
 }
-
-@Composable
-private fun SavedCardRow(title: String, subtitle: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = MaterialTheme.shapes.medium,
-        color = if (selected) UrbanColors.Gold.copy(alpha = 0.10f) else UrbanColors.Card,
-        border = BorderStroke(1.dp, if (selected) UrbanColors.Gold else UrbanColors.Muted.copy(alpha = 0.25f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-            }
-            RadioButton(selected = selected, onClick = onClick, colors = RadioButtonDefaults.colors(selectedColor = UrbanColors.Gold))
-        }
-    }
-}
+

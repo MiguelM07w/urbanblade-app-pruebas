@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.InsightsViewModel
 
@@ -102,7 +103,7 @@ fun InsightsScreen(onBack: () -> Unit, vm: InsightsViewModel = viewModel()) {
                 data.revenue?.let { revenue ->
                     item {
                         InsightCard("Ingresos", Icons.Default.TrendingUp, revenue.status, revenue.message) {
-                            revenue.avgDaily?.let { BigNumber("Promedio diario", "$" + "%,.0f".format(it)) }
+                            revenue.avgDaily?.let { BigNumber("Promedio diario", UrbanFormat.moneyShort(it)) }
                         }
                     }
                 }

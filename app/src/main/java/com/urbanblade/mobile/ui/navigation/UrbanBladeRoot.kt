@@ -301,7 +301,9 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                         onBook = { barberId -> nav.openBooking(bookingRoute(null, barberId)) }
                     )
                 }
-                composable("wallet") { WalletScreen(onBack = { nav.popBackStack() }) }
+                composable("wallet") {
+                    WalletScreen(onBack = { nav.popBackStack() }, onBook = { nav.openBooking("booking") })
+                }
                 composable("store") { StoreScreen(user = user, onOrders = { nav.navigate("orders") }) }
                 composable("orders") { OrdersScreen(user = user, onBack = { nav.popBackStack() }) }
                 composable("payments") { PaymentsScreen(user = user, onBack = { nav.popBackStack() }) }

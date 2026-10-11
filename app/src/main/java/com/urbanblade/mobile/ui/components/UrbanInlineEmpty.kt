@@ -22,8 +22,10 @@ import com.urbanblade.mobile.ui.theme.UrbanColors
 
 /**
  * Estado vacío compacto, en una sola fila. Para secciones secundarias que pueden estar vacías
- * (membresía, paquetes, gift cards): el estado vacío centrado y grande se queda para la pantalla
- * principal, no para cada bloque de una lista de secciones.
+ * (membresía, paquetes, gift cards): el estado vacío centrado y grande ([UrbanEmptyState]) se queda
+ * para la pantalla principal, no para cada bloque de una lista de secciones.
+ *
+ * Si el bloque admite una acción real, va aquí (no se deja un mensaje pasivo sin salida).
  */
 @Composable
 fun UrbanInlineEmpty(
@@ -38,7 +40,7 @@ fun UrbanInlineEmpty(
                 Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(UrbanColors.Gold.copy(alpha = 0.10f)),
+                    .background(UrbanColors.CardAlt),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))

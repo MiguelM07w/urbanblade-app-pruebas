@@ -96,7 +96,8 @@ fun UrbanModuleScreen(
             contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item { UrbanPageHeader(title = title, subtitle = subtitle, eyebrow = eyebrow) }
+            // Módulo (tiene volver): encabezado compacto.
+            item { UrbanPageHeader(title = title, subtitle = subtitle, eyebrow = eyebrow, compact = true) }
             content()
         }
     }
@@ -167,7 +168,9 @@ fun UrbanHeroStat(label: String, value: String, icon: ImageVector, modifier: Mod
         Spacer(Modifier.width(9.dp))
         Column {
             Text(value, style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // La etiqueta sí puede ir en dos líneas: con el tamaño de fuente del sistema al máximo
+            // "Cobrado hoy" se cortaba como "Cobrado …" (visto en el S25 el 10-oct-2026).
+            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -278,7 +281,8 @@ fun UrbanModuleTile(
             Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(UrbanColors.Gold.copy(alpha = 0.14f)),
+                // Caja neutra e icono dorado (auditoría, P2-3: el dorado es énfasis, no relleno).
+                .background(UrbanColors.CardAlt),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(20.dp))

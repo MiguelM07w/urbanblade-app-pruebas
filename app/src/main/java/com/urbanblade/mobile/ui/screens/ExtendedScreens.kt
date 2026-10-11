@@ -29,6 +29,7 @@ import com.urbanblade.mobile.data.model.AuthUser
 import com.urbanblade.mobile.data.model.OrderRow
 import com.urbanblade.mobile.data.model.ProductItem
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.*
 
@@ -63,7 +64,7 @@ fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewM
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text("${cart.values.sum()} artículos", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
-                            Text("\$${"%.2f".format(total)} MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                            Text("${UrbanFormat.money(total)} MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
                         }
                         UrbanPrimaryButton(
                             text = "Pedir",
@@ -147,7 +148,7 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
                 )
             } else {
                 Box(
-                    Modifier.size(70.dp).clip(RoundedCornerShape(16.dp)).background(UrbanColors.Gold.copy(alpha = 0.09f)),
+                    Modifier.size(70.dp).clip(RoundedCornerShape(16.dp)).background(UrbanColors.CardAlt),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Inventory2, null, tint = UrbanColors.Gold, modifier = Modifier.size(29.dp))
@@ -155,7 +156,7 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                item.categoria?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold) }
+                item.categoria?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted) }
                 Text(item.nombre, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 // Muchas descripciones empiezan repitiendo el nombre ("Aceite — producto…"): se quita ese prefijo.
                 item.descripcion
@@ -184,7 +185,7 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
             }
             Spacer(Modifier.width(10.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text("\$${"%.0f".format(item.precioVenta)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(item.precioVenta)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
                 if (canShop) {
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -333,7 +334,7 @@ fun MoreScreen(user: AuthUser, onNavigate: (String) -> Unit) {
             add(ModuleItem("inventory", "Inventario", "Stock y movimientos", Icons.Default.Inventory2, "OPERACIÓN"))
             add(ModuleItem("inventory_movements", "Movimientos de inventario", "Entradas y salidas de stock", Icons.Default.SwapVert, "OPERACIÓN"))
             add(ModuleItem("waitlist_staff", "Lista de espera", "Clientes esperando un horario", Icons.Default.HourglassTop, "OPERACIÓN"))
-            add(ModuleItem("gift_cards", "Gift cards", "Vender y consultar saldo", Icons.Default.CardGiftcard, "OPERACIÓN"))
+            add(ModuleItem("gift_cards", "Tarjetas regalo", "Vender y consultar saldo", Icons.Default.CardGiftcard, "OPERACIÓN"))
             add(ModuleItem("cash", "Corte de caja", "Resumen de turno", Icons.Default.PointOfSale, "OPERACIÓN"))
         }
         if (barber) {
@@ -391,7 +392,7 @@ private fun ModuleCard(module: ModuleItem, onNavigate: (String) -> Unit) {
     UrbanCard(Modifier.fillMaxWidth(), onClick = { onNavigate(module.route) }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.Gold.copy(alpha = 0.09f)),
+                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.CardAlt),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(module.icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
@@ -401,7 +402,7 @@ private fun ModuleCard(module: ModuleItem, onNavigate: (String) -> Unit) {
                 Text(module.title, style = MaterialTheme.typography.titleMedium)
                 Text(module.subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
-            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Gold)
+            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted)
         }
     }
 }

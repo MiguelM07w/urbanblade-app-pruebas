@@ -349,14 +349,16 @@ fun AuthPrimaryButton(
                 scaleX = scale
                 scaleY = scale
             },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         // Deshabilitado por formulario incompleto: gris con borde, claramente "aún no". Mientras carga
         // sigue dorado (solo está ocupado). Antes el dorado apagado parecía un botón roto.
         colors = ButtonDefaults.buttonColors(
             containerColor = UrbanColors.Gold,
             contentColor = UrbanColors.OnGold,
-            disabledContainerColor = if (enabled || loading) UrbanColors.Gold else UrbanColors.Card,
-            disabledContentColor = if (enabled || loading) UrbanColors.OnGold else UrbanColors.Muted
+            // Igual que UrbanPrimaryButton: CardAlt y tinta al 75 % para que el botón se vea sin
+            // confundirse con el fondo (auditoría del 24-sep: "parece defectuoso").
+            disabledContainerColor = if (enabled || loading) UrbanColors.Gold else UrbanColors.CardAlt,
+            disabledContentColor = if (enabled || loading) UrbanColors.OnGold else UrbanColors.Ink.copy(alpha = 0.75f)
         ),
         border = if (enabled || loading) null else androidx.compose.foundation.BorderStroke(1.dp, UrbanColors.Line)
     ) {

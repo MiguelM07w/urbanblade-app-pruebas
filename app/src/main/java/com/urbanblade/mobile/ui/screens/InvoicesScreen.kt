@@ -58,7 +58,7 @@ import com.urbanblade.mobile.ui.components.UrbanStatusPill
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.InvoicesViewModel
 
-private fun money(value: Double) = "\$" + "%,.2f".format(value)
+private fun money(value: Double) = UrbanFormat.money(value)
 
 private val METODO = mapOf("efectivo" to "Efectivo", "tarjeta" to "Tarjeta", "transferencia" to "Transferencia", "qr" to "QR")
 

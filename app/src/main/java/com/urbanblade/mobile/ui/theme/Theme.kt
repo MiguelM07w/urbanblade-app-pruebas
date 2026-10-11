@@ -205,6 +205,14 @@ private val UrbanTypography = Typography(
         fontSize = 27.sp,
         lineHeight = 33.sp
     ),
+    // Paso intermedio de la familia serif: encabezados de módulos y pantallas utilitarias
+    // (auditoría P2-2: el título de 27 sp es para las pantallas raíz, no para todo).
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 29.sp
+    ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
@@ -252,9 +260,10 @@ private val UrbanTypography = Typography(
 private val UrbanShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(18.dp),
+    // Escala de la auditoría (P0-5): 8 / 12 / 16 / 24. Antes 18 y 30, que no encajaban con ningún paso.
+    medium = RoundedCornerShape(16.dp),
     large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(30.dp)
+    extraLarge = RoundedCornerShape(24.dp)
 )
 
 @Composable

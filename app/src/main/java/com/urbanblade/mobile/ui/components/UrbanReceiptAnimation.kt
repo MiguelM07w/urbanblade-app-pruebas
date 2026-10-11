@@ -113,7 +113,7 @@ fun UrbanReceiptAnimation(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "\$${"%.0f".format(total)}",
+                    text = "${UrbanFormat.moneyShort(total)}",
                     style = MaterialTheme.typography.displaySmall,
                     color = UrbanColors.Gold,
                     fontWeight = FontWeight.Bold
