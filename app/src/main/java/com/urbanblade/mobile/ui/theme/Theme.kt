@@ -205,6 +205,14 @@ private val UrbanTypography = Typography(
         fontSize = 27.sp,
         lineHeight = 33.sp
     ),
+    // Paso intermedio de la familia serif: encabezados de módulos y pantallas utilitarias
+    // (auditoría P2-2: el título de 27 sp es para las pantallas raíz, no para todo).
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 29.sp
+    ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,

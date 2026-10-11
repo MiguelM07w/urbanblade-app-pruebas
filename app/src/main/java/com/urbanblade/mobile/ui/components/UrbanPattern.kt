@@ -96,7 +96,8 @@ fun UrbanModuleScreen(
             contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item { UrbanPageHeader(title = title, subtitle = subtitle, eyebrow = eyebrow) }
+            // Módulo (tiene volver): encabezado compacto.
+            item { UrbanPageHeader(title = title, subtitle = subtitle, eyebrow = eyebrow, compact = true) }
             content()
         }
     }

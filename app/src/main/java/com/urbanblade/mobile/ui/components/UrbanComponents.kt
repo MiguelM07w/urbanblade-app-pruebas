@@ -116,7 +116,9 @@ fun UrbanPageHeader(
     title: String,
     subtitle: String? = null,
     eyebrow: String? = null,
-    trailing: (@Composable () -> Unit)? = null
+    trailing: (@Composable () -> Unit)? = null,
+    /** Encabezado de módulo o pantalla utilitaria: un paso menos de serif (24 sp en vez de 27). */
+    compact: Boolean = false
 ) {
     Row(
         Modifier.fillMaxWidth(),
@@ -132,7 +134,11 @@ fun UrbanPageHeader(
                 )
                 Spacer(Modifier.height(5.dp))
             }
-            Text(title, style = MaterialTheme.typography.headlineMedium, color = UrbanColors.Ink)
+            Text(
+                title,
+                style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
+                color = UrbanColors.Ink
+            )
             subtitle?.let {
                 Spacer(Modifier.height(5.dp))
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Muted)
