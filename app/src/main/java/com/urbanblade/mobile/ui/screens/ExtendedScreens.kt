@@ -148,7 +148,7 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
                 )
             } else {
                 Box(
-                    Modifier.size(70.dp).clip(RoundedCornerShape(16.dp)).background(UrbanColors.Gold.copy(alpha = 0.09f)),
+                    Modifier.size(70.dp).clip(RoundedCornerShape(16.dp)).background(UrbanColors.CardAlt),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Inventory2, null, tint = UrbanColors.Gold, modifier = Modifier.size(29.dp))
@@ -156,7 +156,7 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                item.categoria?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold) }
+                item.categoria?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted) }
                 Text(item.nombre, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 // Muchas descripciones empiezan repitiendo el nombre ("Aceite — producto…"): se quita ese prefijo.
                 item.descripcion
@@ -185,7 +185,7 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
             }
             Spacer(Modifier.width(10.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text("${UrbanFormat.moneyShort(item.precioVenta)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(item.precioVenta)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
                 if (canShop) {
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -392,7 +392,7 @@ private fun ModuleCard(module: ModuleItem, onNavigate: (String) -> Unit) {
     UrbanCard(Modifier.fillMaxWidth(), onClick = { onNavigate(module.route) }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.Gold.copy(alpha = 0.09f)),
+                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.CardAlt),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(module.icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
