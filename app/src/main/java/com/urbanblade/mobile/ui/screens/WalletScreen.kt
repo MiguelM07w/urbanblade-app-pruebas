@@ -320,7 +320,7 @@ private fun PointsCard(loyalty: ClientLoyalty) {
             loyalty.earnRules.forEach { rule ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(rule.descripcion, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Muted, modifier = Modifier.weight(1f))
-                    Text("+${rule.puntos}", style = MaterialTheme.typography.titleSmall, color = UrbanColors.Gold)
+                    Text("+${rule.puntos}", style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
                 }
             }
             loyalty.maxRedeemPct?.let {
@@ -359,7 +359,7 @@ private fun MembershipPlanCard(plan: MembershipPlan, busy: Boolean, onSubscribe:
     UrbanCard(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(44.dp).clip(CircleShape).background(UrbanColors.Gold.copy(alpha = 0.14f)),
+                Modifier.size(44.dp).clip(CircleShape).background(UrbanColors.CardAlt),
                 contentAlignment = Alignment.Center
             ) { Icon(Icons.Default.CardMembership, null, tint = UrbanColors.Gold) }
             Spacer(Modifier.width(12.dp))
@@ -545,7 +545,7 @@ private fun GiftCardRow(card: GiftCard) {
                 Text(card.code, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text("Saldo inicial: ${UrbanFormat.moneyShort(card.montoInicial)}", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
-            Text("${UrbanFormat.moneyShort(card.saldo)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+            Text("${UrbanFormat.moneyShort(card.saldo)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
         }
     }
 }

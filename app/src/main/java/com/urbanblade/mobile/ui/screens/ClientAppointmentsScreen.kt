@@ -59,7 +59,6 @@ import com.urbanblade.mobile.ui.components.UrbanPageHeader
 import com.urbanblade.mobile.ui.components.UrbanPillTabs
 import com.urbanblade.mobile.ui.components.UrbanPrimaryButton
 import com.urbanblade.mobile.ui.components.ServiceTicketDialog
-import com.urbanblade.mobile.ui.components.formatMoney
 import com.urbanblade.mobile.ui.components.UrbanSectionTitle
 import com.urbanblade.mobile.ui.components.UrbanSkeletonList
 import com.urbanblade.mobile.ui.components.UrbanStateKind
@@ -160,7 +159,9 @@ fun ClientAppointmentsScreen(
                         UrbanAttentionRow(
                             Icons.Default.Payments,
                             "Tienes un adeudo por inasistencia",
-                            "${formatMoney(debt)} por pagar en la barbería (efectivo o transferencia). Mientras tanto no puedes reservar.",
+
+                            "${UrbanFormat.money(debt)} por pagar en la barbería (efectivo o transferencia). Mientras tanto no puedes reservar.",
+
                             UrbanColors.Warning
                         )
                     }
@@ -307,7 +308,7 @@ private fun NextClientAppointment(appt: AppointmentRow, onPay: (() -> Unit)?, on
         }
         Spacer(Modifier.height(8.dp))
         Text(UrbanFormat.time(appt.horaInicio), style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
-        Text(UrbanFormat.date(appt.fecha), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+        Text(UrbanFormat.date(appt.fecha), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Muted)
         Spacer(Modifier.height(14.dp))
         HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
         Spacer(Modifier.height(12.dp))
@@ -319,7 +320,7 @@ private fun NextClientAppointment(appt: AppointmentRow, onPay: (() -> Unit)?, on
                 Text(appt.barber?.user?.name ?: "Barbero por confirmar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             (appt.precioCobrado ?: appt.service?.precio)?.let {
-                Text("\$${"%.0f".format(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
             }
         }
         clientStateHint(appt.estado)?.let {

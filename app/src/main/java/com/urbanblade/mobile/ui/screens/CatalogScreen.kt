@@ -225,7 +225,7 @@ private fun ServiceCard(service: ServiceItem, onBook: () -> Unit) {
             }
             Spacer(Modifier.width(10.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text("${UrbanFormat.moneyShort(service.precio)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(service.precio)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Reservar", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
@@ -246,7 +246,7 @@ private fun BarberCard(barber: BarberItem, showsProfile: Boolean, onOpen: () -> 
             Column(Modifier.weight(1f)) {
                 Text(barber.user?.name ?: "Barbero", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 barber.especialidades?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(it, style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 barber.avgRating?.let { avg ->
                     Spacer(Modifier.height(2.dp))

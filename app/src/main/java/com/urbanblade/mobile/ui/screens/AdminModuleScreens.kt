@@ -293,7 +293,7 @@ fun RafflesScreen(onBack: () -> Unit, vm: RafflesViewModel = viewModel()) {
                     listOf(
                         Triple("Total", raffles.stats.total.toString(), UrbanColors.Ink),
                         Triple("Reclamados", raffles.stats.reclamados.toString(), UrbanColors.Success),
-                        Triple("Vigentes", raffles.stats.vigentes.toString(), UrbanColors.Gold)
+                        Triple("Vigentes", raffles.stats.vigentes.toString(), UrbanColors.Ink)
                     )
                 )
             }
