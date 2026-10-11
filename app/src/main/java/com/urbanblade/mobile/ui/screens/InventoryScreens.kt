@@ -22,6 +22,7 @@ import com.urbanblade.mobile.data.model.AuthUser
 import com.urbanblade.mobile.data.model.CreateProductRequest
 import com.urbanblade.mobile.data.model.InventoryProductRow
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.InventoryViewModel
 
@@ -92,7 +93,7 @@ fun InventoryListScreen(user: AuthUser, onBack: () -> Unit, onHistory: () -> Uni
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         InventorySummaryValue("Productos", response.meta.stats.total.toString(), Modifier.weight(1f))
                         InventorySummaryValue("Por reponer", response.meta.stats.bajoStock.toString(), Modifier.weight(1f), response.meta.stats.bajoStock > 0)
-                        InventorySummaryValue("Valor venta", "\$${"%.0f".format(response.meta.stats.valorTotal)}", Modifier.weight(1f))
+                        InventorySummaryValue("Valor venta", "${UrbanFormat.moneyShort(response.meta.stats.valorTotal)}", Modifier.weight(1f))
                     }
                 }
             }
@@ -213,7 +214,7 @@ private fun InventoryProductCard(
                 )
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("\$${"%.2f".format(product.precioVenta)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                Text("${UrbanFormat.money(product.precioVenta)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
                 when {
                     product.lowStock -> SimpleStatusPill("stock bajo", UrbanColors.Danger)
                     product.pendingRestock -> SimpleStatusPill("reposición pendiente", UrbanColors.Warning)

@@ -221,7 +221,9 @@ fun UrbanMetricCard(
                 Modifier
                     .size(38.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(UrbanColors.Gold.copy(alpha = 0.13f)),
+                    // Caja neutra e icono dorado: con el tinte dorado en cada tarjeta el dorado
+                    // dejaba de ser énfasis (auditoría, P2-3).
+                    .background(UrbanColors.CardAlt),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(20.dp))
@@ -259,34 +261,48 @@ fun UrbanQuickAction(
                 Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
-            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Gold)
+            // Gris, como en UrbanRow y UrbanAttentionRow: el chevrón solo dice "hay más".
+            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted)
+        }
+    }
+}
+
+/**
+ * Píldora de un tono semántico, con ícono opcional. La usan los estados de cita/pago
+ * ([UrbanStatusPill]) y la variación de un KPI ([UrbanTrendPill]), para que las dos se vean igual.
+ *
+ * El color va mezclado con el texto del tema: el ámbar o el verde puros casi no se leen sobre el
+ * crema de "Libreta" (lo mismo que ya hacía UrbanStatusPill).
+ */
+@Composable
+internal fun UrbanTonePill(label: String, icon: ImageVector?, tone: Color, modifier: Modifier = Modifier) {
+    // El tono ya viene resuelto a Color (StatusTone.color() lo resuelve quien llama).
+    val color = tone
+    val content = androidx.compose.ui.graphics.lerp(color, UrbanColors.Ink, 0.3f)
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = color.copy(alpha = 0.13f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.35f))
+    ) {
+        Row(
+            Modifier.padding(start = if (icon != null) 8.dp else 10.dp, end = 10.dp, top = 5.dp, bottom = 5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            icon?.let {
+                Icon(it, null, tint = content, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(4.dp))
+            }
+            Text(label, style = MaterialTheme.typography.labelMedium, color = content, maxLines = 1)
         }
     }
 }
 
 @Composable
 fun UrbanStatusPill(status: String) {
-    // Etiqueta, color e ícono salen de statusStyle() (UrbanStatus.kt), el mismo en toda la app.
+    // Etiqueta, tono e ícono salen de statusStyle() (UrbanStatus.kt), el mismo en toda la app.
     val style = statusStyle(status)
-    val color = style.tone.color()
-    // Mezclado con el texto del tema: el ámbar o verde puros casi no se leen sobre el crema de "Libreta".
-    val content = androidx.compose.ui.graphics.lerp(color, UrbanColors.Ink, 0.3f)
-    Surface(
-        shape = CircleShape,
-        color = color.copy(alpha = 0.13f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.35f))
-    ) {
-        Row(
-            Modifier.padding(start = if (style.icon != null) 8.dp else 10.dp, end = 10.dp, top = 5.dp, bottom = 5.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            style.icon?.let {
-                Icon(it, null, tint = content, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(4.dp))
-            }
-            Text(style.label, style = MaterialTheme.typography.labelMedium, color = content, maxLines = 1)
-        }
-    }
+    UrbanTonePill(label = style.label, icon = style.icon, tone = style.tone.color())
 }
 
 @Composable
@@ -347,8 +363,11 @@ fun UrbanPrimaryButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = UrbanColors.Gold,
             contentColor = UrbanColors.OnGold,
-            disabledContainerColor = if (enabled || loading) UrbanColors.Gold else UrbanColors.Card,
-            disabledContentColor = if (enabled || loading) UrbanColors.OnGold else UrbanColors.Muted
+            // "Gris con borde" se queda (el dorado apagado parecía un botón roto), pero con
+            // CardAlt y el texto al 75 % del color de tinta: sobre Card el botón se veía como un
+            // hueco y la auditoría lo reportó como "parece defectuoso".
+            disabledContainerColor = if (enabled || loading) UrbanColors.Gold else UrbanColors.CardAlt,
+            disabledContentColor = if (enabled || loading) UrbanColors.OnGold else UrbanColors.Ink.copy(alpha = 0.75f)
         ),
         border = if (enabled || loading) null else BorderStroke(1.dp, UrbanColors.Line)
     ) {
@@ -411,6 +430,14 @@ fun UrbanInfoBanner(text: String, icon: ImageVector = Icons.Default.Info, modifi
     }
 }
 
+/**
+ * Estado vacío de pantalla completa: la mascota Nava, el título y, si aplica, una acción.
+ *
+ * Cuál usar, para no inventar variantes locales:
+ * - pantalla o sección principal sin datos → esta ([UrbanEmptyState]);
+ * - error (Bruno, con "Reintentar") → [UrbanMascotState] con [UrbanStateKind.ERROR];
+ * - bloque secundario dentro de una lista → [UrbanInlineEmpty], que es compacto.
+ */
 @Composable
 fun UrbanEmptyState(
     title: String,

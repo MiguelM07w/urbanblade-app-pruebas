@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urbanblade.mobile.data.model.AuthUser
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.ClientsViewModel
 import kotlinx.coroutines.delay
@@ -110,7 +111,7 @@ fun ClientsListScreen(user: AuthUser, onClientClick: (String) -> Unit, onBack: (
                             Column(horizontalAlignment = Alignment.End) {
                                 client.segment?.let { SimpleStatusPill(SEGMENT_LABEL[it] ?: it, color = if (it == "vip") UrbanColors.Gold else null) }
                                 Spacer(Modifier.height(4.dp))
-                                Text("\$${"%,.0f".format(client.totalSpent)}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
+                                Text(UrbanFormat.moneyShort(client.totalSpent), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
                                 Text(UrbanFormat.count(client.totalAppointments, "cita", "citas"), style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted)
                             }
                         }
@@ -262,13 +263,13 @@ fun ClientDetailScreen(user: AuthUser, clientId: String, onBack: () -> Unit, vm:
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         UrbanMetricCard("Citas totales", d.totalAppointments.toString(), Icons.Default.CalendarMonth, Modifier.weight(1f))
-                        UrbanMetricCard("Total gastado", "\$${"%,.0f".format(d.totalSpent)}", Icons.Default.Payments, Modifier.weight(1f))
+                        UrbanMetricCard("Total gastado", UrbanFormat.moneyShort(d.totalSpent), Icons.Default.Payments, Modifier.weight(1f))
                     }
                 }
                 if (d.averageSpent > 0) {
                     item {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            UrbanMetricCard("Ticket promedio", "\$${"%,.0f".format(d.averageSpent)}", Icons.Default.Receipt, Modifier.weight(1f))
+                            UrbanMetricCard("Ticket promedio", UrbanFormat.moneyShort(d.averageSpent), Icons.Default.Receipt, Modifier.weight(1f))
                             UrbanMetricCard(
                                 "Días sin venir",
                                 d.daysSinceLastAppointment?.toString() ?: "—",

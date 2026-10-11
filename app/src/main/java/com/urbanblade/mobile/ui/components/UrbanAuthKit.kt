@@ -355,8 +355,10 @@ fun AuthPrimaryButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = UrbanColors.Gold,
             contentColor = UrbanColors.OnGold,
-            disabledContainerColor = if (enabled || loading) UrbanColors.Gold else UrbanColors.Card,
-            disabledContentColor = if (enabled || loading) UrbanColors.OnGold else UrbanColors.Muted
+            // Igual que UrbanPrimaryButton: CardAlt y tinta al 75 % para que el botón se vea sin
+            // confundirse con el fondo (auditoría del 24-sep: "parece defectuoso").
+            disabledContainerColor = if (enabled || loading) UrbanColors.Gold else UrbanColors.CardAlt,
+            disabledContentColor = if (enabled || loading) UrbanColors.OnGold else UrbanColors.Ink.copy(alpha = 0.75f)
         ),
         border = if (enabled || loading) null else androidx.compose.foundation.BorderStroke(1.dp, UrbanColors.Line)
     ) {

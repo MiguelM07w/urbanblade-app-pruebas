@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import com.urbanblade.mobile.data.model.BarberItem
 import com.urbanblade.mobile.data.model.ServiceItem
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.CatalogViewModel
 
@@ -224,7 +225,7 @@ private fun ServiceCard(service: ServiceItem, onBook: () -> Unit) {
             }
             Spacer(Modifier.width(10.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text("\$${"%.0f".format(service.precio)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(service.precio)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Reservar", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)

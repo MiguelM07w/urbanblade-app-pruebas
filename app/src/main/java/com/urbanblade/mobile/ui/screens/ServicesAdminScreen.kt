@@ -228,7 +228,7 @@ private fun ServiceAdminCard(service: ServiceAdminItem, onOpen: () -> Unit, onTo
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    "$" + "%.0f".format(service.precio),
+                    UrbanFormat.moneyShort(service.precio),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (service.activo) UrbanColors.Gold else UrbanColors.Muted

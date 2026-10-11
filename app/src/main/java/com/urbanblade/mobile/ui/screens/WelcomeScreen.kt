@@ -69,7 +69,7 @@ fun WelcomeScreen(onRegister: () -> Unit, onLogin: () -> Unit, sessionExpired: B
             horizontalAlignment = Alignment.Start
         ) {
             StaggerIn(0) { UrbanBrandMark() }
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(26.dp))
 
             StaggerIn(1) {
                 Text(
@@ -104,13 +104,15 @@ fun WelcomeScreen(onRegister: () -> Unit, onLogin: () -> Unit, sessionExpired: B
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .padding(bottom = 88.dp)
-                            .size(300.dp)
+                            // 220 dp y más pegada a las acciones: con 300 dp y 88 dp de aire la
+                            // composición dejaba un hueco (auditoría del 24-sep, P1).
+                            .padding(bottom = 36.dp)
+                            .size(220.dp)
                             .graphicsLayer { translationY = bob.dp.toPx() }
                     )
                 }
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(14.dp))
 
             if (sessionExpired) {
                 UrbanInfoBanner("Tu sesión venció. Inicia sesión de nuevo para continuar.", Icons.Default.Lock)

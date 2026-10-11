@@ -53,6 +53,7 @@ import com.urbanblade.mobile.ui.components.UrbanTextField
 import com.urbanblade.mobile.ui.components.UrbanTopBar
 import com.urbanblade.mobile.ui.components.UrbanMascotState
 import com.urbanblade.mobile.ui.components.UrbanStateKind
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.GIFT_CARD_MAX
 import com.urbanblade.mobile.ui.viewmodel.GIFT_CARD_MIN
@@ -60,7 +61,7 @@ import com.urbanblade.mobile.ui.viewmodel.GiftCardsStaffViewModel
 
 private val PRESETS = listOf(200, 500, 1000, 2000)
 
-private fun money(value: Double) = "$" + String.format(java.util.Locale("es", "MX"), "%,.0f", value)
+private fun money(value: Double) = UrbanFormat.moneyShort(value)
 
 /** Gift cards en mostrador: vender en efectivo y consultar el saldo de una tarjeta por su código. */
 @Composable
@@ -88,7 +89,7 @@ fun GiftCardsStaffScreen(onBack: () -> Unit, vm: GiftCardsStaffViewModel = viewM
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
-                UrbanPageHeader("Gift cards", "Vende una tarjeta en mostrador o consulta su saldo.", "OPERACIÓN")
+                UrbanPageHeader("Tarjetas regalo", "Vende una tarjeta en mostrador o consulta su saldo.", "OPERACIÓN")
             }
 
             state.sold?.let { sold ->

@@ -28,8 +28,6 @@ import com.urbanblade.mobile.ui.viewmodel.DashboardViewModel
 import java.time.LocalDate
 import java.util.Locale
 
-private fun money(value: Double) = "\$" + String.format(Locale("es", "MX"), "%,.0f", value)
-
 /**
  * Inicio de recepción: el pulso del día (citas, cobrado, clientes nuevos), lo que requiere acción
  * (pagos por verificar, pedidos, stock) y las citas de hoy por confirmar. Antes veía el tablero
@@ -81,7 +79,7 @@ fun ReceptionHomeScreen(
                         HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
                         Spacer(Modifier.height(14.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                            UrbanHeroStat("Cobrado hoy", money(board.collectedToday), Icons.Default.PointOfSale, Modifier.weight(1f))
+                            UrbanHeroStat("Cobrado hoy", UrbanFormat.moneyShort(board.collectedToday), Icons.Default.PointOfSale, Modifier.weight(1f))
                             UrbanHeroStat("Clientes nuevos", board.newClientsToday.toString(), Icons.Default.PersonAdd, Modifier.weight(1f))
                         }
                     }
@@ -122,7 +120,13 @@ fun ReceptionHomeScreen(
 
                 if (board.toConfirm.isNotEmpty()) {
                     item { UrbanSectionTitle("Por confirmar hoy", "Citas pendientes que siguen en el día.", "Ver agenda") { onNavigate("appointments") } }
-                    items(board.toConfirm, key = { it.id }) { appt -> ToConfirmRow(appt) { onNavigate("appointments") } }
+                    // Una sola tarjeta con todas las filas, con separador entre ellas (antes: una
+                    // tarjeta con borde por cita, que es lo que la auditoría pidió reducir).
+                    item {
+                        UrbanRowGroup(items = board.toConfirm) { appt ->
+                            ToConfirmRow(appt) { onNavigate("appointments") }
+                        }
+                    }
                 }
             }
         }
@@ -139,7 +143,7 @@ fun ReceptionHomeScreen(
                     Triple("Cobros", "Pagos y comprobantes", Icons.Default.Payments),
                     Triple("Clientes", "Buscar y registrar", Icons.Default.People),
                     Triple("Lista de espera", "Clientes esperando horario", Icons.Default.HourglassTop),
-                    Triple("Gift cards", "Vender y consultar saldo", Icons.Default.CardGiftcard),
+                    Triple("Tarjetas regalo", "Vender y consultar saldo", Icons.Default.CardGiftcard),
                     Triple("Corte de caja", "Cierre del turno", Icons.Default.PointOfSale),
                 ),
                 routes = listOf("appointments", "payments", "clients", "waitlist_staff", "gift_cards", "cash"),
@@ -151,8 +155,12 @@ fun ReceptionHomeScreen(
 
 @Composable
 private fun ToConfirmRow(appt: ReceptionAppointment, onClick: () -> Unit) {
-    UrbanCard(Modifier.fillMaxWidth(), onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    // Fila compacta del kit: la hora como distintivo a la izquierda y el chevron a la derecha.
+    UrbanRow(
+        title = appt.cliente,
+        subtitle = "${appt.servicio} · ${appt.barbero}",
+        onClick = onClick,
+        leading = {
             Box(
                 Modifier
                     .clip(RoundedCornerShape(12.dp))
@@ -161,12 +169,7 @@ private fun ToConfirmRow(appt: ReceptionAppointment, onClick: () -> Unit) {
             ) {
                 Text(UrbanFormat.time(appt.hora), style = MaterialTheme.typography.titleSmall, color = UrbanColors.Gold)
             }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(appt.cliente, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("${appt.servicio} · ${appt.barbero}", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted)
-        }
-    }
+        },
+        trailing = { Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted) }
+    )
 }

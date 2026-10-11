@@ -270,7 +270,7 @@ private fun NextAppointmentCard(next: AppointmentRow, onClick: () -> Unit) {
                 )
             }
             (next.precioCobrado ?: next.service?.precio)?.let {
-                Text("\$${"%.0f".format(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
             }
         }
     }
@@ -299,7 +299,7 @@ private fun RebookCard(visit: AppointmentRow, onRebook: () -> Unit) {
             }
             visit.service?.precio?.let {
                 Spacer(Modifier.width(8.dp))
-                Text("\$${"%.0f".format(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
             }
         }
         Spacer(Modifier.height(14.dp))

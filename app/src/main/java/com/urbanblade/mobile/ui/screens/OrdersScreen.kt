@@ -68,8 +68,8 @@ import com.urbanblade.mobile.ui.viewmodel.ORDER_PAYMENT_METHODS
 import com.urbanblade.mobile.ui.viewmodel.OrderFilter
 import com.urbanblade.mobile.ui.viewmodel.OrdersViewModel
 
-private fun money(value: Double) = "$" + String.format(java.util.Locale("es", "MX"), "%,.2f", value)
-private fun moneyShort(value: Double) = "$" + String.format(java.util.Locale("es", "MX"), "%,.0f", value)
+private fun money(value: Double) = UrbanFormat.money(value)
+private fun moneyShort(value: Double) = UrbanFormat.moneyShort(value)
 
 /** Pedidos de la tienda: el personal los gestiona (entregar, cobrar, cancelar); el cliente sigue los suyos. */
 @Composable

@@ -22,15 +22,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AlternateEmail
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -177,7 +178,7 @@ fun LoginScreen(
                 onClick = ::submit,
                 enabled = canSubmit,
                 loading = busy,
-                icon = Icons.Default.ArrowForward,
+                icon = Icons.AutoMirrored.Filled.ArrowForward,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -205,6 +206,8 @@ fun RegisterScreen(
     var googleBusy by remember { mutableStateOf(false) }
     // Consentimiento obligatorio (igual que la web): Términos, Aviso de Privacidad y mayoría de edad.
     var acceptedLegal by remember { mutableStateOf(false) }
+    // Dos pasos (auditoría del 24-sep): la pantalla era demasiado larga y densa de una vez.
+    var step by rememberSaveable { mutableStateOf(0) }
 
     // Mismo mínimo que AuthController::register() ('password' => ['min:8', 'confirmed']) --
     // validar aquí evita un viaje al servidor que de todos modos rechazaría la contraseña.
@@ -213,105 +216,131 @@ fun RegisterScreen(
     val passwordTooShort = password.isNotEmpty() && password.length < 8
     val passwordsMismatch = confirmation.isNotEmpty() && password != confirmation
     val emailValid = isValidEmail(email)
-    val canSubmit = name.isNotBlank() && emailValid && password.length >= 8 && confirmation == password && acceptedLegal
+    val stepOneValid = name.isNotBlank() && emailValid && acceptedLegal
+    val stepTwoValid = password.length >= 8 && confirmation == password
+    val canSubmit = stepOneValid && stepTwoValid
     fun submit() {
         if (canSubmit && !busy) authViewModel.register(name.trim(), email.trim(), password, confirmation)
     }
+    // La flecha de la barra vuelve al paso anterior, no fuera de la pantalla.
+    val backAction: () -> Unit = if (step == 1) ({ step = 0 }) else onBack
 
     AuthScaffold(
         eyebrow = "NUEVA CUENTA",
-        title = "Crea tu cuenta",
-        subtitle = "Reserva, compra y administra tu experiencia UrbanBlade.",
+        title = if (step == 0) "Crea tu cuenta" else "Tu contraseña",
+        subtitle = if (step == 0) {
+            "Tus datos, y después la contraseña."
+        } else {
+            "Elige una contraseña de al menos 8 caracteres."
+        },
         mood = if (error != null) MascotMood.ERROR else MascotMood.DEFAULT,
-        onBack = onBack
+        onBack = backAction
     ) {
-        StaggerIn(1) {
-            LegalConsentCheckbox(acceptedLegal, { acceptedLegal = it })
+        StaggerIn(0) {
+            Text("Paso ${step + 1} de 2", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
         }
-        StaggerIn(1) {
-            GoogleSignInButton(
-                text = "Registrarme con Google",
-                loading = googleBusy,
-                enabled = acceptedLegal,
-                onClick = {
-                    scope.launch {
-                        googleBusy = true
-                        val result = GoogleAuthHelper.requestGoogleIdToken(context)
-                        googleBusy = false
-                        when (result) {
-                            is GoogleAuthHelper.Result.Token -> authViewModel.loginWithGoogle(result.value)
-                            GoogleAuthHelper.Result.Unavailable -> authViewModel.reportGoogleUnavailable()
-                            GoogleAuthHelper.Result.Cancelled -> authViewModel.reportGoogleCancelled()
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        StaggerIn(2) { OrDivider("o con tu correo") }
-        StaggerIn(3) {
-            UrbanTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = "Nombre",
-                leadingIcon = Icons.Default.Person,
-                capitalization = KeyboardCapitalization.Words
-            )
-        }
-        StaggerIn(4) {
-            UrbanTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = "Correo electrónico",
-                leadingIcon = Icons.Default.AlternateEmail,
-                placeholder = "nombre@correo.com",
-                keyboardType = KeyboardType.Email,
-                error = if (emailTouched && email.isNotBlank() && !emailValid) "Escribe un correo válido." else null,
-                onBlur = { emailTouched = true }
-            )
-        }
-        StaggerIn(5) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                UrbanTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = "Contraseña",
-                    leadingIcon = Icons.Default.Lock,
-                    isPassword = true,
-                    error = if (passwordTooShort) "Mínimo 8 caracteres." else null,
-                    helper = if (password.isEmpty()) "Mínimo 8 caracteres." else null
-                )
-                PasswordStrengthMeter(password)
+        if (step == 0) {
+            StaggerIn(1) {
+                LegalConsentCheckbox(acceptedLegal, { acceptedLegal = it })
             }
-        }
-        StaggerIn(6) {
-            UrbanTextField(
-                value = confirmation,
-                onValueChange = { confirmation = it },
-                label = "Confirmar contraseña",
-                leadingIcon = Icons.Default.VerifiedUser,
-                isPassword = true,
-                imeAction = ImeAction.Done,
-                onImeAction = ::submit,
-                error = if (passwordsMismatch) "Las contraseñas no coinciden." else null
-            )
-        }
-        AnimatedVisibility(visible = error != null) {
-            error?.let { UrbanErrorBanner(it) }
-        }
-        StaggerIn(7) {
-            AuthPrimaryButton(
-                text = "Crear cuenta",
-                onClick = ::submit,
-                enabled = canSubmit,
-                loading = busy,
-                icon = Icons.Default.HowToReg,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        if (onLogin != null) {
-            StaggerIn(8) {
-                SwitchAuthRow(prompt = "¿Ya tienes cuenta?", action = "Inicia sesión", onClick = onLogin)
+            StaggerIn(1) {
+                GoogleSignInButton(
+                    text = "Registrarme con Google",
+                    loading = googleBusy,
+                    enabled = acceptedLegal,
+                    onClick = {
+                        scope.launch {
+                            googleBusy = true
+                            val result = GoogleAuthHelper.requestGoogleIdToken(context)
+                            googleBusy = false
+                            when (result) {
+                                is GoogleAuthHelper.Result.Token -> authViewModel.loginWithGoogle(result.value)
+                                GoogleAuthHelper.Result.Unavailable -> authViewModel.reportGoogleUnavailable()
+                                GoogleAuthHelper.Result.Cancelled -> authViewModel.reportGoogleCancelled()
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            StaggerIn(2) { OrDivider("o con tu correo") }
+            StaggerIn(3) {
+                UrbanTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = "Nombre",
+                    leadingIcon = Icons.Default.Person,
+                    capitalization = KeyboardCapitalization.Words
+                )
+            }
+            StaggerIn(4) {
+                UrbanTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = "Correo electrónico",
+                    leadingIcon = Icons.Default.AlternateEmail,
+                    placeholder = "nombre@correo.com",
+                    keyboardType = KeyboardType.Email,
+                    error = if (emailTouched && email.isNotBlank() && !emailValid) "Escribe un correo válido." else null,
+                    onBlur = { emailTouched = true }
+                )
+            }
+            StaggerIn(5) {
+                AuthPrimaryButton(
+                    text = "Continuar",
+                    onClick = { step = 1 },
+                    enabled = stepOneValid,
+                    icon = Icons.AutoMirrored.Filled.ArrowForward,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (onLogin != null) {
+                StaggerIn(6) {
+                    SwitchAuthRow(prompt = "¿Ya tienes cuenta?", action = "Inicia sesión", onClick = onLogin)
+                }
+            }
+        } else {
+            StaggerIn(1) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    UrbanTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Contraseña",
+                        leadingIcon = Icons.Default.Lock,
+                        isPassword = true,
+                        error = if (passwordTooShort) "Mínimo 8 caracteres." else null,
+                        helper = if (password.isEmpty()) "Mínimo 8 caracteres." else null
+                    )
+                    PasswordStrengthMeter(password)
+                }
+            }
+            StaggerIn(2) {
+                UrbanTextField(
+                    value = confirmation,
+                    onValueChange = { confirmation = it },
+                    label = "Confirmar contraseña",
+                    leadingIcon = Icons.Default.VerifiedUser,
+                    isPassword = true,
+                    imeAction = ImeAction.Done,
+                    onImeAction = ::submit,
+                    error = if (passwordsMismatch) "Las contraseñas no coinciden." else null
+                )
+            }
+            AnimatedVisibility(visible = error != null) {
+                error?.let { UrbanErrorBanner(it) }
+            }
+            StaggerIn(3) {
+                AuthPrimaryButton(
+                    text = "Crear cuenta",
+                    onClick = ::submit,
+                    enabled = canSubmit,
+                    loading = busy,
+                    icon = Icons.Default.HowToReg,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            StaggerIn(4) {
+                SwitchAuthRow(prompt = "¿Algo mal en tus datos?", action = "Volver", onClick = { step = 0 })
             }
         }
     }
@@ -356,8 +385,7 @@ fun ForgotPasswordScreen(authViewModel: AuthViewModel, onBack: () -> Unit) {
                     imeAction = ImeAction.Done,
                     onImeAction = ::submit,
                     error = if (emailTouched && email.isNotBlank() && !emailValid) "Escribe un correo válido." else null,
-                    onBlur = { emailTouched = true },
-                    helper = "Si no lo ves, revisa también tu bandeja de spam."
+                    onBlur = { emailTouched = true }
                 )
             }
             AnimatedVisibility(visible = error != null) {
@@ -369,9 +397,21 @@ fun ForgotPasswordScreen(authViewModel: AuthViewModel, onBack: () -> Unit) {
                     onClick = ::submit,
                     enabled = emailValid,
                     loading = busy,
-                    icon = Icons.Default.Send,
+                    icon = Icons.AutoMirrored.Filled.Send,
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+            StaggerIn(3) {
+                Text(
+                    "Si no lo ves en unos minutos, revisa tu bandeja de spam.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = UrbanColors.Muted,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            StaggerIn(4) {
+                SwitchAuthRow(prompt = "¿Ya la recordaste?", action = "Inicia sesión", onClick = onBack)
             }
         } else {
             Column(
@@ -502,7 +542,7 @@ private fun AuthScaffold(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (onBack != null) {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Volver") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
                 } else {
                     Spacer(Modifier.size(48.dp))
                 }
@@ -510,20 +550,24 @@ private fun AuthScaffold(
                 Spacer(Modifier.size(48.dp))
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
             StaggerIn(0) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(eyebrow, style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             title,
                             style = MaterialTheme.typography.headlineMedium,
                             color = UrbanColors.Ink,
+                            // Máximo dos líneas (auditoría del 24-sep): con el tamaño de fuente del
+                            // sistema al máximo el título empujaba el formulario fuera de vista.
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             modifier = Modifier.semantics { heading() }
                         )
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(4.dp))
                         Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = UrbanColors.Muted)
                     }
                     // La mascota solo aparece cuando comunica algo (un error o un envío correcto);
@@ -540,7 +584,7 @@ private fun AuthScaffold(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
 
             Column(
                 Modifier.fillMaxWidth(),

@@ -73,6 +73,7 @@ import com.urbanblade.mobile.ui.components.UrbanHeroLabel
 import com.urbanblade.mobile.ui.components.UrbanPageHeader
 import com.urbanblade.mobile.ui.components.UrbanSkeletonList
 import com.urbanblade.mobile.ui.components.UrbanTopBar
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.MascotMood
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.theme.mascot
@@ -157,8 +158,10 @@ fun ChatbotScreen(onBack: () -> Unit, onBook: (serviceId: String) -> Unit = {}, 
                             colors = IconButtonDefaults.filledIconButtonColors(
                                 containerColor = UrbanColors.Gold,
                                 contentColor = UrbanColors.OnGold,
-                                disabledContainerColor = UrbanColors.Card,
-                                disabledContentColor = UrbanColors.Muted
+                                // Igual que los botones del kit: CardAlt + tinta al 75 % para que se
+                                // vea el control cuando está apagado (antes se perdía en el fondo).
+                                disabledContainerColor = UrbanColors.CardAlt,
+                                disabledContentColor = UrbanColors.Ink.copy(alpha = 0.75f)
                             )
                         ) { Icon(Icons.AutoMirrored.Filled.Send, "Enviar") }
                     }
@@ -268,7 +271,7 @@ private fun ChatBubbleRow(bubble: ChatBubble, onRate: (Boolean) -> Unit, onBook:
                     Icon(Icons.Default.ContentCut, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Reservar ${service.nombre} · $${"%.0f".format(service.precio)}",
+                        "Reservar ${service.nombre} · ${UrbanFormat.moneyShort(service.precio)}",
                         style = MaterialTheme.typography.labelLarge,
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis

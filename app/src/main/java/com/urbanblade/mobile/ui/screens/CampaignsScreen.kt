@@ -75,6 +75,7 @@ import com.urbanblade.mobile.ui.components.UrbanPageHeader
 import com.urbanblade.mobile.ui.components.UrbanStatStrip
 import com.urbanblade.mobile.ui.components.UrbanStateKind
 import com.urbanblade.mobile.ui.components.urbanFilterChipColors
+import com.urbanblade.mobile.ui.components.statusStyle
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.CampaignsViewModel
 import java.time.Instant
@@ -82,12 +83,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneOffset
-
-private fun statusText(estado: String?) = when (estado) {
-    "enviada" -> "Enviada"
-    "programada" -> "Programada"
-    else -> estado.orEmpty().replaceFirstChar { it.uppercase() }
-}
 
 /** Campañas de marketing por segmento (solo administrador): historial y envío inmediato o programado. */
 @Composable
@@ -173,7 +168,8 @@ private fun CampaignCard(c: CampaignRow, segment: String) {
                 Text(c.titulo ?: "—", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
                 Text(segment, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
-            c.estado?.let { UrbanStatusPill(statusText(it)) }
+            // statusStyle (dentro de UrbanStatusPill) ya pone la etiqueta y el tono de cada estado.
+                                c.estado?.let { UrbanStatusPill(it) }
         }
         c.cuerpo?.takeIf { it.isNotBlank() }?.let {
             Spacer(Modifier.height(6.dp))

@@ -33,6 +33,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.urbanblade.mobile.data.model.AppointmentRow
 import com.urbanblade.mobile.ui.components.UrbanCard
+import com.urbanblade.mobile.ui.components.color
+import com.urbanblade.mobile.ui.components.statusStyle
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import java.time.LocalDate
 import java.time.YearMonth
@@ -42,13 +44,8 @@ import java.util.Locale
 private val es = Locale("es", "MX")
 private val weekdayLabels = listOf("L", "M", "M", "J", "V", "S", "D")
 
-private fun estadoColor(estado: String): Color = when (estado) {
-    "pendiente" -> UrbanColors.Warning
-    "confirmada" -> UrbanColors.Info
-    "en_proceso" -> UrbanColors.Gold
-    "completada" -> UrbanColors.Success
-    else -> UrbanColors.Danger
-}
+/** Color del punto de un día: el mismo tono que la píldora de estado, no otra tabla de colores. */
+private fun estadoColor(estado: String): Color = statusStyle(estado).tone.color()
 
 /**
  * Calendario mensual de citas: cada día marca con puntos de color (por estado) las citas que tiene,
