@@ -81,8 +81,8 @@ import com.urbanblade.mobile.ui.viewmodel.PaymentMethodFilter
 import com.urbanblade.mobile.ui.viewmodel.PaymentsStaffViewModel
 import com.urbanblade.mobile.ui.viewmodel.REJECT_REASON_MAX
 
-private fun money(value: Double) = "$" + String.format(java.util.Locale("es", "MX"), "%,.2f", value)
-private fun moneyShort(value: Double) = "$" + String.format(java.util.Locale("es", "MX"), "%,.0f", value)
+private fun money(value: Double) = UrbanFormat.money(value)
+private fun moneyShort(value: Double) = UrbanFormat.moneyShort(value)
 
 /** Motivos frecuentes de rechazo: en mostrador se elige uno en vez de escribirlo cada vez. */
 internal val REJECT_QUICK_REASONS = listOf(

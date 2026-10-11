@@ -11,9 +11,6 @@ import androidx.compose.ui.unit.dp
 import com.urbanblade.mobile.data.model.ServiceTicket
 import com.urbanblade.mobile.ui.theme.UrbanColors
 
-/** Pesos mexicanos con centavos, para tickets y adeudos: «$1,234.50». */
-fun formatMoney(value: Double): String = "$" + "%,.2f".format(java.util.Locale.US, value)
-
 /**
  * Ticket del servicio terminado (flujo de citas V2): lo ve el barbero al terminar y el cliente en su historial.
  * El comprobante en PDF se abre en el navegador; el correo con comprobante y factura sale solo.
@@ -43,13 +40,13 @@ fun ServiceTicketDialog(ticket: ServiceTicket, onDismiss: () -> Unit) {
                     "${ticket.duracionMin} min" + if (ticket.minutosExtra > 0) " + ${ticket.minutosExtra} extra" else ""
                 )
                 HorizontalDivider(Modifier.padding(vertical = 4.dp), color = UrbanColors.Muted.copy(alpha = 0.3f))
-                TicketLine("Precio del servicio", formatMoney(ticket.precioServicio))
-                if (ticket.descuentos > 0) TicketLine("Descuentos", "−" + formatMoney(ticket.descuentos), UrbanColors.Success)
-                if (ticket.depositoAplicado > 0) TicketLine("Pagado al reservar", formatMoney(ticket.depositoAplicado))
-                TicketLine("Cobro (${ticket.metodoPago ?: "—"})", formatMoney(ticket.monto))
-                if (ticket.propina > 0) TicketLine("Propina", formatMoney(ticket.propina))
+                TicketLine("Precio del servicio", UrbanFormat.money(ticket.precioServicio))
+                if (ticket.descuentos > 0) TicketLine("Descuentos", "−" + UrbanFormat.money(ticket.descuentos), UrbanColors.Success)
+                if (ticket.depositoAplicado > 0) TicketLine("Pagado al reservar", UrbanFormat.money(ticket.depositoAplicado))
+                TicketLine("Cobro (${ticket.metodoPago ?: "—"})", UrbanFormat.money(ticket.monto))
+                if (ticket.propina > 0) TicketLine("Propina", UrbanFormat.money(ticket.propina))
                 HorizontalDivider(Modifier.padding(vertical = 4.dp), color = UrbanColors.Muted.copy(alpha = 0.3f))
-                TicketLine("Total pagado", formatMoney(ticket.totalPagado), UrbanColors.Gold, bold = true)
+                TicketLine("Total pagado", UrbanFormat.money(ticket.totalPagado), UrbanColors.Gold, bold = true)
                 Text(
                     "También lo enviamos al correo del cliente con su factura.",
                     style = MaterialTheme.typography.bodySmall,
