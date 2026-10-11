@@ -495,7 +495,7 @@ private fun GoogleSignInButton(
         onClick = onClick,
         enabled = enabled && !loading,
         modifier = modifier.heightIn(min = 56.dp),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, UrbanColors.Line),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = UrbanColors.Card,

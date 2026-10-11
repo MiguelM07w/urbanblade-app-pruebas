@@ -105,7 +105,7 @@ fun UrbanStatCard(
                 Box(
                     Modifier
                         .size(32.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(UrbanColors.CardAlt),
                     contentAlignment = Alignment.Center
                 ) {

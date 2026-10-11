@@ -250,7 +250,7 @@ fun UrbanQuickAction(
             Box(
                 Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(UrbanColors.Gold),
                 contentAlignment = Alignment.Center
             ) {
@@ -358,7 +358,7 @@ fun UrbanPrimaryButton(
         onClick = onClick,
         enabled = enabled && !loading,
         modifier = modifier.heightIn(min = 52.dp),
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(16.dp),
         // Igual que AuthPrimaryButton: gris con borde si falta algo, dorado mientras carga.
         colors = ButtonDefaults.buttonColors(
             containerColor = UrbanColors.Gold,
@@ -390,7 +390,7 @@ fun UrbanOutlineButton(
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.heightIn(min = 50.dp),
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, UrbanColors.Line)
     ) {
         icon?.let { Icon(it, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)) }

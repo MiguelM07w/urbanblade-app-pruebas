@@ -349,7 +349,7 @@ fun AuthPrimaryButton(
                 scaleX = scale
                 scaleY = scale
             },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         // Deshabilitado por formulario incompleto: gris con borde, claramente "aún no". Mientras carga
         // sigue dorado (solo está ocupado). Antes el dorado apagado parecía un botón roto.
         colors = ButtonDefaults.buttonColors(

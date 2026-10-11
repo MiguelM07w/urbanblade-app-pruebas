@@ -252,9 +252,10 @@ private val UrbanTypography = Typography(
 private val UrbanShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(18.dp),
+    // Escala de la auditoría (P0-5): 8 / 12 / 16 / 24. Antes 18 y 30, que no encajaban con ningún paso.
+    medium = RoundedCornerShape(16.dp),
     large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(30.dp)
+    extraLarge = RoundedCornerShape(24.dp)
 )
 
 @Composable
