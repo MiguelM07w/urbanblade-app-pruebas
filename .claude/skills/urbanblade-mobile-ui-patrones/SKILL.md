@@ -180,6 +180,9 @@ responsabilidad).
     `UrbanEmptyState` delega en `UrbanMascotState`, así que **no hay lógica duplicada** y no
     hace falta migrar las llamadas directas que ya existen. Un vacío que admite una acción real
     no se deja como mensaje pasivo.
+    Aplicado el 11-oct-2026: en Beneficios, "Movimientos recientes" sin datos ofrece
+    **"Reservar cita"** con `UrbanOutlineButton` —de contorno, para no competir con el CTA de la
+    pantalla— y la acción se pasa por parámetro desde la navegación.
 14. **El estado deshabilitado tiene que verse.** El botón apagado sigue siendo gris con borde
     (el dorado apagado se leía como botón roto), pero con `CardAlt` y la tinta al 75 %: sobre
     `Card` el botón se perdía en el fondo y la auditoría del 24-sep lo reportó como "parece
