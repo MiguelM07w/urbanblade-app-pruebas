@@ -42,7 +42,7 @@ import com.urbanblade.mobile.ui.viewmodel.WalletViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WalletScreen(onBack: () -> Unit, vm: WalletViewModel = viewModel()) {
+fun WalletScreen(onBack: () -> Unit, onBook: () -> Unit, vm: WalletViewModel = viewModel()) {
     val data by vm.data.collectAsState()
     val loading by vm.loading.collectAsState()
     val busy by vm.busy.collectAsState()
@@ -123,7 +123,7 @@ fun WalletScreen(onBack: () -> Unit, vm: WalletViewModel = viewModel()) {
                         item { LevelLadder(loyalty) }
                     }
                     item { UrbanSectionTitle("Tus puntos", "Cómo se ganan y en qué los usas.") }
-                    item { PointsCard(loyalty) }
+                    item { PointsCard(loyalty, onBook) }
                 }
 
                 val membership = data.membership
@@ -312,7 +312,7 @@ private fun LevelLadder(loyalty: ClientLoyalty) {
 
 /** Cómo se ganan los puntos, cómo se canjean y los últimos movimientos. */
 @Composable
-private fun PointsCard(loyalty: ClientLoyalty) {
+private fun PointsCard(loyalty: ClientLoyalty, onBook: () -> Unit) {
     UrbanCard(Modifier.fillMaxWidth()) {
         if (loyalty.earnRules.isNotEmpty()) {
             Text("Cómo ganarlos", style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
@@ -339,6 +339,9 @@ private fun PointsCard(loyalty: ClientLoyalty) {
         Spacer(Modifier.height(6.dp))
         if (loyalty.recentTransactions.isEmpty()) {
             Text("Aún no tienes movimientos. Tu primera cita completada suma puntos.", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+            Spacer(Modifier.height(10.dp))
+            // Un vacío con salida: la acción que suma los primeros puntos (auditoría P1-4).
+            UrbanOutlineButton("Reservar cita", onBook, Modifier.fillMaxWidth(), Icons.Default.ContentCut)
         } else {
             loyalty.recentTransactions.forEach { tx ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
