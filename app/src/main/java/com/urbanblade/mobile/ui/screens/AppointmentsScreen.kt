@@ -40,6 +40,7 @@ import com.urbanblade.mobile.data.model.AuthUser
 import com.urbanblade.mobile.data.model.SlotItem
 import com.urbanblade.mobile.data.model.WaitlistEntry
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.AppointmentsViewModel
 import java.time.LocalDate
@@ -1000,12 +1001,12 @@ internal fun CheckoutSheet(appt: AppointmentRow, vm: AppointmentsViewModel, onDi
             UrbanSectionTitle("Pagar cita", appt.service?.nombre)
             Spacer(Modifier.height(14.dp))
 
-            UrbanKeyValue("Servicio", "\$${"%.0f".format(basePrice)}")
-            if (tipAmount > 0) UrbanKeyValue("Propina", "\$${"%.0f".format(tipAmount)}")
-            UrbanKeyValue("Total estimado", "\$${"%.0f".format(basePrice + tipAmount)}")
+            UrbanKeyValue("Servicio", "${UrbanFormat.moneyShort(basePrice)}")
+            if (tipAmount > 0) UrbanKeyValue("Propina", "${UrbanFormat.moneyShort(tipAmount)}")
+            UrbanKeyValue("Total estimado", "${UrbanFormat.moneyShort(basePrice + tipAmount)}")
             Spacer(Modifier.height(4.dp))
             Text(
-                "El monto final (con descuentos de nivel/membresía o gift card aplicados) lo confirma UrbanBlade al procesar el pago.",
+                "El monto final (con descuentos de nivel/membresía o tarjeta regalo aplicados) lo confirma UrbanBlade al procesar el pago.",
                 style = MaterialTheme.typography.bodySmall,
                 color = UrbanColors.Muted
             )
@@ -1033,12 +1034,12 @@ internal fun CheckoutSheet(appt: AppointmentRow, vm: AppointmentsViewModel, onDi
             // Gift card y puntos son poco frecuentes: se esconden para que el método de pago quede a la vista.
             val extrasOpen = showExtras || giftCardCode.isNotBlank() || puntos.isNotBlank()
             TextButton(onClick = { showExtras = !extrasOpen }) {
-                Text(if (extrasOpen) "Ocultar gift card y puntos" else "¿Tienes gift card o puntos?", color = UrbanColors.Gold)
+                Text(if (extrasOpen) "Ocultar tarjeta regalo y puntos" else "¿Tienes tarjeta regalo o puntos?", color = UrbanColors.Gold)
                 Icon(if (extrasOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = UrbanColors.Gold)
             }
             if (extrasOpen) {
                 Spacer(Modifier.height(16.dp))
-                UrbanFieldLabel("Código de gift card (opcional)")
+                UrbanFieldLabel("Código de tarjeta regalo (opcional)")
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     giftCardCode, { giftCardCode = it },

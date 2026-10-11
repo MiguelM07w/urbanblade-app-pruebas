@@ -4,6 +4,7 @@ import com.urbanblade.mobile.core.session.SessionEvents
 import com.urbanblade.mobile.data.model.AuthUser
 import com.urbanblade.mobile.data.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -40,6 +41,9 @@ class AuthViewModelTest {
     fun setup() {
         Dispatchers.setMain(dispatcher)
         repository = mock()
+        // Por defecto no hay sesión guardada; las pruebas que la necesitan la re-estiban.
+        // restoreSession es suspend: el stub por defecto va en runBlocking.
+        runBlocking { whenever(repository.restoreSession()).thenReturn(AuthRepository.RestoredSession(null)) }
     }
 
     @After
@@ -146,6 +150,48 @@ class AuthViewModelTest {
         verify(repository, never()).register(any(), any(), any())
     }
 
+
+    @Test
+    fun `sin conexion se entra con el resumen guardado y se avisa`() = runTest(dispatcher) {
+        val user = AuthUser(id = "1", name = "Ana", email = "ana@test.com")
+        whenever(repository.restoreSession())
+            .thenReturn(AuthRepository.RestoredSession(user, fromCache = true))
+
+        val vm = AuthViewModel(repository)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(AuthState.Authenticated(user), vm.state.value)
+        assertTrue("debe avisar que no hubo conexión", vm.offline.value)
+    }
+
+    @Test
+    fun `al confirmar la sesion con el servidor no se avisa nada`() = runTest(dispatcher) {
+        val user = AuthUser(id = "1", name = "Ana", email = "ana@test.com")
+        whenever(repository.restoreSession()).thenReturn(AuthRepository.RestoredSession(user))
+
+        val vm = AuthViewModel(repository)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(AuthState.Authenticated(user), vm.state.value)
+        assertFalse("con el servidor confirmado no hay aviso", vm.offline.value)
+    }
+
+    @Test
+    fun `un login que si funciona quita el aviso sin conexion`() = runTest(dispatcher) {
+        val user = AuthUser(id = "1", name = "Ana", email = "ana@test.com")
+        whenever(repository.restoreSession())
+            .thenReturn(AuthRepository.RestoredSession(user, fromCache = true))
+
+        val vm = AuthViewModel(repository)
+        dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(vm.offline.value)
+
+        whenever(repository.login("ana@test.com", "secret123")).thenReturn(user)
+        vm.login("ana@test.com", "secret123")
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse("tras entrar de nuevo ya hay conexión", vm.offline.value)
+    }
     @Test
     fun `logout limpia el estado a Guest`() = runTest(dispatcher) {
         val vm = AuthViewModel(repository)
@@ -158,7 +204,7 @@ class AuthViewModelTest {
     @Test
     fun `una sesion rechazada por el servidor vuelve a invitado y lo avisa`() = runTest(dispatcher) {
         val user = AuthUser(id = "1", name = "Ana", email = "ana@test.com")
-        whenever(repository.restoreSession()).thenReturn(user)
+        whenever(repository.restoreSession()).thenReturn(AuthRepository.RestoredSession(user))
 
         val vm = AuthViewModel(repository)
         dispatcher.scheduler.advanceUntilIdle()
@@ -174,7 +220,7 @@ class AuthViewModelTest {
 
     @Test
     fun `sesion vencida sin usuario autenticado no hace nada`() = runTest(dispatcher) {
-        whenever(repository.restoreSession()).thenReturn(null)
+        whenever(repository.restoreSession()).thenReturn(AuthRepository.RestoredSession(null))
 
         val vm = AuthViewModel(repository)
         dispatcher.scheduler.advanceUntilIdle()

@@ -159,9 +159,7 @@ fun ClientAppointmentsScreen(
                         UrbanAttentionRow(
                             Icons.Default.Payments,
                             "Tienes un adeudo por inasistencia",
-
                             "${UrbanFormat.money(debt)} por pagar en la barbería (efectivo o transferencia). Mientras tanto no puedes reservar.",
-
                             UrbanColors.Warning
                         )
                     }

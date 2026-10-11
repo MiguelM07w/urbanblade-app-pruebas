@@ -40,6 +40,7 @@ import com.urbanblade.mobile.data.model.ServiceItem
 import com.urbanblade.mobile.data.model.ProductItem
 import com.urbanblade.mobile.data.model.SlotItem
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.BookingViewModel
 import androidx.compose.foundation.horizontalScroll
@@ -309,16 +310,16 @@ fun BookingScreen(
                         if (productsTotal > 0 || tip > 0) {
                             Text(
                                 listOfNotNull(
-                                    "Servicio \$${"%.0f".format(servicePrice)}",
-                                    productsTotal.takeIf { it > 0 }?.let { "productos \$${"%.0f".format(it)}" },
-                                    tip.takeIf { it > 0 }?.let { "propina \$${"%.0f".format(it)}" }
+                                    "Servicio ${UrbanFormat.moneyShort(servicePrice)}",
+                                    productsTotal.takeIf { it > 0 }?.let { "productos ${UrbanFormat.moneyShort(it)}" },
+                                    tip.takeIf { it > 0 }?.let { "propina ${UrbanFormat.moneyShort(it)}" }
                                 ).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = UrbanColors.Muted
                             )
                         }
                     }
-                    Text("\$${"%.0f".format(visitTotal)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                    Text("${UrbanFormat.moneyShort(visitTotal)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
                 }
             }
             if (step == BookingStep.PAY) {
@@ -488,7 +489,7 @@ private fun ServiceStep(services: List<ServiceItem>, selectedId: String, onSelec
                         onClick = { onSelect(service.id) },
                         title = service.nombre,
                         subtitle = "${service.duracionMin} min",
-                        trailing = "\$${"%.0f".format(service.precio)}",
+                        trailing = "${UrbanFormat.moneyShort(service.precio)}",
                         imageUrl = service.imagen,
                         fallbackIcon = serviceIcon(service.nombre)
                     )
@@ -739,7 +740,7 @@ private fun ExtrasStep(
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(p.nombre, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text("\$${"%.0f".format(p.precioVenta)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
+                            Text("${UrbanFormat.moneyShort(p.precioVenta)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
                         }
                         if (qty == 0) {
                             TextButton(onClick = { onQuantity(p.id, 1) }) {
@@ -818,7 +819,7 @@ private fun ReviewStep(
             Spacer(Modifier.height(14.dp))
             HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
             Spacer(Modifier.height(12.dp))
-            ReviewRow(serviceIcon(service?.nombre.orEmpty()), service?.nombre ?: "—", service?.let { "${it.duracionMin} min · \$${"%.0f".format(it.precio)}" })
+            ReviewRow(serviceIcon(service?.nombre.orEmpty()), service?.nombre ?: "—", service?.let { "${it.duracionMin} min · ${UrbanFormat.moneyShort(it.precio)}" })
             Spacer(Modifier.height(10.dp))
             ReviewRow(Icons.Default.Person, barber?.user?.name ?: "—", "Te confirma la cita desde su agenda")
         }
@@ -835,7 +836,7 @@ private fun ReviewStep(
                 extras.forEach { (p, qty) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                         Text("${p.nombre}${if (qty > 1) " ×$qty" else ""}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink, modifier = Modifier.weight(1f))
-                        Text("\$${"%.0f".format(p.precioVenta * qty)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
+                        Text("${UrbanFormat.moneyShort(p.precioVenta * qty)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.urbanblade.mobile.ui.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -191,6 +193,12 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
 
     Scaffold(
         containerColor = UrbanColors.Background,
+        // Entrar sin red no cierra la sesión: se avisa arriba y el contenido baja solo. Cada pantalla
+        // conserva su propio estado con "Reintentar", para que se pueda seguir usando lo guardado.
+        topBar = {
+            val offline by authViewModel.offline.collectAsState()
+            if (offline) OfflineBanner(onRetry = { authViewModel.bootstrap() })
+        },
         // Bladebot como en la web: una burbuja en las pantallas principales que abre el chat.
         // Se esconde al bajar (para no tapar lo que se está leyendo) y vuelve al subir o al cambiar de pantalla.
         floatingActionButton = {
@@ -378,6 +386,36 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 composable("settings") { SettingsScreen(onBack = { nav.popBackStack() }) }
                 composable("system") { SystemStatusScreen(onBack = { nav.popBackStack() }) }
             }
+        }
+    }
+}
+
+/**
+ * Aviso de que se entró sin poder confirmar la sesión con el servidor (red caída o error suyo).
+ * La sesión sigue viva: esto solo lo dice, y el botón reintenta confirmarla.
+ */
+@Composable
+private fun OfflineBanner(onRetry: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(UrbanColors.Warning.copy(alpha = 0.16f))
+            // El Scaffold no reserva el inset para su topBar: sin esto el aviso queda debajo del
+            // reloj y de los iconos del sistema (y el toque de "Reintentar" no llega).
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.CloudOff, null, tint = UrbanColors.Warning, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(
+            "Sin conexión: estás viendo lo guardado.",
+            style = MaterialTheme.typography.bodySmall,
+            color = UrbanColors.Ink,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onRetry) {
+            Text("Reintentar", color = UrbanColors.Gold, fontWeight = FontWeight.SemiBold)
         }
     }
 }

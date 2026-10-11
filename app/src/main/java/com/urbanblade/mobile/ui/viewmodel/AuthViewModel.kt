@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import java.io.IOException
 
 sealed interface AuthState {
     data object Loading : AuthState
@@ -35,6 +36,14 @@ class AuthViewModel @JvmOverloads constructor(
     /** Verdadero cuando la sesión se cerró porque el servidor la rechazó; la bienvenida lo avisa. */
     val sessionExpired: StateFlow<Boolean> = _sessionExpired.asStateFlow()
 
+    private val _offline = MutableStateFlow(false)
+    /**
+     * Verdadero cuando se entró con el resumen guardado porque no se pudo confirmar la sesión con el
+     * servidor (sin red o error suyo). La sesión sigue viva: la app lo avisa y ofrece reintentar, en
+     * vez de mostrar la pantalla de acceso como si se hubiera cerrado (ver SessionUserStore).
+     */
+    val offline: StateFlow<Boolean> = _offline.asStateFlow()
+
     init {
         bootstrap()
         viewModelScope.launch {
@@ -46,14 +55,16 @@ class AuthViewModel @JvmOverloads constructor(
         if (_state.value !is AuthState.Authenticated) return
         repository.clearLocalSession()
         _sessionExpired.value = true
+        _offline.value = false
         _state.value = AuthState.Guest
     }
 
     fun bootstrap() {
         viewModelScope.launch {
             _state.value = AuthState.Loading
-            val user = repository.restoreSession()
-            _state.value = user?.let { AuthState.Authenticated(it) } ?: AuthState.Guest
+            val restored = repository.restoreSession()
+            _offline.value = restored.fromCache
+            _state.value = restored.user?.let { AuthState.Authenticated(it) } ?: AuthState.Guest
         }
     }
 
@@ -70,6 +81,7 @@ class AuthViewModel @JvmOverloads constructor(
             _error.value = null
             try {
                 val user = repository.login(email.trim(), password)
+                _offline.value = false
                 _state.value = AuthState.Authenticated(user)
             } catch (e: Exception) {
                 // En el acceso, un 422 significa correo o contraseña con formato inaceptable: el genérico
@@ -93,6 +105,7 @@ class AuthViewModel @JvmOverloads constructor(
             _error.value = null
             try {
                 val user = repository.googleLogin(idToken)
+                _offline.value = false
                 _state.value = AuthState.Authenticated(user)
             } catch (e: Exception) {
                 _error.value = e.toFriendlyMessage("No se pudo iniciar sesión con Google.")
@@ -119,6 +132,7 @@ class AuthViewModel @JvmOverloads constructor(
             _error.value = null
             try {
                 val user = repository.register(name.trim(), email.trim(), password)
+                _offline.value = false
                 _state.value = AuthState.Authenticated(user)
             } catch (e: Exception) {
                 _error.value = e.toFriendlyMessage("No se pudo crear la cuenta.")
@@ -147,13 +161,15 @@ class AuthViewModel @JvmOverloads constructor(
     fun refreshUser() {
         viewModelScope.launch {
             if (_state.value !is AuthState.Authenticated) return@launch
-            runCatching { repository.currentUser() }.onSuccess { _state.value = AuthState.Authenticated(it) }
+            runCatching { repository.currentUser() }.onSuccess { _offline.value = false
+ _state.value = AuthState.Authenticated(it) }
         }
     }
 
     fun logout() {
         viewModelScope.launch {
             repository.logout()
+            _offline.value = false
             _state.value = AuthState.Guest
         }
     }
@@ -188,6 +204,8 @@ internal fun Exception.toFriendlyMessage(fallback: String): String {
             503 -> "UrbanBlade está en mantenimiento."
             else -> fallback
         }
+        // Sin red o tiempo agotado: un mensaje claro, no el "Unable to resolve host" técnico.
+        is IOException -> "Sin conexión. Revisa tu red e inténtalo de nuevo."
         else -> message?.takeIf { it.isNotBlank() } ?: fallback
     }
 }

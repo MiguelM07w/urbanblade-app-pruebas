@@ -39,17 +39,32 @@ class AuthRepository(
     }
 
     /** Vuelve a leer el usuario de la sesión (tras cambiar nombre, correo o foto en Mi cuenta). */
-    suspend fun currentUser(): AuthUser = api.me().user
+    suspend fun currentUser(): AuthUser = api.me().user.also { session.saveUser(it) }
 
-    suspend fun restoreSession(): AuthUser? {
-        if (session.currentToken().isNullOrBlank()) return null
+    /**
+     * Arranque de sesión. `fromCache` es verdadero cuando se entró con el resumen guardado porque
+     * no se pudo confirmar con el servidor (sin red o error del servidor): la sesión sigue viva y
+     * la app lo avisa, en vez de mostrar la pantalla de acceso como si se hubiera cerrado.
+     */
+    data class RestoredSession(val user: AuthUser?, val fromCache: Boolean = false)
+
+    suspend fun restoreSession(): RestoredSession {
+        if (session.currentToken().isNullOrBlank()) return RestoredSession(null)
         return try {
-            api.me().user
+            val user = api.me().user
+            session.saveUser(user)
+            RestoredSession(user)
         } catch (e: retrofit2.HttpException) {
-            if (e.code() == 401) session.clear()
-            null
+            // 401: el servidor rechazó la sesión; ahí sí se limpia y se pide acceso otra vez.
+            if (e.code() == 401) {
+                session.clear()
+                RestoredSession(null)
+            } else {
+                session.cachedUser()?.let { RestoredSession(it, fromCache = true) } ?: RestoredSession(null)
+            }
         } catch (_: Exception) {
-            null
+            // Sin red (o tiempo agotado): se entra con el resumen guardado.
+            session.cachedUser()?.let { RestoredSession(it, fromCache = true) } ?: RestoredSession(null)
         }
     }
 

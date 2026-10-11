@@ -24,6 +24,7 @@ import com.urbanblade.mobile.core.appointments.remainingLabel
 import com.urbanblade.mobile.core.appointments.remainingTone
 import com.urbanblade.mobile.data.model.AppointmentRow
 import com.urbanblade.mobile.ui.components.*
+import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.BarberAgendaViewModel
 
@@ -115,7 +116,7 @@ fun BarberAgendaScreen(onBack: () -> Unit, vm: BarberAgendaViewModel = viewModel
                 Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     UrbanHeroStat("Terminadas", agenda.stats.completedPeriod.toString(), Icons.Default.CheckCircle, Modifier.weight(1f), tone = UrbanColors.Success)
-                    UrbanHeroStat("Tus ingresos", "\$" + "%,.0f".format(agenda.stats.incomeTotal), Icons.Default.Payments, Modifier.weight(1f))
+                    UrbanHeroStat("Tus ingresos", UrbanFormat.moneyShort(agenda.stats.incomeTotal), Icons.Default.Payments, Modifier.weight(1f))
                 }
             }
         }
