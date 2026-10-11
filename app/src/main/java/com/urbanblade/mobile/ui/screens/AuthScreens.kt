@@ -115,7 +115,17 @@ fun LoginScreen(
         title = "Bienvenido de vuelta",
         subtitle = "Entra para reservar, comprar y seguir tus beneficios.",
         mood = if (error != null) MascotMood.ERROR else MascotMood.DEFAULT,
-        onBack = onBack
+        onBack = onBack,
+        footer = {
+            AuthPrimaryButton(
+                text = "Entrar a UrbanBlade",
+                onClick = ::submit,
+                enabled = canSubmit,
+                loading = busy,
+                icon = Icons.AutoMirrored.Filled.ArrowForward,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     ) {
         StaggerIn(1) {
             GoogleSignInButton(
@@ -172,16 +182,6 @@ fun LoginScreen(
         AnimatedVisibility(visible = error != null) {
             error?.let { UrbanErrorBanner(it) }
         }
-        StaggerIn(5) {
-            AuthPrimaryButton(
-                text = "Entrar a UrbanBlade",
-                onClick = ::submit,
-                enabled = canSubmit,
-                loading = busy,
-                icon = Icons.AutoMirrored.Filled.ArrowForward,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
         StaggerIn(6) {
             SwitchAuthRow(prompt = "¿Eres nuevo?", action = "Crea tu cuenta", onClick = onRegister)
         }
@@ -234,7 +234,27 @@ fun RegisterScreen(
             "Elige una contraseña de al menos 8 caracteres."
         },
         mood = if (error != null) MascotMood.ERROR else MascotMood.DEFAULT,
-        onBack = backAction
+        onBack = backAction,
+        footer = {
+            if (step == 0) {
+                AuthPrimaryButton(
+                    text = "Continuar",
+                    onClick = { step = 1 },
+                    enabled = stepOneValid,
+                    icon = Icons.AutoMirrored.Filled.ArrowForward,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                AuthPrimaryButton(
+                    text = "Crear cuenta",
+                    onClick = ::submit,
+                    enabled = canSubmit,
+                    loading = busy,
+                    icon = Icons.Default.HowToReg,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
     ) {
         StaggerIn(0) {
             Text("Paso ${step + 1} de 2", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
@@ -285,15 +305,6 @@ fun RegisterScreen(
                     onBlur = { emailTouched = true }
                 )
             }
-            StaggerIn(5) {
-                AuthPrimaryButton(
-                    text = "Continuar",
-                    onClick = { step = 1 },
-                    enabled = stepOneValid,
-                    icon = Icons.AutoMirrored.Filled.ArrowForward,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
             if (onLogin != null) {
                 StaggerIn(6) {
                     SwitchAuthRow(prompt = "¿Ya tienes cuenta?", action = "Inicia sesión", onClick = onLogin)
@@ -329,16 +340,6 @@ fun RegisterScreen(
             AnimatedVisibility(visible = error != null) {
                 error?.let { UrbanErrorBanner(it) }
             }
-            StaggerIn(3) {
-                AuthPrimaryButton(
-                    text = "Crear cuenta",
-                    onClick = ::submit,
-                    enabled = canSubmit,
-                    loading = busy,
-                    icon = Icons.Default.HowToReg,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
             StaggerIn(4) {
                 SwitchAuthRow(prompt = "¿Algo mal en tus datos?", action = "Volver", onClick = { step = 0 })
             }
@@ -371,7 +372,21 @@ fun ForgotPasswordScreen(authViewModel: AuthViewModel, onBack: () -> Unit) {
             "Si el correo está registrado, te llegará un enlace para elegir una contraseña nueva."
         },
         mood = if (sent != null) MascotMood.SUCCESS else MascotMood.DEFAULT,
-        onBack = onBack
+        onBack = onBack,
+        footer = if (sent == null) {
+            {
+                AuthPrimaryButton(
+                    text = "Enviar instrucciones",
+                    onClick = ::submit,
+                    enabled = emailValid,
+                    loading = busy,
+                    icon = Icons.AutoMirrored.Filled.Send,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        } else {
+            null
+        }
     ) {
         if (sent == null) {
             StaggerIn(1) {
@@ -390,16 +405,6 @@ fun ForgotPasswordScreen(authViewModel: AuthViewModel, onBack: () -> Unit) {
             }
             AnimatedVisibility(visible = error != null) {
                 error?.let { UrbanErrorBanner(it) }
-            }
-            StaggerIn(2) {
-                AuthPrimaryButton(
-                    text = "Enviar instrucciones",
-                    onClick = ::submit,
-                    enabled = emailValid,
-                    loading = busy,
-                    icon = Icons.AutoMirrored.Filled.Send,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
             StaggerIn(3) {
                 Text(
@@ -523,17 +528,28 @@ private fun AuthScaffold(
     subtitle: String,
     mood: MascotMood,
     onBack: (() -> Unit)?,
+    /**
+     * Acción principal de la pantalla. Va anclada abajo: con el teclado abierto sigue visible
+     * (auditoría P1-7) en vez de quedarse debajo del formulario.
+     */
+    footer: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     AuthBackdrop {
+        // Dos columnas: el contenido se desplaza y el pie no. Con el teclado abierto, imePadding
+        // sube el pie, así que la acción principal no se pierde.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
                 .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+            ) {
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -586,13 +602,22 @@ private fun AuthScaffold(
 
             Spacer(Modifier.height(14.dp))
 
-            Column(
-                Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                content = content
-            )
+                Column(
+                    Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    content = content
+                )
 
-            Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(20.dp))
+            }
+
+            footer?.let { pie ->
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 12.dp)
+                ) { pie() }
+            }
         }
     }
 }
