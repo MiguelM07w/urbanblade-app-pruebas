@@ -131,10 +131,10 @@ private fun ProfileHeader(data: BarberProfileResponse, canBook: Boolean, onBook:
                     chips.forEach { chip ->
                         Surface(
                             shape = RoundedCornerShape(50),
-                            color = UrbanColors.Gold.copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, UrbanColors.Gold.copy(alpha = 0.3f))
+                            color = UrbanColors.CardAlt,
+                            border = BorderStroke(1.dp, UrbanColors.Line)
                         ) {
-                            Text(chip, Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+                            Text(chip, Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Ink)
                         }
                     }
                 }
@@ -165,7 +165,7 @@ private fun ProfileStats(data: BarberProfileResponse) {
 @Composable
 private fun StatTile(label: String, value: String, modifier: Modifier) {
     UrbanCard(modifier) {
-        Text(value, style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold, maxLines = 1)
+        Text(value, style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink, maxLines = 1)
         Text(label, style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -209,8 +209,8 @@ private fun ReviewCard(review: BarberReviewItem) {
         }
         review.service?.let { service ->
             Spacer(Modifier.height(8.dp))
-            Surface(shape = RoundedCornerShape(50), color = UrbanColors.Gold.copy(alpha = 0.12f)) {
-                Text(service, Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = UrbanColors.Gold)
+            Surface(shape = RoundedCornerShape(50), color = UrbanColors.CardAlt) {
+                Text(service, Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = UrbanColors.Ink)
             }
         }
         review.comment?.takeIf { it.isNotBlank() }?.let {

@@ -281,7 +281,7 @@ private fun RebookCard(visit: AppointmentRow, onRebook: () -> Unit) {
     UrbanCard(Modifier.fillMaxWidth(), onClick = onRebook) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.Gold.copy(alpha = 0.14f)),
+                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.CardAlt),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(serviceIcon(visit.service?.nombre.orEmpty()), null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
@@ -299,7 +299,7 @@ private fun RebookCard(visit: AppointmentRow, onRebook: () -> Unit) {
             }
             visit.service?.precio?.let {
                 Spacer(Modifier.width(8.dp))
-                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
             }
         }
         Spacer(Modifier.height(14.dp))
