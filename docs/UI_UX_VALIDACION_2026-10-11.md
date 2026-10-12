@@ -87,3 +87,11 @@ La aceptación de integración requiere cuenta QA y entorno de prueba: OAuth Goo
 - `UrbanPillTabs` adapta icono/etiqueta a ancho menor de 300 dp o fuente desde 130 %; objetivo táctil mínimo de 48 dp.
 - Build del paquete habitual contra la API publicada: aprobado. Pruebas JVM: 318 aprobadas, 1 omitida, 0 errores/fallos. Lint: 0 errores, 32 advertencias y 4 hints de mantenimiento.
 - La revisión visual en el teléfono de estos nuevos cambios se aplaza hasta la reconexión del usuario. No se ha instalado este último APK ni se han realizado cobros.
+
+## Reserva recuperable (12-oct-2026)
+
+- Catálogo de servicios/barberos con carga y reintento; una falla evita publicar un catálogo incompleto.
+- El horario pertenece a la combinación de servicio, barbero y fecha. Al recargar se invalida de inmediato; restaurar una pantalla exige volver a comprobar disponibilidad antes de continuar.
+- El regreso permite cambiar el servicio y respeta los pasos visitados; se bloquea mientras se registra la reserva. El resumen muestra «Total estimado».
+- Validación final local: 321 casos JVM, 320 aprobados, 1 omitido y 0 fallos/errores; lint 0 errores, 32 advertencias y 4 hints. assembleDebug aprobado contra https://api.urbanblade.com.mx/api/v1/ en el paquete habitual.
+- La instalación y revisión visual de este APK en el teléfono siguen pendientes de reconexión. No se crearon/cancelaron citas ni se realizaron cobros.

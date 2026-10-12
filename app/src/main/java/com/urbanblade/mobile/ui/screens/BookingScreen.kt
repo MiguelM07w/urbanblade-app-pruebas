@@ -81,6 +81,9 @@ fun BookingScreen(
     val slots by vm.slots.collectAsState()
     val slotsLoading by vm.slotsLoading.collectAsState()
     val slotsError by vm.slotsError.collectAsState()
+    val slotsFor by vm.slotsFor.collectAsState()
+    val catalogLoading by vm.catalogLoading.collectAsState()
+    val catalogError by vm.catalogError.collectAsState()
     val busy by vm.busy.collectAsState()
     val error by vm.error.collectAsState()
     val waitlistJoined by vm.waitlistJoined.collectAsState()
@@ -95,6 +98,12 @@ fun BookingScreen(
     // en el horario: antes volvía a pedir el servicio y había que tocarlo dos veces.
     val firstStep = if (initialServiceId.isNullOrBlank()) BookingStep.SERVICE else BookingStep.SCHEDULE
     var step by rememberSaveable { mutableStateOf(firstStep) }
+    var firstVisitedStep by rememberSaveable { mutableStateOf(firstStep) }
+    fun previousStep() {
+        if (busy) return
+        step = BookingStep.entries[step.ordinal - 1]
+        if (step.ordinal < firstVisitedStep.ordinal) firstVisitedStep = step
+    }
     // Embudo de reserva en Analytics: de dónde llegó y hasta qué paso avanza (sin datos personales).
     LaunchedEffect(Unit) {
         com.urbanblade.mobile.core.analytics.UrbanAnalytics.log(
@@ -194,15 +203,16 @@ fun BookingScreen(
     }
     val visitTotal = servicePrice + productsTotal + tip
 
-    val canAdvance = when (step) {
-        BookingStep.SERVICE -> serviceId.isNotBlank()
-        BookingStep.SCHEDULE -> barberId.isNotBlank() && time.isNotBlank()
-        BookingStep.EXTRAS -> true
-        BookingStep.PAY -> true
+    val validSlot = selectedService != null && selectedBarber != null &&
+        slotsFor == "$barberId|$serviceId|$date" && !slotsLoading && slotsError == null &&
+        time.isNotBlank() && slots.any { it.time == time }
+    val canAdvance = !catalogLoading && catalogError == null && when (step) {
+        BookingStep.SERVICE -> selectedService != null
+        else -> validSlot
     }
     // El "atrás" del teléfono regresa un paso; desde el paso en que se entró sale de la reserva.
-    androidx.activity.compose.BackHandler(enabled = !confirmed && step.ordinal > firstStep.ordinal) {
-        step = BookingStep.entries[step.ordinal - 1]
+    androidx.activity.compose.BackHandler(enabled = !confirmed && step.ordinal > firstVisitedStep.ordinal) {
+        previousStep()
     }
 
     // Momento de éxito antes de salir del flujo (antes se saltaba de pantalla sin confirmar nada).
@@ -226,7 +236,7 @@ fun BookingScreen(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = { UrbanTopBar(title = "", onBack = {
-            if (step.ordinal > firstStep.ordinal) step = BookingStep.entries[step.ordinal - 1]
+            if (step.ordinal > firstVisitedStep.ordinal) previousStep()
             else onBack()
         }) }
     ) { padding ->
@@ -258,53 +268,64 @@ fun BookingScreen(
                     UrbanOutlineButton("Reintentar horarios", { vm.loadSlots(barberId, serviceId, date) },
                         enabled = !slotsLoading, modifier = Modifier.fillMaxWidth())
                 }
-                when (step) {
-                    BookingStep.SERVICE -> Column {
-                        if (initialBarberId != null && selectedBarber != null && barbers.size > 1) {
-                            UrbanInfoBanner(
-                                "Reservando con ${selectedBarber.user?.name ?: "tu barbero"}. Puedes cambiarlo en el paso 2.",
-                                Icons.Default.Person
-                            )
-                            Spacer(Modifier.height(12.dp))
+                if (step.ordinal > BookingStep.SCHEDULE.ordinal && !validSlot) {
+                    UrbanInfoBanner(if (slotsLoading) "Volviendo a comprobar tu horario…" else "Revisa el horario antes de continuar.", Icons.Default.Schedule)
+                    UrbanOutlineButton("Revisar horario", { step = BookingStep.SCHEDULE }, modifier = Modifier.fillMaxWidth())
+                }
+                when {
+                    catalogLoading && services.isEmpty() -> UrbanSkeletonList(3)
+                    catalogError != null -> UrbanMascotState(
+                        UrbanStateKind.ERROR, "No pudimos cargar los servicios y barberos", catalogError,
+                        "Reintentar", onAction = { vm.loadCatalog() }
+                    )
+                    else -> when (step) {
+                        BookingStep.SERVICE -> Column {
+                            if (initialBarberId != null && selectedBarber != null && barbers.size > 1) {
+                                UrbanInfoBanner(
+                                    "Reservando con ${selectedBarber.user?.name ?: "tu barbero"}. Puedes cambiarlo en el paso 2.",
+                                    Icons.Default.Person
+                                )
+                                Spacer(Modifier.height(12.dp))
+                            }
+                            ServiceStep(services, serviceId) { serviceId = it }
                         }
-                        ServiceStep(services, serviceId) { serviceId = it }
-                    }
-                    BookingStep.SCHEDULE -> CalendarStep(
-                        header = { BarberPicker(barbers, barberId) { barberId = it } },
-                        date = date,
-                        onDateChange = { date = it },
-                        slots = slots,
-                        time = time,
-                        onTimeChange = { time = it },
-                        showEmptyState = slotsRequested && !slotsLoading && slotsError == null && slots.isEmpty(),
-                        loading = slotsLoading,
-                        waitlistJoined = waitlistJoined,
-                        onJoinWaitlist = { vm.joinWaitlist(barberId, serviceId, date) }
-                    )
-                    BookingStep.EXTRAS -> ExtrasStep(
-                        products = products,
-                        cart = cart,
-                        onQuantity = { id, qty -> cart = if (qty <= 0) cart - id else cart + (id to qty) },
-                        notes = notes,
-                        onNotesChange = { notes = it }
-                    )
-                    BookingStep.PAY -> ReviewStep(
-                        service = selectedService,
-                        barber = selectedBarber,
-                        date = date,
-                        time = time,
-                        extras = cartLines,
-                        notes = notes
-                    ) {
-                        BookingPaymentSection(
-                            state = pay,
-                            servicePrice = selectedService?.precio ?: 0.0,
-                            transferInfo = transferInfo,
-                            savedCards = savedCards,
-                            cardAvailable = cardAvailable && cardEnabledRemotely,
-                            testMode = BuildConfig.STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_"),
-                            onPickReceipt = pickReceipt
+                        BookingStep.SCHEDULE -> CalendarStep(
+                            header = { BarberPicker(barbers, barberId) { barberId = it } },
+                            date = date,
+                            onDateChange = { date = it },
+                            slots = slots,
+                            time = time,
+                            onTimeChange = { time = it },
+                            showEmptyState = slotsRequested && !slotsLoading && slotsError == null && slots.isEmpty(),
+                            loading = slotsLoading,
+                            waitlistJoined = waitlistJoined,
+                            onJoinWaitlist = { vm.joinWaitlist(barberId, serviceId, date) }
                         )
+                        BookingStep.EXTRAS -> ExtrasStep(
+                            products = products,
+                            cart = cart,
+                            onQuantity = { id, qty -> cart = if (qty <= 0) cart - id else cart + (id to qty) },
+                            notes = notes,
+                            onNotesChange = { notes = it }
+                        )
+                        BookingStep.PAY -> ReviewStep(
+                            service = selectedService,
+                            barber = selectedBarber,
+                            date = date,
+                            time = time,
+                            extras = cartLines,
+                            notes = notes
+                        ) {
+                            BookingPaymentSection(
+                                state = pay,
+                                servicePrice = selectedService?.precio ?: 0.0,
+                                transferInfo = transferInfo,
+                                savedCards = savedCards,
+                                cardAvailable = cardAvailable && cardEnabledRemotely,
+                                testMode = BuildConfig.STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_"),
+                                onPickReceipt = pickReceipt
+                            )
+                        }
                     }
                 }
             }
@@ -322,7 +343,7 @@ fun BookingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Total de tu visita", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
+                        Text("Total estimado", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
                         if (productsTotal > 0 || tip > 0) {
                             Text(
                                 listOfNotNull(
@@ -360,8 +381,9 @@ fun BookingScreen(
             ) {
                 if (step != BookingStep.SERVICE) {
                     UrbanOutlineButton(
-                        text = "Atrás",
-                        onClick = { step = BookingStep.entries[step.ordinal - 1] },
+                        text = if (step == BookingStep.SCHEDULE) "Cambiar servicio" else "Atrás",
+                        onClick = { previousStep() },
+                        enabled = !busy,
                         icon = Icons.Default.ArrowBack,
                         modifier = Modifier.weight(1f)
                     )

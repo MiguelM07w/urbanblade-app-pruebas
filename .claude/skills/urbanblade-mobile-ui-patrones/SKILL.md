@@ -290,3 +290,12 @@ título de hasta dos líneas y descripción de hasta tres. Agrupar con `UrbanRow
 no usar avisos de atención para navegación ordinaria. `UrbanPillTabs` tiene objetivo
 táctil de 48 dp y apila icono/etiqueta en menos de 300 dp o con fuente desde 130 %,
 sin cortar las etiquetas con puntos suspensivos. La misma pieza sirve a todos los roles.
+
+### Reserva recuperable (12-oct-2026, TT32 / HT-12)
+
+El catálogo distingue carga, error y reintento. No avanzar ni confirmar con IDs
+fuera del catálogo ni con una hora sin respuesta vigente para servicio/barbero/día
+(`BookingViewModel.slotsFor`). Restaurar el borrador conserva la elección, pero
+requiere volver a validarla. Cambiar servicio amplía el recorrido para que Atrás
+superior, inferior y sistema vuelvan por el mismo paso; durante la reserva no se
+cambia de paso. El resumen es estimado: Laravel confirma el importe y beneficios.

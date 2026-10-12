@@ -50,3 +50,15 @@ de rol; las filas permiten título de dos líneas y descripción de tres.
 al menos 48 dp. En menos de 300 dp disponibles o con fuente desde 130 % coloca el
 icono arriba y permite envolver la etiqueta completa. La comprobación visual en el
 teléfono de esta continuación queda aplazada a la reconexión solicitada por el usuario.
+
+## Continuación del recorrido de reserva (12-oct-2026)
+
+- Catálogo con carga, error y reintento, sin tratar un fallo como catálogo vacío.
+- Horario vinculado a servicio, barbero y día de la última respuesta exitosa.
+  Una elección restaurada no permite avanzar o reservar hasta volver a validarla.
+- Cambiar servicio conserva el borrador y ajusta el límite de Atrás al paso visitado.
+  Mientras se registra la reserva, no se cambia de paso.
+- El total mostrado es estimado a partir del catálogo; Laravel confirma precios,
+  beneficios y permisos. Los productos mantienen su pago aparte en el salón.
+- Web aplica la misma experiencia de roles al asistente y permite reintentar
+  disponibilidad sin perder servicio/barbero. No cambian rutas ni payloads.

@@ -400,7 +400,13 @@ class BookingViewModel @JvmOverloads constructor(
     val slotsLoading = _slotsLoading.asStateFlow()
     private val _slotsError = MutableStateFlow<String?>(null)
     val slotsError = _slotsError.asStateFlow()
+    private val _slotsFor = MutableStateFlow<String?>(null)
+    val slotsFor = _slotsFor.asStateFlow()
     private var slotsRequest: kotlinx.coroutines.Job? = null
+    private val _catalogLoading = MutableStateFlow(false)
+    val catalogLoading = _catalogLoading.asStateFlow()
+    private val _catalogError = MutableStateFlow<String?>(null)
+    val catalogError = _catalogError.asStateFlow()
     /** Productos con existencias para el paso "Extras" (mismo catálogo que la tienda). */
     private val _products = MutableStateFlow<List<ProductItem>>(emptyList())
     val products = _products.asStateFlow()
@@ -444,23 +450,37 @@ class BookingViewModel @JvmOverloads constructor(
     }
 
     fun loadCatalog() = viewModelScope.launch {
+        if (_catalogLoading.value) return@launch
+        _catalogLoading.value = true
+        _catalogError.value = null
         // Los productos son opcionales: si fallan, la reserva sigue sin el paso de extras con productos.
         launch { _products.value = runCatching { repo.products() }.getOrDefault(emptyList()).filter { it.stockActual > 0 } }
         try {
-            _services.value = repo.services()
-            _barbers.value = repo.barbers()
+            val services = repo.services()
+            val barbers = repo.barbers()
+            _services.value = services
+            _barbers.value = barbers
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
-            _error.value = e.toFriendlyMessage("No se pudo cargar el catálogo.")
+            _catalogError.value = e.toFriendlyMessage("No se pudo cargar el catálogo.")
+        } finally {
+            _catalogLoading.value = false
         }
     }
 
     fun loadSlots(barberId: String, serviceId: String, date: String) {
         slotsRequest?.cancel()
+        _slotsFor.value = null
+        _slots.value = emptyList()
         slotsRequest = viewModelScope.launch {
             _slots.value = emptyList(); _slotsError.value = null
             if (barberId.isBlank() || serviceId.isBlank() || date.isBlank()) return@launch
             _slotsLoading.value = true
-            try { _slots.value = repo.slots(barberId, serviceId, date) }
+            try {
+                _slots.value = repo.slots(barberId, serviceId, date)
+                _slotsFor.value = "$barberId|$serviceId|$date"
+            }
             catch (e: kotlinx.coroutines.CancellationException) { throw e }
             catch (e: Exception) { _slotsError.value = e.toFriendlyMessage("No pudimos consultar los horarios.") }
             finally { _slotsLoading.value = false }

@@ -26,6 +26,7 @@ class SlotsAuditTest {
         assertNotNull(vm.slotsError.value)
         assertFalse(vm.slotsLoading.value)
         assertTrue(vm.slots.value.isEmpty())
+        assertNull(vm.slotsFor.value)
     }
 
     @Test fun `respuesta del dia anterior no reemplaza el nuevo`() = runTest(dispatcher) {
@@ -41,5 +42,37 @@ class SlotsAuditTest {
         advanceUntilIdle()
         assertEquals("12:00", vm.slots.value.single().time)
         assertNull(vm.slotsError.value)
+        assertEquals("b|s|2026-10-13", vm.slotsFor.value)
+    }
+
+    @Test fun `reconsultar invalida inmediatamente el horario anterior hasta recibir respuesta`() = runTest(dispatcher) {
+        whenever(repo.slots("b", "s", "2026-10-12")).thenReturn(listOf(SlotItem("10:00", "10:00")))
+        val vm = BookingViewModel(repo)
+        vm.loadSlots("b", "s", "2026-10-12")
+        advanceUntilIdle()
+        assertEquals("b|s|2026-10-12", vm.slotsFor.value)
+        vm.loadSlots("b", "s", "2026-10-12")
+        assertNull(vm.slotsFor.value)
+        assertTrue(vm.slots.value.isEmpty())
+        advanceUntilIdle()
+        assertEquals("b|s|2026-10-12", vm.slotsFor.value)
+    }
+
+    @Test fun `catalogo fallido puede reintentarse sin confundirlo con una reserva fallida`() = runTest(dispatcher) {
+        whenever(repo.products()).thenReturn(emptyList())
+        whenever(repo.services()).thenReturn(listOf(com.urbanblade.mobile.data.model.ServiceItem("s", "Corte")))
+        whenever(repo.barbers()).thenAnswer { throw IOException("offline") }.thenReturn(listOf(com.urbanblade.mobile.data.model.BarberItem("b")))
+        val vm = BookingViewModel(repo)
+        vm.loadCatalog()
+        advanceUntilIdle()
+        assertNotNull(vm.catalogError.value)
+        assertFalse(vm.catalogLoading.value)
+        assertTrue(vm.services.value.isEmpty())
+        assertNull(vm.error.value)
+        vm.loadCatalog()
+        advanceUntilIdle()
+        assertNull(vm.catalogError.value)
+        assertEquals("s", vm.services.value.single().id)
+        assertEquals("b", vm.barbers.value.single().id)
     }
 }
