@@ -60,6 +60,23 @@ Evidencia seleccionada en [`ui-audit-2026-10-11/`](ui-audit-2026-10-11/): captur
 
 ## Límites de la entrega
 
+### Continuación contra la API publicada (12-oct-2026)
+
+Se compiló e instaló con `install -r` el paquete habitual `com.urbanblade.mobile`,
+con `DEBUG_API_BASE_URL=https://api.urbanblade.com.mx/api/v1/`, conservando la sesión.
+La API respondió 200 en `/up` y devolvió 20 servicios. Se revisaron Inicio, Mis
+citas, Cuenta y Reservar antes de actualizar; después se comprobó Inicio y Mis
+citas en el APK actualizado. La cita confirmada mostró el aviso «pago resuelto»
+según Laravel, y sus acciones quedaron sin la burbuja de Bladebot. La revisión
+posterior de Reservar/Cuenta queda por completar debido a conexión USB intermitente.
+No se crearon/cancelaron citas, cambiaron roles ni ejecutaron cobros. Las capturas
+con información de la sesión se conservan solo como archivos locales ignorados.
+
+La continuación pasó 319 casos JVM: 318 aprobados, una omisión deliberada y cero
+fallos. Lint conservó cero errores y 32 advertencias. La selección de experiencia
+y los avisos de pago comparten reglas con web y backend; ver contrato móvil y
+`barber/docs/PLAN_CONTRATO_API.md`.
+
 Los contratos de favoritos/compras/PDF se contrastaron con las rutas y modelos actuales del backend. Las pruebas MockWebServer verifican petición y deserialización; no acreditan persistencia en Laravel ni autorización real.
 
 La aceptación de integración requiere cuenta QA y entorno de prueba: OAuth Google real, cobro/cancelación/fallo y webhook Stripe, PDF servido por Laravel, todos los roles y TalkBack en dispositivo. No declarar pagos reales, publicación en Play ni aplicación global «sin pendientes» a partir de pruebas JVM. Los ocho hallazgos tienen corrección de código; su aceptación visual e integración son estados separados.
