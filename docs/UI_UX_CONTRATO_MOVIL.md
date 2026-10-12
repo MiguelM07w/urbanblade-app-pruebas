@@ -39,3 +39,14 @@ Mis citas usa `pago_resuelto` del servidor para indicar si el pago está resuelt
 Se corrigen los ocho hallazgos de la auditoría y errores de carga descubiertos durante su implementación. No se añaden check-in QR, logística ni cupones. Los puntos existentes provienen de `dashboard.loyalty`, disponible actualmente; la revisión histórica de septiembre no describe todo el contrato actual.
 
 Esta entrega no equivale a publicación en Google Play ni a certificación de pagos reales. Distinguir siempre pruebas JVM, UI con fixtures y flujos contra Laravel/Stripe.
+
+## Pulido de componentes compartidos (12-oct-2026)
+
+Cuenta y Más usan `UrbanActionRow` dentro de `UrbanRowGroup` para distinguir accesos
+ordinarios de avisos que requieren atención. Se conservan las rutas y restricciones
+de rol; las filas permiten título de dos líneas y descripción de tres.
+
+`UrbanPillTabs`, compartido por Cuenta, Citas y módulos, ofrece objetivos táctiles de
+al menos 48 dp. En menos de 300 dp disponibles o con fuente desde 130 % coloca el
+icono arriba y permite envolver la etiqueta completa. La comprobación visual en el
+teléfono de esta continuación queda aplazada a la reconexión solicitada por el usuario.

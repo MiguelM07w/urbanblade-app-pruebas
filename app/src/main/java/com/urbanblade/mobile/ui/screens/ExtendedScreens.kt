@@ -385,11 +385,10 @@ fun MoreScreen(user: AuthUser, onNavigate: (String) -> Unit) {
             item { UrbanSectionTitle(section.replaceFirstChar { it.uppercase() }) }
             item {
                 UrbanRowGroup(group) { module ->
-                    UrbanRow(
+                    UrbanActionRow(
                         title = module.title,
                         subtitle = module.subtitle,
-                        leading = { Icon(module.icon, null, tint = UrbanColors.GoldText, modifier = Modifier.size(24.dp)) },
-                        trailing = { Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted) },
+                        icon = module.icon,
                         onClick = { onNavigate(module.route) }
                     )
                 }

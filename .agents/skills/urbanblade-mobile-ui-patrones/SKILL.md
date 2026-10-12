@@ -277,3 +277,11 @@ equivalencias:
 ## Sincronización de roles (12-oct-2026)
 
 Usar core/access/UserExperience para Inicio, Cuenta y navegación. Prioridad: administrador, recepcionista, barbero, ingeniero, cliente. No confundir experiencia visual con permisos del servidor. Más reutiliza UrbanRowGroup/UrbanRow. Bladebot se oculta en Cuenta, Reservar y Citas para no tapar acciones. Los avisos de pago usan pago_resuelto, nunca deducen deuda por estar confirmada la cita.
+
+### Pulido de accesos y pestañas (12-oct-2026, TT32 / HT-12)
+
+`UrbanActionRow` reutiliza `UrbanRow` para accesos de Cuenta y Más: icono neutro,
+título de hasta dos líneas y descripción de hasta tres. Agrupar con `UrbanRowGroup`;
+no usar avisos de atención para navegación ordinaria. `UrbanPillTabs` tiene objetivo
+táctil de 48 dp y apila icono/etiqueta en menos de 300 dp o con fuente desde 130 %,
+sin cortar las etiquetas con puntos suspensivos. La misma pieza sirve a todos los roles.

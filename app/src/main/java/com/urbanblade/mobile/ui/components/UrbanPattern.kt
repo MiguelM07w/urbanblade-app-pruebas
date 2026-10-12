@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -319,30 +321,42 @@ fun urbanFilterChipColors() = androidx.compose.material3.FilterChipDefaults.filt
 /** Pestañas en píldora (2 o 3), con la seleccionada en dorado como el destino activo de la barra inferior. */
 @Composable
 fun UrbanPillTabs(tabs: List<Pair<String, ImageVector>>, selected: Int, onSelect: (Int) -> Unit) {
-    Surface(
-        shape = CircleShape,
-        color = UrbanColors.Card,
-        border = BorderStroke(1.dp, UrbanColors.Line),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(4.dp).selectableGroup()) {
-            tabs.forEachIndexed { index, (label, icon) ->
-                val isSelected = index == selected
-                val background by animateColorAsState(if (isSelected) UrbanColors.Gold else Color.Transparent, label = "tab")
-                val content = if (isSelected) UrbanColors.OnGold else UrbanColors.Muted
-                Row(
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 44.dp)
-                        .clip(CircleShape)
-                        .background(background)
-                        .selectable(selected = isSelected, onClick = { onSelect(index) }, role = Role.Tab),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(icon, null, tint = content, modifier = Modifier.size(17.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1, textAlign = TextAlign.Center, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val stacked = maxWidth < 300.dp || LocalDensity.current.fontScale >= 1.3f
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = UrbanColors.Card,
+            border = BorderStroke(1.dp, UrbanColors.Line),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(Modifier.padding(4.dp).selectableGroup()) {
+                tabs.forEachIndexed { index, (label, icon) ->
+                    val isSelected = index == selected
+                    val background by animateColorAsState(if (isSelected) UrbanColors.Gold else Color.Transparent, label = "tab")
+                    val content = if (isSelected) UrbanColors.OnGold else UrbanColors.Muted
+                    Row(
+                        Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(background)
+                            .selectable(selected = isSelected, onClick = { onSelect(index) }, role = Role.Tab)
+                            .padding(horizontal = 6.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (stacked) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(icon, null, tint = content, modifier = Modifier.size(17.dp))
+                                Spacer(Modifier.height(4.dp))
+                                Text(label, style = MaterialTheme.typography.labelLarge, color = content, textAlign = TextAlign.Center)
+                            }
+                        } else {
+                            Icon(icon, null, tint = content, modifier = Modifier.size(17.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(label, style = MaterialTheme.typography.labelLarge, color = content, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }

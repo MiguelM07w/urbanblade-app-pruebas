@@ -80,3 +80,10 @@ y los avisos de pago comparten reglas con web y backend; ver contrato móvil y
 Los contratos de favoritos/compras/PDF se contrastaron con las rutas y modelos actuales del backend. Las pruebas MockWebServer verifican petición y deserialización; no acreditan persistencia en Laravel ni autorización real.
 
 La aceptación de integración requiere cuenta QA y entorno de prueba: OAuth Google real, cobro/cancelación/fallo y webhook Stripe, PDF servido por Laravel, todos los roles y TalkBack en dispositivo. No declarar pagos reales, publicación en Play ni aplicación global «sin pendientes» a partir de pruebas JVM. Los ocho hallazgos tienen corrección de código; su aceptación visual e integración son estados separados.
+
+## Continuación de componentes compartidos (12-oct-2026)
+
+- Cuenta y Más reutilizan `UrbanActionRow`/`UrbanRowGroup`, con títulos y descripciones multilínea y semántica de botón. Las rutas y permisos se mantienen.
+- `UrbanPillTabs` adapta icono/etiqueta a ancho menor de 300 dp o fuente desde 130 %; objetivo táctil mínimo de 48 dp.
+- Build del paquete habitual contra la API publicada: aprobado. Pruebas JVM: 318 aprobadas, 1 omitida, 0 errores/fallos. Lint: 0 errores, 32 advertencias y 4 hints de mantenimiento.
+- La revisión visual en el teléfono de estos nuevos cambios se aplaza hasta la reconexión del usuario. No se ha instalado este último APK ni se han realizado cobros.
