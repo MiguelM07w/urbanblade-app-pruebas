@@ -273,3 +273,7 @@ equivalencias:
   un paso. Carga/error/vacío de horarios son estados diferentes.
 - Ver contrato, checklist y evidencia en `docs/UI_UX_CONTRATO_MOVIL.md`,
   `docs/VERIFICACION_MANUAL_P0.md` y `docs/UI_UX_VALIDACION_2026-10-11.md`.
+
+## Sincronización de roles (12-oct-2026)
+
+Usar core/access/UserExperience para Inicio, Cuenta y navegación. Prioridad: administrador, recepcionista, barbero, ingeniero, cliente. No confundir experiencia visual con permisos del servidor. Más reutiliza UrbanRowGroup/UrbanRow. Bladebot se oculta en Cuenta, Reservar y Citas para no tapar acciones. Los avisos de pago usan pago_resuelto, nunca deducen deuda por estar confirmada la cita.

@@ -6,6 +6,7 @@
 
 - Sin sesión: Bienvenida → Acceso/Registro/Recuperación. La bienvenida permite consultar servicios. Elegir servicio/barbero pide acceso y preserva la elección durante el recorrido, sin prometer guardar un borrador tras cerrar el proceso.
 - Cliente exclusivo: Inicio / Reservar / Mis citas / Cuenta. Personal y cuentas con varios roles usan navegación de operación; ingeniero exclusivo conserva destinos de solo lectura.
+- La experiencia se resuelve en `core/access/UserExperience`: administrador → recepción → barbero → ingeniero → cliente. Web y API siguen la misma prioridad, sin depender del orden de `roles`. Elegir experiencia no concede permisos; Laravel sigue validando cada acción.
 - Beneficios, pedidos y facturas son secundarios de Cuenta; tienda y muro, de Inicio. Laravel valida permisos.
 - Atrás superior, inferior y sistema de reserva regresan un paso; desde el paso de entrada salen. En registro, contraseña vuelve a datos antes de salir.
 - Los datos no sensibles del formulario sobreviven a recreación; las contraseñas permanecen en memoria y se vuelven a escribir. Los mensajes de Google aparecen en el paso visible. La acción principal tiene pie con `imePadding`.
@@ -31,7 +32,9 @@
 
 Los cuatro temas, mascotas, tipografía y kit mantienen la identidad web. Los fondos y acentos de marca permanecen; `GoldText` y los estados del tema claro tienen tonos legibles. Acceso usa papel claro en Libreta. La bienvenida compacta desplaza el texto y coloca la mascota debajo, sin superposición.
 
-Bladebot invita a reservar al cliente y pregunta «¿Revisamos tu día?» al personal. Se oculta en Cuenta para no cubrir formularios ni la pestaña Ajustes.
+Bladebot invita a reservar al cliente y pregunta «¿Revisamos tu día?» al personal. Se oculta en Cuenta, Reservar y Citas para no cubrir formularios, precios ni acciones de citas. Sigue disponible desde Inicio y herramientas.
+
+Mis citas usa `pago_resuelto` del servidor para indicar si el pago está resuelto, pendiente o desconocido. Una cita confirmada no implica por sí sola deuda ni pago completo. Más reutiliza `UrbanRowGroup` y `UrbanRow`, con los mismos tokens de todas las pantallas.
 
 Se corrigen los ocho hallazgos de la auditoría y errores de carga descubiertos durante su implementación. No se añaden check-in QR, logística ni cupones. Los puntos existentes provienen de `dashboard.loyalty`, disponible actualmente; la revisión histórica de septiembre no describe todo el contrato actual.
 

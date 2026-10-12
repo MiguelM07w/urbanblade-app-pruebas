@@ -81,9 +81,7 @@ fun AccountScreen(
     vm: AccountViewModel = viewModel()
 ) {
     val state by vm.state.collectAsState()
-    val isClient = "cliente" in user.roles && user.roles.none {
-        it in listOf("administrador", "recepcionista", "barbero", "ingeniero")
-    }
+    val isClient = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pickPhoto = rememberSingleImagePicker { uri -> vm.uploadAvatar(context, uri, onUserChanged) }

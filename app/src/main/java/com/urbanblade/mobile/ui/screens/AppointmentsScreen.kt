@@ -70,8 +70,8 @@ fun AppointmentsScreen(user: AuthUser, onBook: () -> Unit, vm: AppointmentsViewM
     var shownMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedDay by remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
     val staff = user.roles.any { it in listOf("administrador", "recepcionista") }
-    val canBook = user.roles.any { it in listOf("cliente", "administrador", "recepcionista") }
-    val isClient = user.roles.contains("cliente")
+    val canBook = com.urbanblade.mobile.core.access.UserExperience.canBook(user.roles)
+    val isClient = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
 
     // El personal ve las citas de todo el negocio: las estadísticas del servidor son las del propio
     // usuario (0 para un administrador), así que se calculan aquí sobre la lista.

@@ -42,7 +42,7 @@ fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewM
     val error by vm.error.collectAsState()
     val message by vm.message.collectAsState()
     var query by remember { mutableStateOf("") }
-    val isClient = user.roles.contains("cliente")
+    val isClient = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
     val total = products.sumOf { it.precioVenta * (cart[it.id] ?: 0) }
 
     LaunchedEffect(Unit) { vm.load() }
@@ -317,13 +317,15 @@ fun MoreScreen(user: AuthUser, onNavigate: (String) -> Unit) {
     val admin = "administrador" in roles
     val engineer = "ingeniero" in roles
     val barber = "barbero" in roles
-    val client = "cliente" in roles
+    val client = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
 
     val modules = buildList {
-        add(ModuleItem("catalog", "Servicios y barberos", "Explora el catálogo", Icons.Default.ContentCut, "GENERAL"))
+        if (!com.urbanblade.mobile.core.access.UserExperience.isEngineer(user.roles)) {
+            add(ModuleItem("catalog", "Servicios y barberos", "Explora el catálogo", Icons.Default.ContentCut, "GENERAL"))
+            add(ModuleItem("social", "Muro de Inspiración", "Trabajos del equipo", Icons.Default.Groups, "GENERAL"))
+        }
         add(ModuleItem("notifications", "Notificaciones", "Novedades de tu cuenta", Icons.Default.Notifications, "GENERAL"))
         add(ModuleItem("analytics", "Analítica", "Actividad y rendimiento", Icons.Default.QueryStats, "GENERAL"))
-        add(ModuleItem("social", "Muro de Inspiración", "Trabajos del equipo", Icons.Default.Groups, "GENERAL"))
         add(ModuleItem("chatbot", "Bladebot", "Asistente UrbanBlade", Icons.Default.SmartToy, "GENERAL"))
         if (staff || client) {
             add(ModuleItem("payments", "Pagos", "Historial y comprobantes", Icons.Default.Payments, "OPERACIÓN"))
@@ -381,29 +383,19 @@ fun MoreScreen(user: AuthUser, onNavigate: (String) -> Unit) {
         }
         modules.groupBy { it.section }.forEach { (section, group) ->
             item { UrbanSectionTitle(section.replaceFirstChar { it.uppercase() }) }
-            items(group) { module -> ModuleCard(module, onNavigate) }
+            item {
+                UrbanRowGroup(group) { module ->
+                    UrbanRow(
+                        title = module.title,
+                        subtitle = module.subtitle,
+                        leading = { Icon(module.icon, null, tint = UrbanColors.GoldText, modifier = Modifier.size(24.dp)) },
+                        trailing = { Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted) },
+                        onClick = { onNavigate(module.route) }
+                    )
+                }
+            }
         }
         item { Spacer(Modifier.height(8.dp)) }
-    }
-}
-
-@Composable
-private fun ModuleCard(module: ModuleItem, onNavigate: (String) -> Unit) {
-    UrbanCard(Modifier.fillMaxWidth(), onClick = { onNavigate(module.route) }) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.CardAlt),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(module.icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.width(13.dp))
-            Column(Modifier.weight(1f)) {
-                Text(module.title, style = MaterialTheme.typography.titleMedium)
-                Text(module.subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-            }
-            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted)
-        }
     }
 }
 

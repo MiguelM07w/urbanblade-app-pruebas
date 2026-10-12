@@ -285,9 +285,13 @@ fun ClientAppointmentsScreen(
 }
 
 /** Qué sigue en cada estado, en lenguaje claro (el cliente no ve los botones de la agenda del barbero). */
-internal fun clientStateHint(estado: String): String? = when (estado) {
+internal fun clientStateHint(estado: String, paymentResolved: Boolean? = null): String? = when (estado) {
     "pendiente" -> "Esperando que tu barbero apruebe la cita; te avisaremos en cuanto la confirme."
-    "confirmada" -> "Cita aprobada. Antes de que empiece el servicio debe estar pagada: con tarjeta aquí, o en recepción al llegar."
+    "confirmada" -> when (paymentResolved) {
+        true -> "Cita aprobada y pago resuelto. Te esperamos a la hora de tu cita."
+        false -> "Cita aprobada. Resuelve el pago antes del servicio; consulta las opciones aquí o en recepción."
+        null -> "Cita aprobada. Consulta el estado de tu pago en tus comprobantes o en recepción."
+    }
     "en_proceso" -> "Tu servicio está en curso."
     "no_asistio" -> "No registramos tu asistencia. Si hay un cargo pendiente, págalo en la barbería para volver a reservar."
     else -> null
@@ -321,7 +325,7 @@ private fun NextClientAppointment(appt: AppointmentRow, onPay: (() -> Unit)?, on
                 Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
             }
         }
-        clientStateHint(appt.estado)?.let {
+        clientStateHint(appt.estado, appt.pagoResuelto)?.let {
             Spacer(Modifier.height(10.dp))
             Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
         }
@@ -367,7 +371,7 @@ private fun ClientAppointmentRow(
                 Text(UrbanFormat.date(appt.fecha), style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
         }
-        clientStateHint(appt.estado)?.let {
+        clientStateHint(appt.estado, appt.pagoResuelto)?.let {
             Spacer(Modifier.height(8.dp))
             Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
         }

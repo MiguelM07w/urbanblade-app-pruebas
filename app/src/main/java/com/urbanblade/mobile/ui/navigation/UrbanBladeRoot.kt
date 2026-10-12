@@ -141,10 +141,8 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
     val scope = rememberCoroutineScope()
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
-    val isClient = user.roles.contains("cliente")
-    val clientOnly = isClient && user.roles.none { it in listOf("administrador", "recepcionista", "barbero", "ingeniero") }
-    val engineerOnly = user.roles.contains("ingeniero") &&
-        user.roles.none { it in listOf("administrador", "recepcionista", "barbero", "cliente") }
+    val clientOnly = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
+    val engineerOnly = com.urbanblade.mobile.core.access.UserExperience.isEngineer(user.roles)
 
     // Nav por rol. Cliente (propuesta A, 25-sep): cuatro pestañas con un solo verbo para
     // reservar; Beneficios, pagos y pedidos viven en Cuenta y en el Inicio, ya no en la barra.
@@ -222,7 +220,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
         floatingActionButton = {
             androidx.compose.animation.AnimatedVisibility(
                 // Cuenta contiene formularios y pestañas: la burbuja no debe cubrir Ajustes.
-                visible = current in rootRoutes && current != "profile" && bubbleShown && bubbleEnabled,
+                visible = current in rootRoutes && current !in listOf("profile", "catalog", "appointments") && bubbleShown && bubbleEnabled,
                 enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
                 exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut()
             ) {
@@ -324,7 +322,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 ) { entry ->
                     BarberProfileScreen(
                         slug = entry.arguments?.getString("slug").orEmpty(),
-                        canBook = isClient,
+                        canBook = clientOnly,
                         onBack = { nav.popBackStack() },
                         onBook = { barberId -> nav.openBooking(bookingRoute(null, barberId)) }
                     )
@@ -364,7 +362,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                     SocialFeedScreen(
                         onBack = { nav.popBackStack() },
                         // Solo el cliente reserva desde el muro; el personal lo ve como galería.
-                        onBookBarber = if (isClient) { barberId -> nav.openBooking(bookingRoute(null, barberId)) } else null
+                        onBookBarber = if (clientOnly) { barberId -> nav.openBooking(bookingRoute(null, barberId)) } else null
                     )
                 }
                 composable("clients") {
