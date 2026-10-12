@@ -81,7 +81,9 @@ fun AccountScreen(
     vm: AccountViewModel = viewModel()
 ) {
     val state by vm.state.collectAsState()
-    val isClient = "cliente" in user.roles
+    val isClient = "cliente" in user.roles && user.roles.none {
+        it in listOf("administrador", "recepcionista", "barbero", "ingeniero")
+    }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pickPhoto = rememberSingleImagePicker { uri -> vm.uploadAvatar(context, uri, onUserChanged) }
@@ -280,10 +282,10 @@ fun AccountScreen(
             val openLegal = com.urbanblade.mobile.ui.components.rememberOpenLegal()
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 androidx.compose.material3.TextButton(onClick = { openLegal(com.urbanblade.mobile.ui.components.UrbanLegal.PRIVACY_URL) }) {
-                    Text("Aviso de Privacidad", color = UrbanColors.Gold)
+                    Text("Aviso de Privacidad", color = UrbanColors.GoldText)
                 }
                 androidx.compose.material3.TextButton(onClick = { openLegal(com.urbanblade.mobile.ui.components.UrbanLegal.TERMS_URL) }) {
-                    Text("Términos y Condiciones", color = UrbanColors.Gold)
+                    Text("Términos y Condiciones", color = UrbanColors.GoldText)
                 }
                 Text(
                     "Para ejercer tus derechos sobre tus datos (acceso, corrección o borrado del historial), escribe a ${com.urbanblade.mobile.ui.components.UrbanLegal.CONTACT_EMAIL}.",

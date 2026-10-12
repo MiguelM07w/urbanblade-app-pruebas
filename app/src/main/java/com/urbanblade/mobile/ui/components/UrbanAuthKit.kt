@@ -88,14 +88,17 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun AuthBackdrop(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    Box(modifier.fillMaxSize().background(Color(0xFF090A0C))) {
+    Box(modifier.fillMaxSize().background(UrbanColors.Background)) {
         Image(
             painter = painterResource(R.drawable.auth_barbershop_background),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        Box(
+        if (UrbanColors.current.isLight) {
+            // La tinta oscura de Libreta necesita el mismo papel claro también en acceso.
+            Box(Modifier.fillMaxSize().background(UrbanColors.Background))
+        } else Box(
             Modifier
                 .fillMaxSize()
                 .background(

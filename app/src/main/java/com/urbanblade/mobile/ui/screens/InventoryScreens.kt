@@ -88,7 +88,7 @@ fun InventoryListScreen(user: AuthUser, onBack: () -> Unit, onHistory: () -> Uni
 
             item {
                 UrbanPremiumCard(Modifier.fillMaxWidth()) {
-                    Text("RESUMEN DE EXISTENCIAS", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                    Text("RESUMEN DE EXISTENCIAS", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         InventorySummaryValue("Productos", response.meta.stats.total.toString(), Modifier.weight(1f))

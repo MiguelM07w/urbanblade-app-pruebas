@@ -151,7 +151,7 @@ fun <T> UrbanChoiceTiles(
                         option.title,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isSelected) UrbanColors.Gold else UrbanColors.Ink,
+                        color = if (isSelected) UrbanColors.GoldText else UrbanColors.Ink,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center

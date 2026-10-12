@@ -221,7 +221,7 @@ private fun WelcomeCard(enabled: Boolean, onAsk: (String) -> Unit) {
             )
         }
         Spacer(Modifier.height(14.dp))
-        Text("Prueba con:", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+        Text("Prueba con:", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
         Spacer(Modifier.height(6.dp))
         SuggestionRow(enabled = enabled, onAsk = onAsk)
     }

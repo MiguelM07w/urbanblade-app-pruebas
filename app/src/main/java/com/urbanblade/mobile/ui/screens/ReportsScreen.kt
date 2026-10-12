@@ -188,7 +188,7 @@ private fun ReportHeader(report: ReportData, rangeLabel: String) {
             )
         }
         Spacer(Modifier.height(10.dp))
-        Text("Periodo: $rangeLabel", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+        Text("Periodo: $rangeLabel", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
     }
 }
 

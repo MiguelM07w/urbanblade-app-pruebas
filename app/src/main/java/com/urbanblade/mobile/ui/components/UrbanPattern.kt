@@ -147,7 +147,7 @@ fun UrbanHeroLabel(text: String) {
     Text(
         text.uppercase(),
         style = MaterialTheme.typography.labelMedium,
-        color = UrbanColors.Gold,
+        color = UrbanColors.GoldText,
         modifier = Modifier.semantics { heading() }
     )
 }

@@ -549,7 +549,7 @@ internal fun AppointmentDateRail(appt: AppointmentRow, emphasized: Boolean) {
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         if (emphasized) {
-            Text(appt.fecha.takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.Gold, fontWeight = FontWeight.Bold)
+            Text(appt.fecha.takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.GoldText, fontWeight = FontWeight.Bold)
             Text(UrbanFormat.date(appt.fecha).take(3).uppercase(), style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted)
             HorizontalDivider(Modifier.padding(vertical = 3.dp), color = UrbanColors.Line)
         }
@@ -661,7 +661,7 @@ private fun AppointmentCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(appt.fecha.takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.Gold)
+                    Text(appt.fecha.takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.GoldText)
                     Text(appt.horaInicio.take(5), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Ink)
                 }
             }
@@ -739,7 +739,7 @@ private fun AppointmentCard(
                             TextButton(onClick = onReschedule, contentPadding = PaddingValues(0.dp)) {
                                 Icon(Icons.Default.EditCalendar, null, modifier = Modifier.size(17.dp), tint = UrbanColors.Gold)
                                 Spacer(Modifier.width(5.dp))
-                                Text("Reagendar", color = UrbanColors.Gold)
+                                Text("Reagendar", color = UrbanColors.GoldText)
                             }
                             Spacer(Modifier.width(16.dp))
                         }
@@ -1034,7 +1034,7 @@ internal fun CheckoutSheet(appt: AppointmentRow, vm: AppointmentsViewModel, onDi
             // Gift card y puntos son poco frecuentes: se esconden para que el método de pago quede a la vista.
             val extrasOpen = showExtras || giftCardCode.isNotBlank() || puntos.isNotBlank()
             TextButton(onClick = { showExtras = !extrasOpen }) {
-                Text(if (extrasOpen) "Ocultar tarjeta regalo y puntos" else "¿Tienes tarjeta regalo o puntos?", color = UrbanColors.Gold)
+                Text(if (extrasOpen) "Ocultar tarjeta regalo y puntos" else "¿Tienes tarjeta regalo o puntos?", color = UrbanColors.GoldText)
                 Icon(if (extrasOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = UrbanColors.Gold)
             }
             if (extrasOpen) {

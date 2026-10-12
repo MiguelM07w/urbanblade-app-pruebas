@@ -87,7 +87,7 @@ fun DashboardScreen(
             UrbanPremiumCard(Modifier.fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(Modifier.weight(1f)) {
-                        Text(UrbanColors.current.label.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+                        Text(UrbanColors.current.label.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
                         Spacer(Modifier.height(6.dp))
                         Text("Todo el negocio,\nen tu bolsillo.", style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.height(8.dp))

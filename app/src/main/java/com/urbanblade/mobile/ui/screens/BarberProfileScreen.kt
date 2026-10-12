@@ -121,7 +121,7 @@ private fun ProfileHeader(data: BarberProfileResponse, canBook: Boolean, onBook:
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StarRow(avg.toInt(), Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("%.1f".format(avg), style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                    Text("%.1f".format(avg), style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                 }
             }
             val chips = data.barber.especialidades.orEmpty().split(',').map { it.trim() }.filter { it.isNotBlank() }.take(6)

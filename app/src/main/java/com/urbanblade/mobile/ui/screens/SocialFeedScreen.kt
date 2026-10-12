@@ -197,7 +197,7 @@ private fun WorkPost(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         work.comments.forEach { c ->
                             Row {
-                                Text(c.user?.name ?: "Usuario", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Gold)
+                                Text(c.user?.name ?: "Usuario", style = MaterialTheme.typography.bodySmall, color = UrbanColors.GoldText)
                                 Spacer(Modifier.width(6.dp))
                                 Text(c.comment ?: "", style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }

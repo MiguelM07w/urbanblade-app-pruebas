@@ -69,6 +69,16 @@ fun UrbanBladeRoot(authViewModel: AuthViewModel = viewModel()) {
             }
         }
         AuthState.Guest -> GuestNav(authViewModel)
+        AuthState.Unavailable -> UrbanBladeBackground {
+            Box(Modifier.fillMaxSize().systemBarsPadding().padding(18.dp), contentAlignment = Alignment.Center) {
+                com.urbanblade.mobile.ui.components.UrbanMascotState(
+                    com.urbanblade.mobile.ui.components.UrbanStateKind.ERROR,
+                    "No pudimos confirmar tu sesión",
+                    "Tu acceso sigue guardado. Revisa tu conexión y vuelve a intentar.",
+                    "Reintentar"
+                ) { authViewModel.bootstrap() }
+            }
+        }
         is AuthState.Authenticated -> {
             PushRegistrationEffect(state.user.id)
             // key: si cambia la cuenta, toda la navegación y sus pantallas se crean de cero.
@@ -92,8 +102,16 @@ private fun GuestNav(authViewModel: AuthViewModel) {
             com.urbanblade.mobile.ui.screens.WelcomeScreen(
                 onRegister = { nav.navigate("register") },
                 onLogin = { nav.navigate("login") },
-                sessionExpired = sessionExpired
+                sessionExpired = sessionExpired,
+                onExplore = { nav.navigate("catalog") }
             )
+        }
+        composable("catalog") {
+            CatalogScreen(isGuest = true, canFavorite = false,
+                onBook = { service, barber ->
+                    PendingBooking.set(service, barber)
+                    nav.navigate("login")
+                }, onLogin = { nav.navigate("login") })
         }
         composable("login") {
             LoginScreen(
@@ -131,7 +149,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
     // Nav por rol. Cliente (propuesta A, 25-sep): cuatro pestañas con un solo verbo para
     // reservar; Beneficios, pagos y pedidos viven en Cuenta y en el Inicio, ya no en la barra.
     // Cada pestaña se llama igual que el título de su pantalla.
-    val items = if (isClient) {
+    val items = if (clientOnly) {
         listOf(
             NavItem("home", "Inicio", Icons.Default.Home),
             NavItem("catalog", "Reservar", Icons.Default.ContentCut),
@@ -148,7 +166,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
     }
     val rootRoutes = items.map { it.route }
 
-    // Selección hecha como invitado en el catálogo (ver GuestNav): se
+    // Selección hecha como invitado en el catálogo: se
     // consume UNA sola vez, al montar la sesión autenticada, y redirige
     // directo al wizard de reserva con esa preselección.
     LaunchedEffect(Unit) {
@@ -203,11 +221,12 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
         // Se esconde al bajar (para no tapar lo que se está leyendo) y vuelve al subir o al cambiar de pantalla.
         floatingActionButton = {
             androidx.compose.animation.AnimatedVisibility(
-                visible = current in rootRoutes && bubbleShown && bubbleEnabled,
+                // Cuenta contiene formularios y pestañas: la burbuja no debe cubrir Ajustes.
+                visible = current in rootRoutes && current != "profile" && bubbleShown && bubbleEnabled,
                 enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
                 exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut()
             ) {
-                com.urbanblade.mobile.ui.components.BladebotBubble(onOpen = {
+                com.urbanblade.mobile.ui.components.BladebotBubble(hint = if (clientOnly) "¿Te ayudo a reservar?" else "¿Revisamos tu día?", onOpen = {
                     com.urbanblade.mobile.core.analytics.UrbanAnalytics.log("bladebot_abierto", "origen" to current)
                     nav.navigate("chatbot")
                 })
@@ -236,7 +255,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                                 label = { Text(item.label, style = MaterialTheme.typography.labelMedium) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = UrbanColors.OnGold,
-                                    selectedTextColor = UrbanColors.Gold,
+                                    selectedTextColor = UrbanColors.GoldText,
                                     indicatorColor = UrbanColors.Gold,
                                     unselectedIconColor = UrbanColors.Muted,
                                     unselectedTextColor = UrbanColors.Muted
@@ -292,6 +311,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 }
                 composable("catalog") {
                     CatalogScreen(
+                        canFavorite = clientOnly,
                         onBook = { serviceId, barberId -> nav.openBooking(bookingRoute(serviceId, barberId)) },
                         onOpenStore = { nav.navigate("store") },
                         onOpenInspiration = { nav.navigate("social") },
@@ -415,7 +435,7 @@ private fun OfflineBanner(onRetry: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         TextButton(onClick = onRetry) {
-            Text("Reintentar", color = UrbanColors.Gold, fontWeight = FontWeight.SemiBold)
+            Text("Reintentar", color = UrbanColors.GoldText, fontWeight = FontWeight.SemiBold)
         }
     }
 }

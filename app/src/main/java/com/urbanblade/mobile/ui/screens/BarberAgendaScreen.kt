@@ -232,7 +232,7 @@ private fun AgendaCard(
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(UrbanFormat.time(appt.horaInicio), style = MaterialTheme.typography.titleSmall, color = UrbanColors.Gold)
+                Text(UrbanFormat.time(appt.horaInicio), style = MaterialTheme.typography.titleSmall, color = UrbanColors.GoldText)
                 if (showDate) Text(UrbanFormat.date(appt.fecha).substringBefore(' '), style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted)
             }
             Spacer(Modifier.width(12.dp))

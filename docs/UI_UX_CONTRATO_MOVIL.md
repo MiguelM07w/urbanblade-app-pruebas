@@ -1,0 +1,38 @@
+# Contrato UI/UX de UrbanBlade Mobile
+
+11-oct-2026 · TT32 / HT-12. Describe la implementación; la evidencia de ejecución se registra en `UI_UX_VALIDACION_2026-10-11.md`.
+
+## Navegación y acceso
+
+- Sin sesión: Bienvenida → Acceso/Registro/Recuperación. La bienvenida permite consultar servicios. Elegir servicio/barbero pide acceso y preserva la elección durante el recorrido, sin prometer guardar un borrador tras cerrar el proceso.
+- Cliente exclusivo: Inicio / Reservar / Mis citas / Cuenta. Personal y cuentas con varios roles usan navegación de operación; ingeniero exclusivo conserva destinos de solo lectura.
+- Beneficios, pedidos y facturas son secundarios de Cuenta; tienda y muro, de Inicio. Laravel valida permisos.
+- Atrás superior, inferior y sistema de reserva regresan un paso; desde el paso de entrada salen. En registro, contraseña vuelve a datos antes de salir.
+- Los datos no sensibles del formulario sobreviven a recreación; las contraseñas permanecen en memoria y se vuelven a escribir. Los mensajes de Google aparecen en el paso visible. La acción principal tiene pie con `imePadding`.
+- Todos los métodos de acceso guardan token cifrado y resumen del usuario. Sin red se usa ese resumen con aviso; token antiguo sin resumen pide reintento. Un 401 limpia sesión. Reintentar no desmonta la navegación autenticada.
+
+## Reserva y favorito
+
+- Servicio → Horario → Extras → Pago. Disponibilidad, permisos y precios finales los valida el servidor.
+- Favorito: `PUT profile/favorite-barber`; la respuesta determina el estado. `GET barbers` devuelve `es_favorito`; se preselecciona al reservar si no hay elección explícita y permite reservar con otro.
+- Horarios: carga/error/reintento separados del estado vacío. Cambiar día/barbero cancela la consulta anterior.
+- Productos y propina mantienen el contrato existente. Comprar paquetes envía ID, nunca un precio calculado.
+
+## Beneficios
+
+- Membresía recurrente: contratación/cancelación existentes.
+- Paquetes: catálogo y `POST packages/stripe-intent`. Tarjeta regalo: monto elegido y destinatario opcional con `POST gift-cards/stripe-intent`; Laravel valida límites.
+- Stripe recoge la tarjeta. El resultado de pago no declara el beneficio activo: el webhook lo confirma. Se explica la espera y se ofrece actualizar. Doble toque bloqueado; cancelar/fallar permite reintento.
+- Sin Stripe configurado o con tarjetas apagadas por Remote Config se explica cómo comprar en recepción.
+- Tarjeta de miembro: `GET dashboard/membership/card` con cliente autenticado. PDF validado compartido por `FileProvider` limitado a su carpeta; no se expone token ni URL.
+- Carga parcial: conserva beneficios anteriores y avisa qué no pudo actualizarse. Una caída de red no equivale a no tener beneficios.
+
+## Apariencia y límites
+
+Los cuatro temas, mascotas, tipografía y kit mantienen la identidad web. Los fondos y acentos de marca permanecen; `GoldText` y los estados del tema claro tienen tonos legibles. Acceso usa papel claro en Libreta. La bienvenida compacta desplaza el texto y coloca la mascota debajo, sin superposición.
+
+Bladebot invita a reservar al cliente y pregunta «¿Revisamos tu día?» al personal. Se oculta en Cuenta para no cubrir formularios ni la pestaña Ajustes.
+
+Se corrigen los ocho hallazgos de la auditoría y errores de carga descubiertos durante su implementación. No se añaden check-in QR, logística ni cupones. Los puntos existentes provienen de `dashboard.loyalty`, disponible actualmente; la revisión histórica de septiembre no describe todo el contrato actual.
+
+Esta entrega no equivale a publicación en Google Play ni a certificación de pagos reales. Distinguir siempre pruebas JVM, UI con fixtures y flujos contra Laravel/Stripe.

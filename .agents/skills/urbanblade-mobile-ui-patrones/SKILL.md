@@ -65,13 +65,12 @@ Endpoints: `GET/PUT profile`, `POST profile/avatar` (multipart `avatar`, JPG/PNG
 merge: mandar solo el canal que cambió). Tras cambiar nombre, correo o foto se llama
 `AuthViewModel.refreshUser()` para que el resto de la app lo vea sin cerrar sesión.
 
-Avisos: la app muestra solo los canales que hoy entregan algo (**en la app, correo,
-promociones**). `sms`, `whatsapp` y `push` existen en el backend pero no se ofrecen
-hasta que funcionen de punta a punta (push llega con T143).
+Avisos: canales en la app, correo y promociones; push móvil mediante FCM cuando
+el proyecto Firebase está configurado. SMS/WhatsApp no se ofrecen como entregas disponibles.
 
-Pendiente de decidir (no implementado): barbero favorito (`PUT profile/favorite-barber`
-existe, pero `GET profile` no devuelve el actual) y eliminar cuenta (`DELETE profile`,
-irreversible: requiere confirmación del PO).
+Favorito: control en catálogo, `PUT profile/favorite-barber`, estado recibido de
+`GET barbers` (`es_favorito`) y preselección al reservar. Eliminar cuenta ya existe
+en Seguridad, con confirmación y autorización del servidor; no duplicar otro flujo.
 
 Para agregar una sección nueva a Mi cuenta: un `AccountAccordion` en la pestaña que le
 corresponda, su formulario en `AccountSections.kt` y su `AccountSection` para los avisos.
@@ -261,3 +260,16 @@ equivalencias:
   `adb shell settings put system font_scale 1.0`. Los datos se cambian en el borde (el
   repositorio o el estado del `ViewModel`), nunca editando el diseño; los fallos se reportan
   con su propuesta antes de corregir.
+
+## Cierre de auditoría UI/UX (11-oct-2026)
+
+- Texto de acento: `UrbanColors.GoldText`; fondos/acento de marca: `Gold`. El tema
+  claro adapta estados semánticos. No usar un acento de fondo como tinta pequeña.
+- `BenefitShop` y `BenefitPurchaseViewModel`: compras de paquetes/tarjetas regalo y
+  descarga de tarjeta PDF. Usar el PaymentSheet compartido y confirmación del servidor.
+- `MembershipCardFiles`: descarga autenticada y FileProvider limitado; nunca abrir
+  la URL de la API en navegador ni compartir el token con el visor.
+- Registro conserva datos no sensibles, nunca contraseñas. Atrás del sistema vuelve
+  un paso. Carga/error/vacío de horarios son estados diferentes.
+- Ver contrato, checklist y evidencia en `docs/UI_UX_CONTRATO_MOVIL.md`,
+  `docs/VERIFICACION_MANUAL_P0.md` y `docs/UI_UX_VALIDACION_2026-10-11.md`.

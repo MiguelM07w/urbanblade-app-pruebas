@@ -263,7 +263,7 @@ private fun OrderInvoice(order: OrderRow, opening: Boolean, onReceipt: (() -> Un
                     color = UrbanColors.Muted
                 )
             }
-            Text(money(order.total), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+            Text(money(order.total), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
         }
         onReceipt?.let { ReceiptButton(opening, it) }
     }
@@ -281,7 +281,7 @@ private fun MembershipInvoice(invoice: MembershipInvoiceRow, opening: Boolean, o
                     color = UrbanColors.Muted
                 )
             }
-            Text(money(invoice.monto), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+            Text(money(invoice.monto), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
         }
         ReceiptButton(opening, onReceipt)
     }
@@ -298,6 +298,6 @@ private fun ReceiptButton(opening: Boolean, onClick: () -> Unit) {
             Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp), tint = UrbanColors.Gold)
         }
         Spacer(Modifier.width(6.dp))
-        Text(if (opening) "Descargando…" else "Descargar comprobante", color = UrbanColors.Gold)
+        Text(if (opening) "Descargando…" else "Descargar comprobante", color = UrbanColors.GoldText)
     }
 }

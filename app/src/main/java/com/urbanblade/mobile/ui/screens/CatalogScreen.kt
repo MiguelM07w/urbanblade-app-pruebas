@@ -36,6 +36,7 @@ import com.urbanblade.mobile.ui.viewmodel.CatalogViewModel
 @Composable
 fun CatalogScreen(
     isGuest: Boolean = false,
+    canFavorite: Boolean = true,
     onBook: (serviceId: String?, barberId: String?) -> Unit,
     onOpenStore: (() -> Unit)? = null,
     onOpenInspiration: (() -> Unit)? = null,
@@ -48,6 +49,7 @@ fun CatalogScreen(
     val barbers by vm.barbers.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
+    val favoriteBusy by vm.favoriteBusy.collectAsState()
     LaunchedEffect(Unit) { vm.load() }
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf<ServiceFilter?>(null) }
@@ -173,6 +175,8 @@ fun CatalogScreen(
             BarberCard(
                 barber,
                 showsProfile = onOpenBarber != null && slug != null,
+                favoriteEnabled = !favoriteBusy,
+                onFavorite = if (!isGuest && canFavorite) ({ vm.favorite(barber) }) else null,
                 onOpen = { if (onOpenBarber != null && slug != null) onOpenBarber(slug) else onBook(null, barber.id) }
             )
         }
@@ -228,7 +232,7 @@ private fun ServiceCard(service: ServiceItem, onBook: () -> Unit) {
                 Text("${UrbanFormat.moneyShort(service.precio)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Reservar", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                    Text("Reservar", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                     Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Gold, modifier = Modifier.size(18.dp))
                 }
             }
@@ -237,7 +241,8 @@ private fun ServiceCard(service: ServiceItem, onBook: () -> Unit) {
 }
 
 @Composable
-private fun BarberCard(barber: BarberItem, showsProfile: Boolean, onOpen: () -> Unit) {
+private fun BarberCard(barber: BarberItem, showsProfile: Boolean, onOpen: () -> Unit,
+    favoriteEnabled: Boolean = true, onFavorite: (() -> Unit)? = null) {
     UrbanCard(Modifier.fillMaxWidth(), onClick = onOpen) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Iniciales debajo de la foto: si la foto falla o no hay, siguen visibles.
@@ -262,8 +267,16 @@ private fun BarberCard(barber: BarberItem, showsProfile: Boolean, onOpen: () -> 
                 }
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(if (showsProfile) Icons.Default.Person else Icons.Default.CalendarMonth, null, tint = UrbanColors.Gold, modifier = Modifier.size(20.dp))
-                Text(if (showsProfile) "Ver perfil" else "Reservar", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+                if (onFavorite != null) {
+                    IconToggleButton(checked = barber.esFavorito, enabled = favoriteEnabled,
+                        onCheckedChange = { onFavorite() }) {
+                        Icon(if (barber.esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            if (barber.esFavorito) "Quitar a ${barber.user?.name ?: "este barbero"} de favoritos"
+                            else "Elegir a ${barber.user?.name ?: "este barbero"} como favorito",
+                            tint = UrbanColors.GoldText)
+                    }
+                } else Icon(if (showsProfile) Icons.Default.Person else Icons.Default.CalendarMonth, null, tint = UrbanColors.GoldText, modifier = Modifier.size(20.dp))
+                Text(if (showsProfile) "Ver perfil" else "Reservar", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
             }
         }
     }

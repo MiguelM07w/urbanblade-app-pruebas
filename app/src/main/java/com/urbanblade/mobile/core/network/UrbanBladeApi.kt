@@ -7,6 +7,18 @@ import okhttp3.RequestBody
 import retrofit2.http.*
 
 interface UrbanBladeApi {
+    @PUT("profile/favorite-barber")
+    suspend fun favoriteBarber(@Body body: FavoriteBarberRequest): FavoriteBarberResponse
+
+    @Streaming
+    @GET("dashboard/membership/card")
+    suspend fun membershipCard(): okhttp3.ResponseBody
+
+    @POST("packages/stripe-intent")
+    suspend fun packageStripeIntent(@Body body: PackagePurchaseRequest): StripeIntentResponse
+
+    @POST("gift-cards/stripe-intent")
+    suspend fun giftCardStripeIntent(@Body body: CashGiftCardRequest): StripeIntentResponse
     @POST("auth/login") suspend fun login(@Body body: LoginRequest): LoginResponse
     @POST("auth/register") suspend fun register(@Body body: RegisterRequest): LoginResponse
     @POST("auth/forgot-password") suspend fun forgotPassword(@Body body: ForgotPasswordRequest): MessageResponse

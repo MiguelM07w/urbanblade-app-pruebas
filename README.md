@@ -511,7 +511,10 @@ POST /api/v1/payments/stripe-intent
 
 El backend calcula el monto real antes de crear el `PaymentIntent`.
 
-Para completar el flujo nativo de tarjeta en Android se debe integrar el **Stripe Android SDK** utilizando únicamente una **Publishable Key**.
+El SDK de Stripe ya está integrado con una **Publishable Key**. Reserva, membresía y
+compras de paquetes/tarjetas regalo usan la API para crear los intentos; el webhook del
+servidor confirma el resultado. Ver [contrato móvil](docs/UI_UX_CONTRATO_MOVIL.md) y
+[evidencia de validación](docs/UI_UX_VALIDACION_2026-10-11.md).
 
 ---
 
@@ -581,8 +584,8 @@ UrbanBladeMobile/
 │  ✅ Clientes e inventario                                │
 │  ✅ Analítica y reportes                                 │
 │  ✅ Herramientas admin / ingeniero                       │
-│  🟡 Stripe Android SDK completo                          │
-│  🟡 Push notifications                                   │
+│  ✅ Stripe Android SDK integrado                          │
+│  ✅ Push FCM integrado                                   │
 │  🟡 Pruebas E2E móviles                                  │
 │  🟡 Release firmado / Google Play                        │
 ╰──────────────────────────────────────────────────────────╯
@@ -592,10 +595,10 @@ UrbanBladeMobile/
 
 ## 🗺️ Roadmap
 
-- [ ] Paridad visual completa con los 4 temas de UrbanBlade Web
-- [ ] Stripe Android SDK
-- [ ] Firebase Cloud Messaging
-- [x] Pruebas unitarias (40 archivos JVM en `app/src/test/`)
+- [x] Cuatro temas y componentes compartidos; contraste adaptado al móvil
+- [x] Stripe Android SDK (requiere configuración y validación de integración)
+- [x] Firebase Cloud Messaging (requiere configuración del proyecto Firebase)
+- [x] Pruebas unitarias JVM: resultado fechado en `docs/UI_UX_VALIDACION_2026-10-11.md`
 - [ ] Pruebas instrumentadas (`app/src/androidTest/` está vacío)
 - [ ] Soporte offline selectivo
 - [ ] APK / AAB firmado
@@ -613,8 +616,7 @@ cd ..\barber\scripts\verificacion
 .\verificar.ps1 -Proyecto mobile
 ```
 
-Ejecuta, en este orden: `gradle :app:lintDebug`, `:app:testDebugUnitTest` (217 pruebas
-JVM en 40 archivos) y `:app:assembleDebug`. Necesita el **Android SDK** y **Gradle 8.13** — el
+Ejecuta, en este orden: `gradle :app:lintDebug`, `:app:testDebugUnitTest` (suite JVM del repositorio) y `:app:assembleDebug`. Necesita el **Android SDK** y **Gradle 9.6.0** — el
 repo no versiona `gradlew` a propósito, se usa la misma versión declarada en
 `gradle-wrapper.properties`. Si falta alguno, el sandbox lo reporta como **omitido** con
 el motivo, en vez de darlo por bueno.

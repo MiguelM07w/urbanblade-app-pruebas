@@ -79,6 +79,8 @@ fun BookingScreen(
     val services by vm.services.collectAsState()
     val barbers by vm.barbers.collectAsState()
     val slots by vm.slots.collectAsState()
+    val slotsLoading by vm.slotsLoading.collectAsState()
+    val slotsError by vm.slotsError.collectAsState()
     val busy by vm.busy.collectAsState()
     val error by vm.error.collectAsState()
     val waitlistJoined by vm.waitlistJoined.collectAsState()
@@ -168,6 +170,7 @@ fun BookingScreen(
     val selectedService = services.firstOrNull { it.id == serviceId }
     // Si llega desde el Muro de Inspiración trae el id del usuario del barbero: se traduce al de su perfil.
     LaunchedEffect(barbers) {
+        if (barberId.isBlank()) barbers.firstOrNull { it.esFavorito }?.let { barberId = it.id }
         resolveBarberId(barbers, barberId)?.let { resolved -> if (resolved != barberId) barberId = resolved }
     }
     val selectedBarber = barbers.firstOrNull { it.id == barberId }
@@ -222,7 +225,10 @@ fun BookingScreen(
 
     Scaffold(
         containerColor = Color.Transparent,
-        topBar = { UrbanTopBar(title = "", onBack = onBack) }
+        topBar = { UrbanTopBar(title = "", onBack = {
+            if (step.ordinal > firstStep.ordinal) step = BookingStep.entries[step.ordinal - 1]
+            else onBack()
+        }) }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             BookingHeader(
@@ -243,6 +249,15 @@ fun BookingScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 18.dp)
             ) {
+                if (step == BookingStep.SCHEDULE && slotsLoading) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                    Text("Consultando horarios…", color = UrbanColors.Muted)
+                }
+                if (step == BookingStep.SCHEDULE) slotsError?.let {
+                    UrbanErrorBanner(it)
+                    UrbanOutlineButton("Reintentar horarios", { vm.loadSlots(barberId, serviceId, date) },
+                        enabled = !slotsLoading, modifier = Modifier.fillMaxWidth())
+                }
                 when (step) {
                     BookingStep.SERVICE -> Column {
                         if (initialBarberId != null && selectedBarber != null && barbers.size > 1) {
@@ -261,7 +276,8 @@ fun BookingScreen(
                         slots = slots,
                         time = time,
                         onTimeChange = { time = it },
-                        showEmptyState = slotsRequested && slots.isEmpty(),
+                        showEmptyState = slotsRequested && !slotsLoading && slotsError == null && slots.isEmpty(),
+                        loading = slotsLoading,
                         waitlistJoined = waitlistJoined,
                         onJoinWaitlist = { vm.joinWaitlist(barberId, serviceId, date) }
                     )
@@ -319,7 +335,7 @@ fun BookingScreen(
                             )
                         }
                     }
-                    Text("${UrbanFormat.moneyShort(visitTotal)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                    Text("${UrbanFormat.moneyShort(visitTotal)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.GoldText)
                 }
             }
             if (step == BookingStep.PAY) {
@@ -424,7 +440,7 @@ private fun BookingHeader(step: BookingStep, summary: String?) {
                 Text(
                     s.label,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (s == step) UrbanColors.Gold else UrbanColors.Muted,
+                    color = if (s == step) UrbanColors.GoldText else UrbanColors.Muted,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -593,6 +609,7 @@ private fun CalendarStep(
     time: String,
     onTimeChange: (String) -> Unit,
     showEmptyState: Boolean,
+    loading: Boolean,
     waitlistJoined: Boolean,
     onJoinWaitlist: () -> Unit
 ) {
@@ -675,7 +692,8 @@ private fun CalendarStep(
                     UrbanInfoBanner("Ya te anotamos en la lista de espera para este día.", Icons.Default.NotificationsActive)
                 }
             }
-            else -> UrbanSkeletonList(2)
+            loading -> UrbanSkeletonList(2)
+            else -> Unit
         }
     }
 }
@@ -740,13 +758,13 @@ private fun ExtrasStep(
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(p.nombre, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text("${UrbanFormat.moneyShort(p.precioVenta)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
+                            Text("${UrbanFormat.moneyShort(p.precioVenta)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.GoldText)
                         }
                         if (qty == 0) {
                             TextButton(onClick = { onQuantity(p.id, 1) }) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp), tint = UrbanColors.Gold)
                                 Spacer(Modifier.width(4.dp))
-                                Text("Agregar", color = UrbanColors.Gold)
+                                Text("Agregar", color = UrbanColors.GoldText)
                             }
                         } else {
                             IconButton(onClick = { onQuantity(p.id, qty - 1) }) { Icon(Icons.Default.Remove, "Quitar uno", tint = UrbanColors.Gold) }
@@ -815,7 +833,7 @@ private fun ReviewStep(
             UrbanHeroLabel("Tu cita")
             Spacer(Modifier.height(6.dp))
             Text(time.takeIf { it.isNotBlank() }?.let { UrbanFormat.time(it) } ?: "—", style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
-            Text(UrbanFormat.date(date), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+            Text(UrbanFormat.date(date), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
             Spacer(Modifier.height(14.dp))
             HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
             Spacer(Modifier.height(12.dp))
@@ -836,7 +854,7 @@ private fun ReviewStep(
                 extras.forEach { (p, qty) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                         Text("${p.nombre}${if (qty > 1) " ×$qty" else ""}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink, modifier = Modifier.weight(1f))
-                        Text("${UrbanFormat.moneyShort(p.precioVenta * qty)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
+                        Text("${UrbanFormat.moneyShort(p.precioVenta * qty)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.GoldText)
                     }
                 }
             }

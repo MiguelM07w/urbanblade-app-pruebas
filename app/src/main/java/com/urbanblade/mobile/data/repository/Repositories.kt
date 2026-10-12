@@ -15,7 +15,9 @@ class AuthRepository(
 ) {
     suspend fun login(email: String, password: String): AuthUser {
         val response = api.login(LoginRequest(email, password))
+        session.clear()
         session.saveToken(response.token)
+        session.saveUser(response.user)
         return response.user
     }
 
@@ -23,13 +25,17 @@ class AuthRepository(
         val response = api.register(
             RegisterRequest(name, email, password, password)
         )
+        session.clear()
         session.saveToken(response.token)
+        session.saveUser(response.user)
         return response.user
     }
 
     suspend fun googleLogin(idToken: String): AuthUser {
         val response = api.googleLogin(GoogleLoginRequest(idToken))
+        session.clear()
         session.saveToken(response.token)
+        session.saveUser(response.user)
         return response.user
     }
 
@@ -46,7 +52,7 @@ class AuthRepository(
      * no se pudo confirmar con el servidor (sin red o error del servidor): la sesión sigue viva y
      * la app lo avisa, en vez de mostrar la pantalla de acceso como si se hubiera cerrado.
      */
-    data class RestoredSession(val user: AuthUser?, val fromCache: Boolean = false)
+    data class RestoredSession(val user: AuthUser?, val fromCache: Boolean = false, val retryRequired: Boolean = false)
 
     suspend fun restoreSession(): RestoredSession {
         if (session.currentToken().isNullOrBlank()) return RestoredSession(null)
@@ -60,11 +66,13 @@ class AuthRepository(
                 session.clear()
                 RestoredSession(null)
             } else {
-                session.cachedUser()?.let { RestoredSession(it, fromCache = true) } ?: RestoredSession(null)
+                session.cachedUser()?.let { RestoredSession(it, fromCache = true) } ?: RestoredSession(null, retryRequired = true)
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (_: Exception) {
             // Sin red (o tiempo agotado): se entra con el resumen guardado.
-            session.cachedUser()?.let { RestoredSession(it, fromCache = true) } ?: RestoredSession(null)
+            session.cachedUser()?.let { RestoredSession(it, fromCache = true) } ?: RestoredSession(null, retryRequired = true)
         }
     }
 
@@ -80,6 +88,11 @@ class AuthRepository(
 }
 
 class UrbanRepository(private val api: UrbanBladeApi) {
+    suspend fun favoriteBarber(id: String?) = api.favoriteBarber(FavoriteBarberRequest(id))
+    suspend fun membershipCard() = api.membershipCard()
+    suspend fun buyPackage(id: String) = api.packageStripeIntent(PackagePurchaseRequest(id)).data
+    suspend fun buyGiftCard(amount: Double, recipient: String?) =
+        api.giftCardStripeIntent(CashGiftCardRequest(amount, destinatarioEmail = recipient)).data
     suspend fun dashboard() = api.dashboard()
     suspend fun services() = api.services().data
     suspend fun barbers() = api.barbers().data

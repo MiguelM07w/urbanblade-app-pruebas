@@ -50,7 +50,7 @@ fun AiBriefingCard(modifier: Modifier = Modifier, vm: AiBriefingViewModel = view
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AutoAwesome, null, tint = UrbanColors.Gold, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Resumen del día", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                    Text("Resumen del día", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                     Spacer(Modifier.weight(1f))
                     Text(
                         if (current.source == "ia") "Bladebot" else "Automático",

@@ -167,7 +167,7 @@ private fun ToConfirmRow(appt: ReceptionAppointment, onClick: () -> Unit) {
                     .background(UrbanColors.Gold.copy(alpha = 0.14f))
                     .padding(horizontal = 10.dp, vertical = 8.dp)
             ) {
-                Text(UrbanFormat.time(appt.hora), style = MaterialTheme.typography.titleSmall, color = UrbanColors.Gold)
+                Text(UrbanFormat.time(appt.hora), style = MaterialTheme.typography.titleSmall, color = UrbanColors.GoldText)
             }
         },
         trailing = { Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted) }

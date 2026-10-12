@@ -97,7 +97,7 @@ private fun InsightCard(insight: AnalyticsInsightItem) {
 private fun SectionContent(section: AnalyticsSection) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         section.subtitulo?.let {
-            Text(it, style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+            Text(it, style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
         }
         section.intro?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
@@ -162,7 +162,7 @@ fun AnalyticsScreen(onBack: () -> Unit, vm: AnalyticsViewModel = viewModel()) {
                     }
                     data.ultimaActualizacion?.let {
                         Spacer(Modifier.height(10.dp))
-                        Text("Actualizado: $it", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+                        Text("Actualizado: $it", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
                     }
                 }
             }

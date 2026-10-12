@@ -118,7 +118,7 @@ fun OrdersScreen(user: AuthUser, onBack: () -> Unit, vm: OrdersViewModel = viewM
                 state.stats?.let { stats ->
                     item {
                         UrbanPremiumCard(Modifier.fillMaxWidth()) {
-                            Text("POR COBRAR", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                            Text("POR COBRAR", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                             Text(moneyShort(stats.porCobrar), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
                             Text("en pedidos pendientes de entregar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
                             HorizontalDivider(Modifier.padding(vertical = 10.dp), color = UrbanColors.Line)

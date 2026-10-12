@@ -7,6 +7,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -32,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +54,10 @@ import com.urbanblade.mobile.ui.theme.mascot
  * (crear cuenta o entrar). Si la sesión anterior venció, lo avisa.
  */
 @Composable
-fun WelcomeScreen(onRegister: () -> Unit, onLogin: () -> Unit, sessionExpired: Boolean = false) {
+fun WelcomeScreen(onRegister: () -> Unit, onLogin: () -> Unit, sessionExpired: Boolean = false, onExplore: (() -> Unit)? = null) {
+    val container = LocalWindowInfo.current.containerSize
+    val density = LocalDensity.current
+    val compact = with(density) { container.width.toDp() < 360.dp || container.height.toDp() < 680.dp || fontScale > 1.15f }
     // La mascota "flota" muy despacio; con "Quitar animaciones" del sistema se queda quieta.
     val transition = rememberInfiniteTransition(label = "float")
     val bob by transition.animateFloat(
@@ -68,35 +75,35 @@ fun WelcomeScreen(onRegister: () -> Unit, onLogin: () -> Unit, sessionExpired: B
                 .padding(horizontal = 28.dp, vertical = 18.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            StaggerIn(0) { UrbanBrandMark() }
-            Spacer(Modifier.height(26.dp))
+            StaggerIn(0) { UrbanBrandMark(compact = compact) }
+            Spacer(Modifier.height(if (compact) 16.dp else 26.dp))
 
             StaggerIn(1) {
                 Text(
                     "MÁS QUE UN CORTE",
                     style = MaterialTheme.typography.labelMedium,
-                    color = UrbanColors.Gold,
+                    color = UrbanColors.GoldText,
                     fontWeight = FontWeight.Bold
                 )
             }
             Spacer(Modifier.height(12.dp))
 
             Box(Modifier.fillMaxWidth().weight(1f)) {
-                StaggerIn(2, Modifier.align(Alignment.TopStart)) {
-                    Column(Modifier.fillMaxWidth(0.76f)) {
-                        Text(
-                            "Tu estilo. Tu tiempo.",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = UrbanColors.Ink,
-                            modifier = Modifier.semantics { heading() }
-                        )
+                if (compact) {
+                    // A 320 dp o con fuente ampliada la mascota no se superpone al texto.
+                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        WelcomeCopy(Modifier.fillMaxWidth())
                         Spacer(Modifier.height(12.dp))
-                        Text(
-                            "Reserva con tu barbero favorito, compra lo mejor y disfruta de tus beneficios.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = UrbanColors.Muted,
+                        Image(
+                            painter = painterResource(UrbanColors.current.mascot(MascotMood.WELCOME)),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.align(Alignment.End).size(140.dp)
                         )
                     }
+                } else {
+                StaggerIn(2, Modifier.align(Alignment.TopStart)) {
+                    WelcomeCopy(Modifier.fillMaxWidth(0.76f))
                 }
                 StaggerIn(3, Modifier.align(Alignment.BottomEnd)) {
                     Image(
@@ -110,6 +117,7 @@ fun WelcomeScreen(onRegister: () -> Unit, onLogin: () -> Unit, sessionExpired: B
                             .size(220.dp)
                             .graphicsLayer { translationY = bob.dp.toPx() }
                     )
+                }
                 }
             }
             Spacer(Modifier.height(14.dp))
@@ -131,13 +139,29 @@ fun WelcomeScreen(onRegister: () -> Unit, onLogin: () -> Unit, sessionExpired: B
                         onClick = onLogin,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
                     ) {
-                        Text("Iniciar sesión", color = UrbanColors.Gold, fontWeight = FontWeight.Bold)
+                        Text("Iniciar sesión", color = UrbanColors.GoldText, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.size(8.dp))
                         androidx.compose.material3.Icon(Icons.Default.Login, contentDescription = null, tint = UrbanColors.Gold)
                     }
                 }
             }
+            onExplore?.let { explore ->
+                TextButton(onClick = explore, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text("Ver servicios sin iniciar sesión", color = UrbanColors.Muted)
+                }
+            }
             Spacer(Modifier.height(4.dp))
         }
+    }
+}
+
+@Composable
+private fun WelcomeCopy(modifier: Modifier) {
+    Column(modifier) {
+        Text("Tu estilo. Tu tiempo.", style = MaterialTheme.typography.displaySmall,
+            color = UrbanColors.Ink, modifier = Modifier.semantics { heading() })
+        Spacer(Modifier.height(12.dp))
+        Text("Reserva con tu barbero favorito, compra lo mejor y disfruta de tus beneficios.",
+            style = MaterialTheme.typography.bodyLarge, color = UrbanColors.Muted)
     }
 }

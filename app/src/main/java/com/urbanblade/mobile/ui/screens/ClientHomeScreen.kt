@@ -250,7 +250,7 @@ private fun NextAppointmentCard(next: AppointmentRow, onClick: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         Text(UrbanFormat.time(next.horaInicio), style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
-        Text(UrbanFormat.date(next.fecha), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+        Text(UrbanFormat.date(next.fecha), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
         Spacer(Modifier.height(16.dp))
         HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
         Spacer(Modifier.height(14.dp))
@@ -270,7 +270,7 @@ private fun NextAppointmentCard(next: AppointmentRow, onClick: () -> Unit) {
                 )
             }
             (next.precioCobrado ?: next.service?.precio)?.let {
-                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
             }
         }
     }

@@ -64,7 +64,7 @@ fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewM
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text("${cart.values.sum()} artículos", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
-                            Text("${UrbanFormat.money(total)} MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                            Text("${UrbanFormat.money(total)} MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.GoldText)
                         }
                         UrbanPrimaryButton(
                             text = "Pedir",

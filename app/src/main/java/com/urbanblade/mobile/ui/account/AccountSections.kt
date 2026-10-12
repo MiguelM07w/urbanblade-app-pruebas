@@ -298,7 +298,7 @@ private fun ThemeSwatch(theme: UrbanTheme, selected: Boolean, onClick: () -> Uni
         Text(
             theme.label,
             style = MaterialTheme.typography.bodySmall,
-            color = if (selected) UrbanColors.Gold else UrbanColors.Muted,
+            color = if (selected) UrbanColors.GoldText else UrbanColors.Muted,
             textAlign = TextAlign.Center,
             modifier = Modifier.width(66.dp)
         )

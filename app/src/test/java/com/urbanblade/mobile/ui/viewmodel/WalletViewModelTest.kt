@@ -55,7 +55,7 @@ class WalletViewModelTest {
     }
 
     @Test
-    fun `load tolera que una fuente falle sin marcar error global`() = runTest(dispatcher) {
+    fun `load avisa si una fuente falla sin descartar las otras`() = runTest(dispatcher) {
         whenever(repo.myMembership()).thenThrow(RuntimeException("sin membresía"))
 
         val vm = WalletViewModel(repo)
@@ -63,7 +63,7 @@ class WalletViewModelTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertNull(vm.data.value.membership)
-        assertNull(vm.error.value)
+        org.junit.Assert.assertNotNull(vm.error.value)
     }
 
     @Test
@@ -76,6 +76,20 @@ class WalletViewModelTest {
 
         assertEquals(1, vm.data.value.giftCards.size)
         assertEquals("GC1", vm.data.value.giftCards.first().code)
+    }
+
+    @Test
+    fun `recarga sin red conserva tarjetas previas y ofrece error`() = runTest(dispatcher) {
+        whenever(repo.myGiftCards()).thenReturn(listOf(GiftCard(code = "GC1", saldo = 100.0)))
+        val vm = WalletViewModel(repo)
+        vm.load()
+        dispatcher.scheduler.advanceUntilIdle()
+        whenever(repo.myGiftCards()).thenAnswer { throw java.io.IOException("offline") }
+        vm.load()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals("GC1", vm.data.value.giftCards.single().code)
+        org.junit.Assert.assertNotNull(vm.error.value)
+        assertTrue(!vm.loading.value)
     }
 
     @Test

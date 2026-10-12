@@ -1,137 +1,55 @@
-# Verificación manual P0 — códigos de error y red lenta
+# Verificación UI/UX del contrato móvil actual
 
-Checklist para ejecutar en Android Studio con emulador (este entorno de desarrollo
-asistido no tiene `adb`/emulador disponible, así que estos pasos no fueron ejecutados
-por el agente — quedan pendientes de que el equipo los corra).
+Esta lista reemplaza los recorridos antiguos de cinco pestañas y catálogo inicial. Ver `UI_UX_CONTRATO_MOVIL.md` y `UI_UX_VALIDACION_2026-10-11.md`.
 
-Cómo simular cada código sin depender de que Laravel lo produzca naturalmente: usar el
-proxy de Charles/mitmproxy, o temporalmente devolver el código deseado desde un
-endpoint de prueba en `barber` (revertir después), o desconectar la red a mitad de una
-petición para el caso de "red lenta"/timeout.
+## Entorno seguro
 
-## Login (`LoginScreen`, `AuthViewModel.login`)
+Usar emulador/cuenta de prueba. No provocar errores, pagos o mantenimiento en producción ni cerrar la sesión de un teléfono personal.
 
-| Código | Cómo forzarlo | Resultado esperado en la UI |
-|---|---|---|
-| 401 | credenciales incorrectas reales | "Credenciales incorrectas o sesión vencida." |
-| 403 | usuario sin verificar correo (ver `EnsureEmailIsVerified` en `barber`) | "Debes verificar tu correo para iniciar sesión." |
-| 422 | enviar email vacío/formato inválido | "Revisa los datos capturados." |
-| 429 | 6+ intentos fallidos seguidos (throttle de Laravel) | "Demasiados intentos. Intenta de nuevo más tarde." |
-| 503 | `php artisan down` en `barber` | "UrbanBlade está en mantenimiento." |
-| Red lenta | Network Link Conditioner / throttling en el emulador a <50kbps | El botón muestra el spinner de `busy` sin trabarse; tras el timeout de OkHttp (20s conexión / 30s lectura, `AppContainer.kt`) debe mostrar un mensaje de error, no quedarse cargando indefinidamente |
+Para revisar la interfaz sin backend real:
 
-## Registro (`RegisterScreen`, `AuthViewModel.register`)
+```powershell
+python scripts/ui-audit/fixture_server.py
+gradle :app:assembleDebug -PUI_AUDIT=true -PDEBUG_API_BASE_URL=http://10.0.2.2:18765/api/v1/
+adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5554 shell am start -n com.urbanblade.mobile.audit/com.urbanblade.mobile.MainActivity
+```
 
-- 422 con email ya registrado → mensaje del backend visible vía `UrbanErrorBanner`.
-- 429 tras múltiples registros seguidos → mismo mensaje de "Demasiados intentos".
+`.audit` tiene datos separados. La API sintética solo escucha en localhost y no crea cobros. Esta prueba verifica UI; persistencia real, OAuth y webhook requieren integración.
 
-## Google Sign-In (`GoogleAuthHelper`, ambas pantallas)
+Para un dispositivo por USB, compilar con `-PDEBUG_API_BASE_URL=http://127.0.0.1:18765/api/v1/` y ejecutar `adb -s <dispositivo-QA> reverse tcp:18765 tcp:18765`. Instalar únicamente la variante `.audit`.
 
-- Cancelar el selector de cuentas → "Selecciona una cuenta de Google para continuar o inicia con correo."
-- Sin Google Play Services / cuenta no disponible → "No pudimos abrir Google. Revisa tu conexión o intenta de nuevo."
-- Requiere `GOOGLE_CLIENT_ID` real en `local.properties` para probar el flujo completo (ver README).
+## Acceso y sesión
 
-## Creación de cita (`BookingScreen`, `BookingViewModel.create`)
+- Bienvenida: crear cuenta, iniciar sesión y consultar servicios. Selección de invitado retomada después del acceso.
+- Registro: datos/consentimiento → contraseña; Atrás superior/sistema vuelve a datos. Recrear conserva datos/consentimiento y borra contraseñas.
+- Error/cancelación de Google visible en paso 1. Teclado: campo y acción alcanzables.
+- Primer acceso → reinicio sin red: resumen y aviso. Token antiguo sin caché: reintento.
+- Reintentar desde una pantalla secundaria conserva navegación.
+- 401/403/422/429/503/timeouts: mensajes apropiados, sin confundir permisos con sesión vencida.
 
-- 422 si el horario ya no está disponible (carrera con otro cliente) → error visible antes de "confirmar" cambios de estado en la UI.
-- 503 con `php artisan down` → error de mantenimiento visible.
+Para responder con errores sin cambiar Laravel:
 
-## Carga de dashboard (`DashboardScreen`)
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:18765/_qa/control -ContentType application/json -Body '{"status":503}'
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:18765/_qa/control -ContentType application/json -Body '{"status":200}'
+```
 
-- Red lenta → el `busy`/`loading` state no debe dejar la pantalla en blanco indefinidamente; confirmar que aparece un estado de carga/skeleton, no un crash.
-- 401 con token expirado/revocado → la app debe regresar a `AuthState.Guest` (ver `AuthRepository.restoreSession`, que limpia la sesión en 401) y mostrar la pantalla de login, no un error genérico.
+## Cliente
 
-## Insets/teclado (P0 #1, complementa las pruebas automatizadas)
+- Cuatro pestañas: Inicio / Reservar / Mis citas / Cuenta; Beneficios/facturas/pedidos desde Cuenta.
+- Favorito: guardar/quitar, recargar, preseleccionar sin reemplazar selección explícita.
+- Reserva: cuatro pasos; carga/error/reintento de horarios, sin lista de espera durante consulta. Cambios rápidos no dejan horarios anteriores. Atrás coherente.
+- Citas: próximas/historial, reagendar/cancelar con políticas reales y confirmación de acciones destructivas.
+- Checkout: cancelar, fallar y reintentar; no prometer cobro/beneficio antes del servidor.
+- Beneficios: carga parcial conserva datos; compra de paquetes/tarjetas regalo, espera de webhook y actualización.
+- PDF: descarga autenticada y visor; errores y ausencia de visor con instrucciones.
 
-Confirmar en un dispositivo/emulador con teclado en pantalla que ningún campo queda
-tapado al enfocarlo, en particular:
+## Personal y accesibilidad
 
-- `ClientsScreens.kt` → diálogo "Nuevo cliente" (4 campos, el de contraseña es el más bajo)
-- `InventoryScreens.kt` → diálogo "Nuevo/editar producto" (7 campos, el peor caso)
-- `UsersScreen.kt` → diálogo de usuario del sistema
-- `CampaignsScreen.kt` → diálogo "Nueva campaña" (el campo "Mensaje" es multilínea)
-- `BarberPortfolioScreen.kt` → diálogo "Subir trabajo"
-- `ReportsScreen.kt` → campos de rango de fechas
-- Pantallas ya cubiertas por `AuthShell` (login/registro/recuperar contraseña) — confirmar que siguen funcionando igual después de este cambio, no solo las nuevas.
+- Roles administrador/recepción/barbero/ingeniero y cuentas mixtas: navegación y permisos correctos.
+- Bladebot adecuado al rol y sin ocultar último contenido.
+- Cuatro temas, 320 dp, fuente ampliada, teclado y recreación: acciones alcanzables y contraste legible.
+- TalkBack: nombres, favorito con estado, orden de foco y errores; no depender solo del color.
 
-## Rebanada de cliente, parte 1 — navegación, catálogo/reserva, citas, wallet
-
-Igual que arriba: sin `adb`/emulador en este entorno, ninguno de estos flujos fue
-ejecutado por el agente. Checklist para Android Studio.
-
-### Navegación por rol
-
-- Iniciar sesión como `cliente`: la barra inferior debe mostrar Inicio, Explorar, Mis
-  citas, Wallet, Perfil (5 items).
-- Iniciar sesión como `administrador`/`recepcionista`/`barbero`: la barra debe seguir
-  igual que antes (Inicio, Citas, Más, Perfil) — confirmar que NO cambió para estos roles.
-
-### Catálogo como invitado + selección preservada
-
-- Cerrar sesión (o instalar limpio). La app debe abrir directo en el catálogo (no en
-  login), con el aviso "Explora como invitado…" visible.
-- Tocar un servicio específico → debe pedir iniciar sesión/crear cuenta.
-- Iniciar sesión (o registrarse) → debe navegar directo al wizard de reserva con ese
-  servicio ya preseleccionado en el paso 1 (confirmar que `PendingBooking` se consumió
-  correctamente y no persiste en una sesión posterior).
-- Repetir tocando un barbero específico en vez de un servicio.
-- Desde el catálogo de invitado, botón "Ya tengo cuenta, iniciar sesión" debe llevar a
-  login sin pasar por ninguna selección pendiente.
-
-### Wizard visual de reserva
-
-- Los 4 pasos (servicio → profesional → calendario → revisión) deben verse uno a la vez,
-  con la barra de progreso avanzando y "Atrás" funcionando en cada paso.
-- Elegir un día sin horarios disponibles → debe aparecer el banner "Sin horarios este
-  día" con el botón "Unirme a la lista de espera"; confirmar que el botón desaparece
-  (o cambia a "ya anotado") tras usarlo.
-- Confirmar una cita real de punta a punta y verificar que aparece en "Mis citas".
-
-### Reagendar, cancelar por política, lista de espera
-
-- En "Mis citas", una cita `pendiente`/`confirmada` y futura debe mostrar "Reagendar" y
-  "Cancelar cita"; una `completada`/`cancelada` no debe mostrar ninguno de los dos.
-- Reagendar: la hoja debe precargar el barbero actual de la cita, permitir cambiar
-  fecha/hora, y mostrar el error real del servidor si la cita ya no es gestionable.
-- Cancelar una cita dentro de la ventana de política (< horas configuradas en
-  `BarbershopSetting.politica_cancelacion`) → debe mostrar el mensaje exacto de Laravel
-  ("Solo puedes cancelar con al menos N horas de anticipación."), no un mensaje genérico.
-- Confirmar que "Mi lista de espera" aparece en Mis citas solo para el rol cliente, y que
-  "Salir" realmente quita la entrada tras recargar.
-
-### Wallet
-
-- Cargar la pestaña Wallet como cliente sin membresía/paquetes/gift cards/referidos
-  reales todavía — debe mostrar los estados vacíos ("Sin membresía activa", etc.) sin
-  errores, no una pantalla en blanco o un crash.
-- Con datos reales de prueba (crear un paquete/membresía/gift card manualmente en
-  `barber` para un cliente de prueba), confirmar que los montos, usos restantes y fechas
-  se ven correctos.
-- "Cancelar membresía" → confirmar el diálogo, verificar que el estado pasa a
-  "se cancelará al finalizar el periodo" sin quitar el acceso inmediato.
-- Botón de copiar código de referido → confirmar que efectivamente copia al portapapeles.
-
-## Checkout de citas (Stripe: tarjeta/transferencia + propina + recibo)
-
-Sin `adb`/emulador aquí: el `PaymentSheet` real de Stripe no se puede ejercitar en este
-entorno. Requiere `STRIPE_PUBLISHABLE_KEY` real en `local.properties` (ver README) antes
-de poder probar nada de esto.
-
-- En "Mis citas", una cita `confirmada`/`en_proceso`/`completada` sin pago debe mostrar
-  el botón "Pagar cita"; una que ya tiene pago (`hasPayment=true`) no debe mostrarlo.
-- Tarjeta: al tocar "Continuar con tarjeta" debe abrir el `PaymentSheet` de Stripe.
-  Con la tarjeta de prueba `4242 4242 4242 4242` (cualquier fecha futura/CVC), tras
-  completar el pago debe aparecer "Confirmando tu pago…" y, en unos segundos, la hoja
-  debe cerrarse sola y la cita debe mostrar el pago reflejado (esto depende de que el
-  webhook de Stripe llegue a `barber` — probar con `stripe listen --forward-to` si se
-  usa un backend local, o contra un entorno con webhook ya configurado).
-- Cancelar el `PaymentSheet` a medio camino → la hoja de checkout debe seguir
-  disponible, sin quedar en un estado roto.
-- Transferencia: elegir un comprobante (foto), tocar "Subir comprobante" → debe
-  responder 201 y la cita debe reflejar el pago "en revisión" hasta que un admin/
-  recepción lo apruebe desde el panel de pagos existente.
-- Propina: probar cada chip (0%/10%/15%/otro monto) y confirmar que el resumen mostrado
-  cambia; confirmar en el recibo final (pantalla de Pagos) que la propina registrada
-  coincide con la elegida.
-- Código de gift card inválido → debe mostrar el error real del servidor ("El código de
-  la tarjeta de regalo no es válido o ya no tiene saldo."), no un mensaje genérico.
+Registrar versión, dispositivo, entorno y evidencia por caso. No marcar como validado un recorrido solo por leer el código o compilarlo.
