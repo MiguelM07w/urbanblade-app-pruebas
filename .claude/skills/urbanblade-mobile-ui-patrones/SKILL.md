@@ -299,3 +299,12 @@ fuera del catálogo ni con una hora sin respuesta vigente para servicio/barbero/
 requiere volver a validarla. Cambiar servicio amplía el recorrido para que Atrás
 superior, inferior y sistema vuelvan por el mismo paso; durante la reserva no se
 cambia de paso. El resumen es estimado: Laravel confirma el importe y beneficios.
+
+### Mis citas recuperable (12-oct-2026, TT32 / HT-12)
+
+Actualizar conserva las citas visibles mientras consulta. Cargar más debe estar
+accesible en Próximas e Historial y deshabilitado durante una consulta; los conteos
+parciales se identifican como páginas cargadas. La próxima cita usa `response.next`
+de Laravel cuando está disponible. Una recarga cancela la paginación anterior y
+un reintento correcto limpia su error. Acciones con FlowRow y objetivos de 48 dp,
+sin cambiar los permisos ni inferir pagos del estado de la cita.

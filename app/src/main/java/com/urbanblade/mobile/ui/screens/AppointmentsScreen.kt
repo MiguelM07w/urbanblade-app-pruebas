@@ -312,6 +312,7 @@ fun AppointmentsScreen(user: AuthUser, onBook: () -> Unit, vm: AppointmentsViewM
                     UrbanOutlineButton(
                         text = if (loadingMore) "Cargando…" else "Cargar más citas",
                         onClick = { vm.loadMore() },
+                        enabled = !loading && !loadingMore,
                         icon = Icons.Default.ExpandMore,
                         modifier = Modifier.fillMaxWidth()
                     )

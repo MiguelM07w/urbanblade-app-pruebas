@@ -95,3 +95,22 @@ La aceptación de integración requiere cuenta QA y entorno de prueba: OAuth Goo
 - El regreso permite cambiar el servicio y respeta los pasos visitados; se bloquea mientras se registra la reserva. El resumen muestra «Total estimado».
 - Validación final local: 321 casos JVM, 320 aprobados, 1 omitido y 0 fallos/errores; lint 0 errores, 32 advertencias y 4 hints. assembleDebug aprobado contra https://api.urbanblade.com.mx/api/v1/ en el paquete habitual.
 - La instalación y revisión visual de este APK en el teléfono siguen pendientes de reconexión. No se crearon/cancelaron citas ni se realizaron cobros.
+
+## Continuación: Mis citas (12-oct-2026)
+
+- Actualizar conserva las citas ya visibles; la paginación está accesible en Próximas e Historial y muestra cuándo los conteos son parciales.
+- La tarjeta prioriza la próxima cita informada por Laravel (`next`). Si solo existe una lista parcial, evita presentarla como agenda completa.
+- Actualizar cancela consultas antiguas, evita peticiones de página duplicadas y limpia el error tras reintentar. Estas reglas y el bloqueo de Cargar más también aplican al personal.
+- Acciones adaptables con FlowRow, objetivos de 48 dp y texto GoldText. No cambian permisos, pagos ni rutas.
+- La revisión visual en teléfono y la instalación se aplazan hasta el regreso y reconexión del usuario; no se crearon/cancelaron citas ni se realizaron cobros reales.
+
+### Revisión al reconectar el teléfono
+
+1. Instalar el APK del paquete habitual con actualización (`adb install -r`), conservando datos y sesión; no desinstalar ni borrar almacenamiento.
+2. Abrir Mis citas y comprobar que la tarjeta destacada coincide con la próxima cita del backend. Alternar Próximas e Historial; si hay más páginas, Cargar más debe estar disponible en ambas.
+3. Tocar Actualizar: la lista visible se conserva durante la consulta. Cargar más no debe generar peticiones duplicadas mientras está ocupado.
+4. Revisar fuente grande y pantalla estrecha: Reservar/Actualizar y Reagendar/Cancelar/Reservar de nuevo deben acomodarse y conservar sus etiquetas. Probar foco y lectura con TalkBack.
+5. Sin confirmar operaciones reales, revisar error y recuperación de conexión. No crear/cancelar/reagendar citas ni realizar cobros en esta aceptación sin una autorización adicional específica.
+6. El build local y CI no sustituyen OAuth Google real, validación visual de todos los roles, Stripe/webhook ni preparación de un AAB release para Play.
+
+Validación local de Mis citas: 324 casos JVM, 323 aprobados, 1 omitido y 0 fallos/errores. Las 24 pruebas de gestión de citas pasaron, incluidas recuperación de página, cancelación de respuestas antiguas y recargas concurrentes. Lint: 0 errores, 32 advertencias y 4 hints de mantenimiento. Build del paquete habitual contra la API publicada aprobado. La aceptación visual y de integración en teléfono se mantiene separada.

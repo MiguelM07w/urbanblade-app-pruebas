@@ -62,3 +62,12 @@ teléfono de esta continuación queda aplazada a la reconexión solicitada por e
   beneficios y permisos. Los productos mantienen su pago aparte en el salón.
 - Web aplica la misma experiencia de roles al asistente y permite reintentar
   disponibilidad sin perder servicio/barbero. No cambian rutas ni payloads.
+
+### Mis citas recuperable (12-oct-2026, TT32 / HT-12)
+
+Actualizar conserva las citas visibles mientras consulta. Cargar más debe estar
+accesible en Próximas e Historial y deshabilitado durante una consulta; los conteos
+parciales se identifican como páginas cargadas. La próxima cita usa `response.next`
+de Laravel cuando está disponible. Una recarga cancela la paginación anterior y
+un reintento correcto limpia su error. Acciones con FlowRow y objetivos de 48 dp,
+sin cambiar los permisos ni inferir pagos del estado de la cita.

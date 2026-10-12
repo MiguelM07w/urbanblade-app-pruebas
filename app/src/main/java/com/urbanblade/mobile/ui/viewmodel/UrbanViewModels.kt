@@ -9,6 +9,9 @@ import com.urbanblade.mobile.data.model.*
 import com.urbanblade.mobile.data.repository.UrbanRepository
 import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -207,6 +210,8 @@ class AppointmentsViewModel @JvmOverloads constructor(
     private val _loadingMore = MutableStateFlow(false)
     val loadingMore = _loadingMore.asStateFlow()
     private var page = 1
+    private var listRequest: Job? = null
+    private var pageRequest: Job? = null
 
     private val _month = MutableStateFlow<List<AppointmentRow>>(emptyList())
     /** Citas del mes que muestra el calendario. */
@@ -215,33 +220,46 @@ class AppointmentsViewModel @JvmOverloads constructor(
     val monthLoading = _monthLoading.asStateFlow()
     private var currentMonth: java.time.YearMonth? = null
 
-    fun load() = viewModelScope.launch {
-        _loading.value = true; _error.value = null
-        try {
-            val response = repo.appointments(page = 1, perPage = PAGE_SIZE)
-            page = 1
-            _data.value = response
-            // Un servidor sin paginación no manda `meta`: se trata como lista completa.
-            _hasMore.value = response.meta?.hasMore == true
+    fun load() {
+        pageRequest?.cancel()
+        _loadingMore.value = false
+        listRequest?.cancel()
+        listRequest = viewModelScope.launch {
+            _loading.value = true; _error.value = null
+            try {
+                val response = repo.appointments(page = 1, perPage = PAGE_SIZE)
+                coroutineContext.ensureActive()
+                page = 1
+                _data.value = response
+                // Un servidor sin paginación no manda `meta`: se trata como lista completa.
+                _hasMore.value = response.meta?.hasMore == true
+            }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar las citas.") }
+            finally { _loading.value = false }
+            currentMonth?.let { loadMonth(it) }
         }
-        catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar las citas.") }
-        finally { _loading.value = false }
-        currentMonth?.let { loadMonth(it) }
     }
 
     /** Trae la página siguiente (citas más antiguas) y la agrega al final de la lista. */
-    fun loadMore() = viewModelScope.launch {
-        if (_loadingMore.value || !_hasMore.value) return@launch
-        _loadingMore.value = true
-        try {
-            val response = repo.appointments(page = page + 1, perPage = PAGE_SIZE)
-            page += 1
-            val known = _data.value.data.map { it.id }.toSet()
-            _data.value = _data.value.copy(data = _data.value.data + response.data.filter { it.id !in known })
-            _hasMore.value = response.meta?.hasMore == true
-        } catch (e: Exception) {
-            _error.value = e.toFriendlyMessage("No se pudieron cargar más citas.")
-        } finally { _loadingMore.value = false }
+    fun loadMore() {
+        if (_loading.value || listRequest?.isActive == true || pageRequest?.isActive == true || !_hasMore.value) return
+        pageRequest = viewModelScope.launch {
+            _loadingMore.value = true
+            _error.value = null
+            try {
+                val response = repo.appointments(page = page + 1, perPage = PAGE_SIZE)
+                coroutineContext.ensureActive()
+                page += 1
+                val known = _data.value.data.map { it.id }.toSet()
+                _data.value = _data.value.copy(data = _data.value.data + response.data.filter { it.id !in known })
+                _hasMore.value = response.meta?.hasMore == true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _error.value = e.toFriendlyMessage("No se pudieron cargar más citas.")
+            } finally { _loadingMore.value = false }
+        }
     }
 
     /** Carga todas las citas de un mes para el calendario (varias páginas si hace falta). */
