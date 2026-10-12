@@ -14,6 +14,7 @@ import kotlinx.coroutines.runBlocking
 import com.urbanblade.mobile.data.model.PageMeta
 import com.urbanblade.mobile.data.model.AppointmentsResponse
 import com.urbanblade.mobile.data.model.AppointmentRow
+import com.urbanblade.mobile.data.model.NoShowFeesResponse
 import com.urbanblade.mobile.data.model.StripeIntentResponseData
 import com.urbanblade.mobile.data.model.UploadPaymentReceiptData
 import com.urbanblade.mobile.data.model.UploadPaymentReceiptResponse
@@ -175,6 +176,32 @@ class AppointmentsViewModelTest {
 
     private fun appointment(code: String = "abc123", estado: String = "pendiente") =
         AppointmentRow(id = "1", code = code, fecha = "2026-10-01", horaInicio = "10:00:00", estado = estado)
+
+    @Test
+    fun `fallo de consulta no elimina el adeudo y solo el servidor confirma cero`() = runTest(dispatcher) {
+        whenever(repo.noShowFees(anyOrNull()))
+            .thenReturn(NoShowFeesResponse(adeudoTotal = 75.0))
+            .thenAnswer { throw java.io.IOException("offline") }
+            .thenReturn(NoShowFeesResponse(adeudoTotal = null))
+            .thenReturn(NoShowFeesResponse(adeudoTotal = 0.0))
+        val vm = AppointmentsViewModel(repo)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(75.0, vm.debt.value, 0.0)
+        assertNull(vm.debtError.value)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(75.0, vm.debt.value, 0.0)
+        assertNotNull(vm.debtError.value)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(75.0, vm.debt.value, 0.0)
+        assertNotNull(vm.debtError.value)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(0.0, vm.debt.value, 0.0)
+        assertNull(vm.debtError.value)
+    }
 
     @Test
     fun `cancelar con 422 muestra el mensaje real del servidor`() = runTest(dispatcher) {

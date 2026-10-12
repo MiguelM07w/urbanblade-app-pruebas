@@ -92,6 +92,7 @@ fun ClientAppointmentsScreen(
     val loadingMore by vm.loadingMore.collectAsState()
     val waitlist by vm.waitlistEntries.collectAsState()
     val debt by vm.debt.collectAsState()
+    val debtError by vm.debtError.collectAsState()
     val ticket by vm.ticket.collectAsState()
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -163,6 +164,7 @@ fun ClientAppointmentsScreen(
             }
             else -> {
                 error?.let { item { UrbanErrorBanner(it) } }
+                debtError?.let { item { UrbanInfoBanner(it) } }
                 if (loading) item { UrbanInfoBanner("Actualizando tus citas…") }
                 if (debt > 0) {
                     item {

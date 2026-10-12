@@ -308,3 +308,8 @@ parciales se identifican como páginas cargadas. La próxima cita usa `response.
 de Laravel cuando está disponible. Una recarga cancela la paginación anterior y
 un reintento correcto limpia su error. Acciones con FlowRow y objetivos de 48 dp,
 sin cambiar los permisos ni inferir pagos del estado de la cita.
+
+La consulta de adeudo conserva el último importe confirmado cuando la conexión
+falla o la API no entrega el total. Muestra un aviso recuperable con Actualizar;
+solo una respuesta válida del servidor puede confirmar un total cero. La respuesta
+antigua se cancela al reconsultar. Esta mejora es de lectura, sin efectuar pagos.

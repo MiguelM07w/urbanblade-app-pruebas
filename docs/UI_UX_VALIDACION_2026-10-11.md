@@ -114,3 +114,9 @@ La aceptación de integración requiere cuenta QA y entorno de prueba: OAuth Goo
 6. El build local y CI no sustituyen OAuth Google real, validación visual de todos los roles, Stripe/webhook ni preparación de un AAB release para Play.
 
 Validación local de Mis citas: 324 casos JVM, 323 aprobados, 1 omitido y 0 fallos/errores. Las 24 pruebas de gestión de citas pasaron, incluidas recuperación de página, cancelación de respuestas antiguas y recargas concurrentes. Lint: 0 errores, 32 advertencias y 4 hints de mantenimiento. Build del paquete habitual contra la API publicada aprobado. La aceptación visual y de integración en teléfono se mantiene separada.
+
+### Adeudo confirmado ante errores de conexión (12-oct-2026)
+
+Una falla de red o una respuesta sin adeudo_total conserva el último importe conocido y muestra un aviso para actualizar. Solo una respuesta válida del backend confirma un total cero; una consulta nueva cancela la anterior. No se ejecutan pagos ni se cambia la autorización. Web usa el mismo criterio.
+
+Validación final local: 325 casos JVM, 324 aprobados, 1 omitido y cero fallos/errores; 25 casos de gestión de citas aprobados. Lint: cero errores, 32 advertencias y 4 hints. assembleDebug aprobado contra la API publicada en el paquete habitual. La instalación y aceptación visual en el teléfono quedan para el regreso y reconexión del usuario.

@@ -57,14 +57,30 @@ class AppointmentsViewModel @JvmOverloads constructor(
     // Adeudo por inasistencia del cliente (mientras sea > 0 no puede reservar) y ticket del servicio terminado.
     private val _debt = MutableStateFlow(0.0)
     val debt = _debt.asStateFlow()
+    private val _debtError = MutableStateFlow<String?>(null)
+    val debtError = _debtError.asStateFlow()
+    private var debtRequest: Job? = null
     private val _ticket = MutableStateFlow<ServiceTicket?>(null)
     val ticket = _ticket.asStateFlow()
     private val _ticketBusy = MutableStateFlow<String?>(null)
     val ticketBusy = _ticketBusy.asStateFlow()
 
-    /** Consulta lo que el cliente debe por inasistencias; un fallo no molesta: solo no se muestra el aviso. */
-    fun loadDebt() = viewModelScope.launch {
-        try { _debt.value = repo.noShowFees().adeudoTotal ?: 0.0 } catch (_: Exception) { _debt.value = 0.0 }
+    /** Un error de consulta nunca convierte el último adeudo confirmado en cero. */
+    fun loadDebt() {
+        debtRequest?.cancel()
+        debtRequest = viewModelScope.launch {
+            _debtError.value = null
+            try {
+                val total = repo.noShowFees().adeudoTotal
+                coroutineContext.ensureActive()
+                if (total != null) _debt.value = total
+                else _debtError.value = "No pudimos comprobar tu adeudo. Actualiza para volver a consultar."
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _debtError.value = "No pudimos comprobar tu adeudo. Actualiza para volver a consultar."
+            }
+        }
     }
 
     fun openTicket(code: String) = viewModelScope.launch {
