@@ -148,3 +148,25 @@ errores (32 advertencias y 4 hints existentes), APK compilado e instalado con
 `adb install -r` conservando la sesión. En administrador: motivo de fecha correcto,
 inventario con 6 en atención y 6 en resumen, Bladebot en fila propia. Contador de
 barbero corregido en código; revalidación física pendiente de cambiar sesión.
+
+
+### Agenda premium compartida (12-oct-2026, TT32 / HT-12)
+
+`UrbanAppointmentHeading` separa estado y título completo para evitar la
+competencia horizontal en nombres largos. Tarjetas de cliente usan el gradiente
+del kit premium. Agenda general de personal identifica al cliente y conserva
+barbero y fecha. Cancelar se accede por Más acciones y mantiene su confirmación;
+los permisos, payloads y precios no cambian.
+
+
+### Legibilidad premium sin dispositivo (13-oct-2026, TT32 / HT-12)
+
+Nombres completos de personas ajustan líneas en la agenda. El rail de fecha
+usa mes abreviado (13 OCT), no el día de semana que podía parecer marzo.
+Cabecera de cita, estado y gradiente compartidos; acciones por rol sin cambios.
+Frontend y backend sin cambios para esta tanda: contratos existentes y CI verde.
+Nueva compilación preparada para teléfono; revalidación física pendiente.
+
+Validación 13-oct: build debug correcto contra API publicada, 327 pruebas JVM
+(326 aprobadas y una omitida), lint sin errores. El último ajuste de nombres
+y fechas no se ha revisado en teléfono. Frontend y backend limpios con CI verde.

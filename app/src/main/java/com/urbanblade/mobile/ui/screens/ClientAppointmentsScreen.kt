@@ -50,6 +50,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urbanblade.mobile.data.model.AppointmentRow
 import com.urbanblade.mobile.ui.components.UrbanAttentionRow
 import com.urbanblade.mobile.ui.components.UrbanAvatar
+import com.urbanblade.mobile.ui.components.UrbanAppointmentHeading
+import com.urbanblade.mobile.ui.components.UrbanPremiumCard
 import com.urbanblade.mobile.ui.components.UrbanCard
 import com.urbanblade.mobile.ui.components.UrbanErrorBanner
 import com.urbanblade.mobile.ui.components.UrbanFormat
@@ -339,7 +341,7 @@ private fun NextClientAppointment(appt: AppointmentRow, completeList: Boolean, o
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(appt.service?.nombre ?: "Servicio", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
-                Text(appt.barber?.user?.name ?: "Barbero por confirmar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(appt.barber?.user?.name ?: "Barbero por confirmar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
             (appt.precioCobrado ?: appt.service?.precio)?.let {
                 Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
@@ -370,23 +372,12 @@ private fun ClientAppointmentRow(
     onRebook: (() -> Unit)? = null,
     onTicket: (() -> Unit)? = null
 ) {
-    UrbanCard(Modifier.fillMaxWidth()) {
+    UrbanPremiumCard(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppointmentDateRail(appt, emphasized = true)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        appt.service?.nombre ?: "Servicio",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (appt.estado == "cancelada") UrbanColors.Muted else UrbanColors.Ink,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    UrbanStatusPill(appt.estado)
-                }
+                UrbanAppointmentHeading(appt.service?.nombre ?: "Servicio", appt.estado)
                 Text(appt.barber?.user?.name ?: "Barbero por confirmar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(UrbanFormat.date(appt.fecha), style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }

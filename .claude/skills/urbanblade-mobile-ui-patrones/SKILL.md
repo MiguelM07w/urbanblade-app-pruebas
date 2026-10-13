@@ -333,3 +333,21 @@ Citas cuenta filas cargadas para barbero y distingue el motivo de bloqueo
 Bladebot ocupa una fila propia sobre la navegación, sin superponerse al contenido.
 Inventario consulta todas las páginas del endpoint y deduplica por ID; el resumen
 es global y la sección de atención corresponde a la vista filtrada.
+
+
+### Agenda premium compartida (12-oct-2026, TT32 / HT-12)
+
+`UrbanAppointmentHeading` separa estado y título completo para evitar la
+competencia horizontal en nombres largos. Tarjetas de cliente usan el gradiente
+del kit premium. Agenda general de personal identifica al cliente y conserva
+barbero y fecha. Cancelar se accede por Más acciones y mantiene su confirmación;
+los permisos, payloads y precios no cambian.
+
+
+### Legibilidad premium sin dispositivo (13-oct-2026, TT32 / HT-12)
+
+Nombres completos de personas ajustan líneas en la agenda. El rail de fecha
+usa mes abreviado (13 OCT), no el día de semana que podía parecer marzo.
+Cabecera de cita, estado y gradiente compartidos; acciones por rol sin cambios.
+Frontend y backend sin cambios para esta tanda: contratos existentes y CI verde.
+Nueva compilación preparada para teléfono; revalidación física pendiente.

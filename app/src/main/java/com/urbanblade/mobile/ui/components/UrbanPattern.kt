@@ -362,3 +362,27 @@ fun UrbanPillTabs(tabs: List<Pair<String, ImageVector>>, selected: Int, onSelect
         }
     }
 }
+
+
+/** Cabecera de cita compartida: estado separado del título para conservar nombres largos. */
+@Composable
+fun UrbanAppointmentHeading(
+    title: String,
+    status: String,
+    modifier: Modifier = Modifier,
+    trailing: @Composable () -> Unit = {}
+) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            UrbanStatusPill(status)
+            Spacer(Modifier.weight(1f))
+            trailing()
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            color = UrbanColors.Ink
+        )
+    }
+}

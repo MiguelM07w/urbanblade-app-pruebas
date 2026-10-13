@@ -296,7 +296,7 @@ fun AppointmentsScreen(user: AuthUser, onBook: () -> Unit, vm: AppointmentsViewM
                 val payable = isClient && appt.isChargeable && !appt.hasPayment && appt.code != null
                 AppointmentCard(
                     appt = appt,
-                    clientName = if (staff) appt.client?.user?.name else null,
+                    clientName = if (!isClient) appt.client?.user?.name else null,
                     onCancel = if (manageable) { { confirmCancel = appt } } else null,
                     onReschedule = if (manageable && isClient) { { rescheduling = appt } } else null,
                     onPay = if (payable) { { checkingOut = appt } } else null,
@@ -551,8 +551,8 @@ internal fun AppointmentDateRail(appt: AppointmentRow, emphasized: Boolean) {
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         if (emphasized) {
-            Text(appt.fecha.takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.GoldText, fontWeight = FontWeight.Bold)
-            Text(UrbanFormat.date(appt.fecha).take(3).uppercase(), style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted)
+            Text(appt.fecha.take(10).takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.GoldText, fontWeight = FontWeight.Bold)
+            Text(UrbanFormat.dateShort(appt.fecha).substringAfter(" ").uppercase(), style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted)
             HorizontalDivider(Modifier.padding(vertical = 3.dp), color = UrbanColors.Line)
         }
         Text(
@@ -563,7 +563,7 @@ internal fun AppointmentDateRail(appt: AppointmentRow, emphasized: Boolean) {
         )
         if (!emphasized) {
             Text(
-                "${appt.fecha.takeLast(2)} ${UrbanFormat.date(appt.fecha).take(3).uppercase()}",
+                UrbanFormat.dateShort(appt.fecha).uppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = UrbanColors.Muted
             )
@@ -671,16 +671,14 @@ private fun AppointmentCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(appt.fecha.takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.GoldText)
+                    Text(appt.fecha.take(10).takeLast(2), style = MaterialTheme.typography.headlineMedium, color = UrbanColors.GoldText)
                     Text(appt.horaInicio.take(5), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Ink)
                 }
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(appt.service?.nombre ?: "Servicio", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                    Spacer(Modifier.width(8.dp))
-                    UrbanStatusPill(appt.estado)
+                com.urbanblade.mobile.ui.components.UrbanAppointmentHeading(appt.service?.nombre ?: "Servicio", appt.estado) {
+                    StaffAppointmentMenu(onCancel = onCancel, onCharge = null)
                 }
                 clientName?.let { PersonLine("Cliente: $it", it, appt.client?.user?.avatarUrl, UrbanColors.Ink) }
                 PersonLine(
@@ -736,7 +734,7 @@ private fun AppointmentCard(
                     )
                 }
                 val canNoShow = appt.estado == "confirmada" && onStatus != null
-                if (onCancel != null || onReschedule != null || canNoShow) {
+                if (onReschedule != null || canNoShow) {
                     Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (canNoShow) {
@@ -753,13 +751,7 @@ private fun AppointmentCard(
                             }
                             Spacer(Modifier.width(16.dp))
                         }
-                        if (onCancel != null) {
-                            TextButton(onClick = onCancel, contentPadding = PaddingValues(0.dp)) {
-                                Icon(Icons.Default.Close, null, modifier = Modifier.size(17.dp), tint = UrbanColors.Danger)
-                                Spacer(Modifier.width(5.dp))
-                                Text("Cancelar cita", color = UrbanColors.Danger)
-                            }
-                        }
+
                     }
                 }
             }
@@ -1167,14 +1159,13 @@ internal fun CheckoutSheet(appt: AppointmentRow, vm: AppointmentsViewModel, onDi
 /** Una persona de la cita (cliente o barbero) con su foto, o iniciales si no tiene. */
 @Composable
 private fun PersonLine(label: String, name: String, imageUrl: String?, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        UrbanAvatar(name, Modifier.size(26.dp), imageUrl = imageUrl)
+    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        UrbanAvatar(name, Modifier.size(30.dp), imageUrl = imageUrl)
         Text(
             label,
             style = MaterialTheme.typography.bodyMedium,
             color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            modifier = Modifier.weight(1f)
         )
     }
 }
