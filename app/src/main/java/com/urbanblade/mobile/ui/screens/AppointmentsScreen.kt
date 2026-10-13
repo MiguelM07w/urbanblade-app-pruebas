@@ -78,7 +78,7 @@ fun AppointmentsScreen(user: AuthUser, onBook: () -> Unit, vm: AppointmentsViewM
     var staffFilter by remember { mutableStateOf("atencion") }
     val today = remember { LocalDate.now().toString() }
     val active = listOf("pendiente", "confirmada", "en_proceso")
-    val stats = if (staff) {
+    val stats = if (!isClient) {
         AppointmentStats(
             total = response.data.size,
             proximas = response.data.count { 
@@ -243,7 +243,7 @@ fun AppointmentsScreen(user: AuthUser, onBook: () -> Unit, vm: AppointmentsViewM
                         item { UrbanEmptyState("Sin citas en este filtro", "Prueba con otro filtro.", Icons.Default.EventAvailable) }
                     }
                 } else {
-                    item { UrbanSectionTitle("Tu agenda", UrbanFormat.count(stats.total, "cita registrada", "citas registradas")) }
+                    item { UrbanSectionTitle("Tu agenda", UrbanFormat.count(response.data.size, "cita cargada", "citas cargadas")) }
                 }
             }
 
@@ -522,6 +522,7 @@ private fun StaffTimelineAppointment(
                             onStatus = if (onStatus != null) { { estado -> stampedAction = estado } } else null,
                             currentStatus = appt.estado,
                             startBlocked = appt.estado == "confirmada" && appt.puedeIniciar == false,
+                            startBlockReason = appt.motivoNoIniciar,
                             onCancel = onCancel,
                             onCharge = onCharge
                         )
@@ -597,6 +598,7 @@ private fun StaffAppointmentMenu(
     onStatus: ((String) -> Unit)? = null,
     currentStatus: String? = null,
     startBlocked: Boolean = false,
+    startBlockReason: String? = null,
     onCancel: (() -> Unit)?,
     onCharge: (() -> Unit)?
 ) {
@@ -614,10 +616,17 @@ private fun StaffAppointmentMenu(
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 if (next != null && onStatus != null) {
                     DropdownMenuItem(
-                        text = { Text(if (startBlocked) "${next.second} (falta el pago)" else next.second) },
+                        text = { Text(if (startBlocked) "${next.second} (no disponible)" else next.second) },
                         enabled = !startBlocked,
                         leadingIcon = { Icon(Icons.Default.PlayArrow, null) },
                         onClick = { expanded = false; onStatus(next.first) }
+                    )
+                }
+                if (startBlocked && !startBlockReason.isNullOrBlank()) {
+                    DropdownMenuItem(
+                        text = { Text(startBlockReason) },
+                        enabled = false,
+                        onClick = {}
                     )
                 }
                 if (onCharge != null) {

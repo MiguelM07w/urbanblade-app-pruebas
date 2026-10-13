@@ -322,3 +322,14 @@ no equivale a una lista vacía ni a un total cero. El aviso identifica la consul
 incompleta y ofrece reintento con el componente compartido. Una nueva consulta
 cancela la anterior. Las descargas tienen objetivo mínimo de 48 dp.
 Validación visual en teléfono y apertura real de PDF pendientes de reconexión.
+
+
+### Hallazgos en dispositivo por rol (12-oct-2026, TT32 / HT-12)
+
+Cliente, recepción, barbero y administrador revisados en el teléfono con API
+publicada, sin cobros ni cambios de citas. Ingeniero pendiente de cuenta real.
+Citas cuenta filas cargadas para barbero y distingue el motivo de bloqueo
+`motivo_no_iniciar`: no atribuir `puede_iniciar=false` exclusivamente al pago.
+Bladebot ocupa una fila propia sobre la navegación, sin superponerse al contenido.
+Inventario consulta todas las páginas del endpoint y deduplica por ID; el resumen
+es global y la sección de atención corresponde a la vista filtrada.

@@ -195,7 +195,7 @@ interface UrbanBladeApi {
     @PUT("barber/schedule") suspend fun updateBarberSchedule(@Body body: UpdateBarberScheduleRequest): BarberScheduleResponse
 
     @GET("clients") suspend fun clients(): JsonObject
-    @GET("inventory/products") suspend fun inventoryProducts(): InventoryResponse
+    @GET("inventory/products") suspend fun inventoryProducts(@Query("page") page: Int = 1): InventoryResponse
     // Multipart siempre (no solo cuando hay imagen): Laravel valida los
     // campos de texto igual venga el request como JSON o multipart/form-data,
     // así que no hace falta duplicar el endpoint -- un solo camino para

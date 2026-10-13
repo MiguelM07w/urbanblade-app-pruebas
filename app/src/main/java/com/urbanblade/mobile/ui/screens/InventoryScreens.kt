@@ -120,7 +120,7 @@ fun InventoryListScreen(user: AuthUser, onBack: () -> Unit, onHistory: () -> Uni
                 item {
                     UrbanSectionTitle(
                         "Requiere atención",
-                        UrbanFormat.count(attentionProducts.size, "producto necesita revisión", "productos necesitan revisión")
+                        UrbanFormat.count(attentionProducts.size, "producto en esta vista necesita revisión", "productos en esta vista necesitan revisión")
                     )
                 }
                 items(attentionProducts, key = { it.id }) { product ->

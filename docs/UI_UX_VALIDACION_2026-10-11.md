@@ -131,3 +131,20 @@ cancela la anterior. Las descargas tienen objetivo mínimo de 48 dp.
 Validación visual en teléfono y apertura real de PDF pendientes de reconexión.
 
 Pruebas JVM de esta tanda: 326 en total, 325 aprobadas, una omitida, sin fallos.
+
+
+### Hallazgos en dispositivo por rol (12-oct-2026, TT32 / HT-12)
+
+Cliente, recepción, barbero y administrador revisados en el teléfono con API
+publicada, sin cobros ni cambios de citas. Ingeniero pendiente de cuenta real.
+Citas cuenta filas cargadas para barbero y distingue el motivo de bloqueo
+`motivo_no_iniciar`: no atribuir `puede_iniciar=false` exclusivamente al pago.
+Bladebot ocupa una fila propia sobre la navegación, sin superponerse al contenido.
+Inventario consulta todas las páginas del endpoint y deduplica por ID; el resumen
+es global y la sección de atención corresponde a la vista filtrada.
+
+Validación final local: 327 pruebas JVM, 326 aprobadas, una omitida; lint sin
+errores (32 advertencias y 4 hints existentes), APK compilado e instalado con
+`adb install -r` conservando la sesión. En administrador: motivo de fecha correcto,
+inventario con 6 en atención y 6 en resumen, Bladebot en fila propia. Contador de
+barbero corregido en código; revalidación física pendiente de cambiar sesión.

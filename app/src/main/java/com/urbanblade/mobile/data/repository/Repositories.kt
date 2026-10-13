@@ -245,7 +245,15 @@ class UrbanRepository(private val api: UrbanBladeApi) {
         api.updateClient(id, UpdateClientRequest(name, email, telefono, notas))
     suspend fun deleteClient(id: String) = api.deleteClient(id)
 
-    suspend fun inventoryProducts() = api.inventoryProducts()
+    suspend fun inventoryProducts(): InventoryResponse {
+        val first = api.inventoryProducts(1)
+        val products = first.data.toMutableList()
+        for (page in 2..(first.meta.lastPage ?: 1)) {
+            val response = api.inventoryProducts(page)
+            products.addAll(response.data)
+        }
+        return first.copy(data = products.distinctBy { it.id })
+    }
 
     private fun productFields(
         nombre: String, categoria: String, descripcion: String?,
