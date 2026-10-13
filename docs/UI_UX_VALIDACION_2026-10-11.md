@@ -120,3 +120,14 @@ Validación local de Mis citas: 324 casos JVM, 323 aprobados, 1 omitido y 0 fall
 Una falla de red o una respuesta sin adeudo_total conserva el último importe conocido y muestra un aviso para actualizar. Solo una respuesta válida del backend confirma un total cero; una consulta nueva cancela la anterior. No se ejecutan pagos ni se cambia la autorización. Web usa el mismo criterio.
 
 Validación final local: 325 casos JVM, 324 aprobados, 1 omitido y cero fallos/errores; 25 casos de gestión de citas aprobados. Lint: cero errores, 32 advertencias y 4 hints. assembleDebug aprobado contra la API publicada en el paquete habitual. La instalación y aceptación visual en el teléfono quedan para el regreso y reconexión del usuario.
+
+
+### Comprobantes recuperables (12-oct-2026, TT32 / HT-12)
+
+Una consulta fallida de productos o membresías conserva el último dato válido;
+no equivale a una lista vacía ni a un total cero. El aviso identifica la consulta
+incompleta y ofrece reintento con el componente compartido. Una nueva consulta
+cancela la anterior. Las descargas tienen objetivo mínimo de 48 dp.
+Validación visual en teléfono y apertura real de PDF pendientes de reconexión.
+
+Pruebas JVM de esta tanda: 326 en total, 325 aprobadas, una omitida, sin fallos.

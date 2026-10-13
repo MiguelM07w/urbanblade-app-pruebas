@@ -25,6 +25,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -148,4 +149,28 @@ class InvoicesViewModelTest {
         assertEquals(299.0, vm.state.value.membershipPaid, 0.0)
         assertEquals(275.0, vm.state.value.totalPaid, 0.0)
     }
+    @Test
+    fun `consulta parcial conserva compras y membresia hasta un reintento correcto`() = runTest(dispatcher) {
+        whenever(repo.membershipInvoices()).thenReturn(
+            MembershipInvoicesResponse(listOf(MembershipInvoiceRow(id = "m1", monto = 299.0)), MembershipInvoicesMeta(299.0))
+        )
+        val vm = InvoicesViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        whenever(repo.orders(any(), anyOrNull(), anyOrNull())).thenThrow(RuntimeException("sin red"))
+        whenever(repo.membershipInvoices()).thenThrow(RuntimeException("sin red"))
+        vm.load()
+        advanceUntilIdle()
+        assertEquals(180.0, vm.state.value.productsPaid, 0.0)
+        assertEquals(299.0, vm.state.value.membershipPaid, 0.0)
+        assertNotNull(vm.state.value.partialError)
+        doReturn(OrdersResponse()).whenever(repo).orders(any(), anyOrNull(), anyOrNull())
+        doReturn(MembershipInvoicesResponse()).whenever(repo).membershipInvoices()
+        vm.load()
+        advanceUntilIdle()
+        assertEquals(0.0, vm.state.value.productsPaid, 0.0)
+        assertEquals(0.0, vm.state.value.membershipPaid, 0.0)
+        assertNull(vm.state.value.partialError)
+    }
+
 }

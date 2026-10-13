@@ -308,3 +308,12 @@ La consulta de adeudo conserva el último importe confirmado cuando la conexión
 falla o la API no entrega el total. Muestra un aviso recuperable con Actualizar;
 solo una respuesta válida del servidor puede confirmar un total cero. La respuesta
 antigua se cancela al reconsultar. Esta mejora es de lectura, sin efectuar pagos.
+
+
+### Comprobantes recuperables (12-oct-2026, TT32 / HT-12)
+
+Una consulta fallida de productos o membresías conserva el último dato válido;
+no equivale a una lista vacía ni a un total cero. El aviso identifica la consulta
+incompleta y ofrece reintento con el componente compartido. Una nueva consulta
+cancela la anterior. Las descargas tienen objetivo mínimo de 48 dp.
+Validación visual en teléfono y apertura real de PDF pendientes de reconexión.

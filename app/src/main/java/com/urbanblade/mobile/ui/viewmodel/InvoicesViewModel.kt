@@ -7,6 +7,9 @@ import com.urbanblade.mobile.data.model.MembershipInvoiceRow
 import com.urbanblade.mobile.data.model.OrderRow
 import com.urbanblade.mobile.data.model.PaymentRow
 import com.urbanblade.mobile.data.repository.UrbanRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +20,7 @@ import kotlinx.coroutines.launch
 data class InvoicesState(
     val loading: Boolean = false,
     val error: String? = null,
+    val partialError: String? = null,
     val payments: List<PaymentRow> = emptyList(),
     val totalPaid: Double = 0.0,
     val orders: List<OrderRow> = emptyList(),
@@ -43,28 +47,47 @@ class InvoicesViewModel @JvmOverloads constructor(
     private val _state = MutableStateFlow(InvoicesState())
     val state: StateFlow<InvoicesState> = _state.asStateFlow()
 
-    fun load() = viewModelScope.launch {
-        _state.update { it.copy(loading = true, error = null) }
-        try {
-            val payments = async { repo.payments() }
-            // Si los pedidos fallan se siguen mostrando las citas.
-            val orders = async { runCatching { repo.orders().data }.getOrDefault(emptyList()) }
-            val memberships = async { runCatching { repo.membershipInvoices() }.getOrNull() }
-            val p = payments.await()
-            val m = memberships.await()
-            _state.update {
-                it.copy(
-                    payments = p.data,
-                    totalPaid = p.meta?.totalPagado ?: p.data.filter { r -> r.collected }.sumOf { r -> r.monto + r.propina },
-                    orders = orders.await(),
-                    memberships = m?.data.orEmpty(),
-                    membershipPaid = m?.meta?.totalPagado ?: m?.data.orEmpty().sumOf { r -> r.monto }
-                )
+    private var loadRequest: Job? = null
+
+    private suspend fun <T> readSection(fetch: suspend () -> T): Result<T> = try {
+        Result.success(fetch())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    fun load() {
+        loadRequest?.cancel()
+        loadRequest = viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null) }
+            try {
+                val payments = async { repo.payments() }
+                // Si los pedidos fallan se siguen mostrando las citas.
+                val orders = async { readSection { repo.orders().data } }
+                val memberships = async { readSection { repo.membershipInvoices() } }
+                val p = payments.await()
+                val mResult = memberships.await()
+                val m = mResult.getOrNull()
+                val o = orders.await()
+                ensureActive()
+                _state.update {
+                    it.copy(
+                        payments = p.data,
+                        totalPaid = p.meta?.totalPagado ?: p.data.filter { r -> r.collected }.sumOf { r -> r.monto + r.propina },
+                        orders = o.getOrNull() ?: it.orders,
+                        memberships = m?.data ?: it.memberships,
+                        membershipPaid = m?.meta?.totalPagado ?: m?.data?.sumOf { r -> r.monto } ?: it.membershipPaid,
+                        partialError = if (o.isFailure || mResult.isFailure) "No pudimos actualizar todos los comprobantes. Conservamos los últimos datos disponibles; reintenta para completar la consulta." else null
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.toFriendlyMessage("No pudimos cargar tus facturas.")) }
+            } finally {
+                if (coroutineContext[Job]?.isActive == true) _state.update { it.copy(loading = false) }
             }
-        } catch (e: Exception) {
-            _state.update { it.copy(error = e.toFriendlyMessage("No pudimos cargar tus facturas.")) }
-        } finally {
-            _state.update { it.copy(loading = false) }
         }
     }
 
