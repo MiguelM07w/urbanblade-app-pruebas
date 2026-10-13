@@ -59,7 +59,7 @@ fun BarberProfileScreen(
         com.urbanblade.mobile.core.analytics.UrbanAnalytics.log("perfil_barbero_visto")
     }
 
-    Scaffold(containerColor = Color.Transparent, topBar = { UrbanTopBar("", onBack) }) { padding ->
+    Scaffold(containerColor = Color.Transparent, topBar = { UrbanTopBar("", onBack) { IconButton(onClick = { vm.load(slug) }, enabled = !loading) { Icon(Icons.Default.Refresh, "Actualizar perfil") } } }) { padding ->
         val data = profile
         when {
             data == null && loading -> Box(Modifier.padding(padding).padding(18.dp)) { UrbanSkeletonList(4) }
@@ -71,6 +71,8 @@ fun BarberProfileScreen(
                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
+                error?.let { item { UrbanErrorBanner(it) } }
+                if (loading) item { UrbanInfoBanner("Actualizando perfil…") }
                 item { ProfileHeader(data, canBook, onBook) }
                 item { ProfileStats(data) }
                 data.barber.descripcion?.takeIf { it.isNotBlank() }?.let { bio ->
@@ -155,19 +157,11 @@ private fun ProfileHeader(data: BarberProfileResponse, canBook: Boolean, onBook:
 
 @Composable
 private fun ProfileStats(data: BarberProfileResponse) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StatTile("Calificación", data.avgRating?.let { "%.1f ★".format(it) } ?: "—", Modifier.weight(1f))
-        StatTile("Reseñas", data.totalReviews.toString(), Modifier.weight(1f))
-        StatTile("Citas", data.citasCompletadas.toString(), Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun StatTile(label: String, value: String, modifier: Modifier) {
-    UrbanCard(modifier) {
-        Text(value, style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink, maxLines = 1)
-        Text(label, style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
+    UrbanStatStrip(listOf(
+        Triple("Calificación", data.avgRating?.let { "%.1f ★".format(it) } ?: "—", UrbanColors.GoldText),
+        Triple("Reseñas", data.totalReviews.toString(), UrbanColors.Ink),
+        Triple("Citas", data.citasCompletadas.toString(), UrbanColors.Ink)
+    ))
 }
 
 @Composable

@@ -318,7 +318,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 composable("wallet") {
                     WalletScreen(onBack = { nav.popBackStack() }, onBook = { nav.openBooking("booking") })
                 }
-                composable("store") { StoreScreen(user = user, onOrders = { nav.navigate("orders") }) }
+                composable("store") { StoreScreen(user = user, onOrders = { nav.navigate("orders") }, onBack = { nav.popBackStack() }) }
                 composable("orders") { OrdersScreen(user = user, onBack = { nav.popBackStack() }) }
                 composable("payments") { PaymentsScreen(user = user, onBack = { nav.popBackStack() }) }
                 composable("notifications") {

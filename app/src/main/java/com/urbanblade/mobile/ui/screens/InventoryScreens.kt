@@ -93,7 +93,7 @@ fun InventoryListScreen(user: AuthUser, onBack: () -> Unit, onHistory: () -> Uni
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         InventorySummaryValue("Productos", response.meta.stats.total.toString(), Modifier.weight(1f))
                         InventorySummaryValue("Por reponer", response.meta.stats.bajoStock.toString(), Modifier.weight(1f), response.meta.stats.bajoStock > 0)
-                        InventorySummaryValue("Valor venta", "${UrbanFormat.moneyShort(response.meta.stats.valorTotal)}", Modifier.weight(1f))
+                        InventorySummaryValue("Valor inventario", "${UrbanFormat.moneyShort(response.meta.stats.valorTotal)}", Modifier.weight(1f))
                     }
                 }
             }

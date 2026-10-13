@@ -199,3 +199,22 @@ Ingeniero sigue pendiente de cuenta real; cobros y cambios reales no ejecutados.
 Validación final de entrega: 331 pruebas JVM (330 aprobadas, una omitida),
 compilación debug correcta y lint sin errores. APK contra API publicada; no
 instalada para esta tanda por ausencia de teléfono conectado.
+
+
+### Tienda y perfiles compartidos (13-oct-2026, TT32 / HT-12)
+
+Tienda usa UrbanTextField con búsqueda IME y una estimación basada en todos los
+productos conocidos del carrito, no solo los resultados visibles. No supera
+existencias conocidas ni permite modificar la selección mientras envía; errores
+conservan el carrito y Laravel confirma precio/stock. Precio y cantidades ocupan
+un pie adaptable. Perfil del barbero usa UrbanStatStrip compartido, adaptable
+a fuente grande, y ofrece actualizar conservando información y mostrando fallos.
+El teléfono queda disponible para la revisión del usuario, sin automatizarlo.
+
+Tienda explicita Crear pedido y pago/recogida en sucursal según el backend.
+Tiene Volver visible; barbero/ingeniero no ven el acceso de pedidos.
+
+Validación tienda/perfiles: 334 JVM (333 aprobadas y una omitida), compilación
+debug y lint final correctos. UI final incluye búsqueda restaurada y textos de
+compra claros; inventario usa Valor inventario como la web, sin cambiar el dato.
+La APK nueva no se instala durante la revisión del usuario de 4f2d48c.

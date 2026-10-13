@@ -8,36 +8,67 @@ import com.urbanblade.mobile.data.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import com.urbanblade.mobile.data.repository.UrbanRepository
 
-class StoreViewModel : ViewModel() {
-    private val repo = AppContainer.urbanRepository
+class StoreViewModel @JvmOverloads constructor(private val repo: UrbanRepository = AppContainer.urbanRepository) : ViewModel() {
     private val _products = MutableStateFlow<List<ProductItem>>(emptyList())
     val products = _products.asStateFlow()
+    private val _knownProducts = MutableStateFlow<Map<String, ProductItem>>(emptyMap())
+    val knownProducts = _knownProducts.asStateFlow()
     private val _cart = MutableStateFlow<Map<String, Int>>(emptyMap())
     val cart = _cart.asStateFlow()
+    val estimatedTotal: Double get() = _cart.value.entries.sumOf { (id, quantity) -> (_knownProducts.value[id]?.precioVenta ?: 0.0) * quantity }
     private val _busy = MutableStateFlow(false); val busy = _busy.asStateFlow()
     private val _message = MutableStateFlow<String?>(null); val message = _message.asStateFlow()
     private val _error = MutableStateFlow<String?>(null); val error = _error.asStateFlow()
+    private var loadRequest: Job? = null
+    private var checkoutRequest: Job? = null
 
-    fun load(q: String? = null) = viewModelScope.launch {
+    fun load(q: String? = null) {
+        if (checkoutRequest?.isActive == true) return
+        loadRequest?.cancel()
         _busy.value = true; _error.value = null
-        try { _products.value = repo.products(q) }
-        catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo cargar la tienda.") }
-        finally { _busy.value = false }
+        loadRequest = viewModelScope.launch {
+            try {
+                val loaded = repo.products(q)
+                ensureActive()
+                _products.value = loaded
+                _knownProducts.value = _knownProducts.value + loaded.associateBy { it.id }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo cargar la tienda.") }
+            finally { if (coroutineContext[Job]?.isActive == true) _busy.value = false }
+        }
     }
-    fun add(id: String) { _cart.value = _cart.value.toMutableMap().apply { this[id] = (this[id] ?: 0) + 1 } }
-    fun remove(id: String) { _cart.value = _cart.value.toMutableMap().apply { val n=(this[id]?:0)-1; if(n<=0) remove(id) else this[id]=n } }
+    fun add(id: String) {
+        if (_busy.value) return
+        val product = _knownProducts.value[id] ?: return
+        val quantity = _cart.value[id] ?: 0
+        if (quantity >= product.stockActual) return
+        _cart.value = _cart.value + (id to quantity + 1)
+    }
+    fun remove(id: String) {
+        if (_busy.value) return
+        val quantity = (_cart.value[id] ?: 0) - 1
+        _cart.value = if (quantity <= 0) _cart.value - id else _cart.value + (id to quantity)
+    }
     fun clear() { _cart.value = emptyMap() }
-    fun checkout(onDone: () -> Unit) = viewModelScope.launch {
-        if (_cart.value.isEmpty()) { _error.value = "Tu carrito está vacío."; return@launch }
+    fun checkout(onDone: () -> Unit) {
+        if (_busy.value || checkoutRequest?.isActive == true) return
+        if (_cart.value.isEmpty()) { _error.value = "Tu carrito está vacío."; return }
+        val body = OrderRequest(_cart.value.map { OrderItemRequest(it.key, it.value) })
         _busy.value = true; _error.value = null
-        try {
-            val body = OrderRequest(_cart.value.map { OrderItemRequest(it.key, it.value) })
-            val res = repo.createOrder(body)
-            _message.value = res.message ?: "Pedido creado."
-            clear(); onDone()
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo crear el pedido.") }
-        finally { _busy.value = false }
+        checkoutRequest = viewModelScope.launch {
+            try {
+                val response = repo.createOrder(body)
+                _message.value = response.message ?: "Pedido creado."
+                clear(); onDone()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo crear el pedido.") }
+            finally { _busy.value = false }
+        }
     }
 }
 

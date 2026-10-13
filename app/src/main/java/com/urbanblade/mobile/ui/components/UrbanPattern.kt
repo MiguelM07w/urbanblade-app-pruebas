@@ -255,14 +255,25 @@ fun UrbanMascotState(
 @Composable
 fun UrbanStatStrip(stats: List<Triple<String, String, Color>>, onClick: (() -> Unit)? = null) {
     UrbanCard(Modifier.fillMaxWidth(), onClick = onClick) {
-        Row(Modifier.fillMaxWidth()) {
-            stats.forEachIndexed { index, (label, value, tone) ->
-                if (index > 0) {
-                    Box(Modifier.width(1.dp).height(44.dp).background(UrbanColors.Line).align(Alignment.CenterVertically))
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            if (maxWidth < 320.dp || LocalDensity.current.fontScale >= 1.3f) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    stats.forEach { (label, value, tone) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                            Text(value, style = MaterialTheme.typography.titleLarge, color = tone)
+                        }
+                    }
                 }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(value, style = MaterialTheme.typography.titleLarge, color = tone, maxLines = 1)
-                    Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            } else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    stats.forEachIndexed { index, (label, value, tone) ->
+                        if (index > 0) Box(Modifier.width(1.dp).height(44.dp).background(UrbanColors.Line).align(Alignment.CenterVertically))
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(value, style = MaterialTheme.typography.titleLarge, color = tone)
+                            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, textAlign = TextAlign.Center)
+                        }
+                    }
                 }
             }
         }

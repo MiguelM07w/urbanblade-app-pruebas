@@ -370,3 +370,17 @@ deben cancelar el ViewModel por una excepción de coroutine hija.
 Catálogo respeta UserExperience.canBook: barbero/ingeniero consultan servicios
 y perfiles, sin acceso ni botón Reservar. Invitado conserva exploración y reserva
 con autenticación posterior; cliente y roles autorizados conservan su recorrido.
+
+
+### Tienda y perfiles compartidos (13-oct-2026, TT32 / HT-12)
+
+Tienda usa UrbanTextField con búsqueda IME y una estimación basada en todos los
+productos conocidos del carrito, no solo los resultados visibles. No supera
+existencias conocidas ni permite modificar la selección mientras envía; errores
+conservan el carrito y Laravel confirma precio/stock. Precio y cantidades ocupan
+un pie adaptable. Perfil del barbero usa UrbanStatStrip compartido, adaptable
+a fuente grande, y ofrece actualizar conservando información y mostrando fallos.
+El teléfono queda disponible para la revisión del usuario, sin automatizarlo.
+
+Tienda explicita Crear pedido y pago/recogida en sucursal según el backend.
+Tiene Volver visible; barbero/ingeniero no ven el acceso de pedidos.
