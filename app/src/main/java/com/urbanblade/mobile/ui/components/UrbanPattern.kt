@@ -172,7 +172,7 @@ fun UrbanHeroStat(label: String, value: String, icon: ImageVector, modifier: Mod
             Text(value, style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             // La etiqueta sí puede ir en dos líneas: con el tamaño de fuente del sistema al máximo
             // "Cobrado hoy" se cortaba como "Cobrado …" (visto en el S25 el 10-oct-2026).
-            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
         }
     }
 }
@@ -200,7 +200,7 @@ fun UrbanAttentionRow(
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(text, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(text, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
                 subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis) }
             }
             when {
@@ -290,21 +290,24 @@ fun UrbanModuleTile(
             Icon(icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.height(10.dp))
-        Text(title, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(title, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
     }
 }
 
 /** Lista de mosaicos en dos columnas. */
 @Composable
 fun UrbanModuleGrid(tiles: List<Triple<String, String, ImageVector>>, routes: List<String>, onNavigate: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        tiles.zip(routes).chunked(2).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { (tile, route) ->
-                    UrbanModuleTile(tile.first, tile.second, tile.third, { onNavigate(route) }, Modifier.weight(1f))
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val columns = if (maxWidth < 340.dp || LocalDensity.current.fontScale >= 1.3f) 1 else 2
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            tiles.zip(routes).chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { (tile, route) ->
+                        UrbanModuleTile(tile.first, tile.second, tile.third, { onNavigate(route) }, Modifier.weight(1f))
+                    }
+                    if (columns == 2 && row.size == 1) Spacer(Modifier.weight(1f))
                 }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }

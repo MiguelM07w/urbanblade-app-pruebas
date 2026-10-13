@@ -351,3 +351,22 @@ usa mes abreviado (13 OCT), no el día de semana que podía parecer marzo.
 Cabecera de cita, estado y gradiente compartidos; acciones por rol sin cambios.
 Frontend y backend sin cambios para esta tanda: contratos existentes y CI verde.
 Nueva compilación preparada para teléfono; revalidación física pendiente.
+
+
+### Kit adaptable y pedidos recuperables (13-oct-2026, TT32 / HT-12)
+
+Mosaicos comparten una columna con ancho menor de 340 dp o fontScale >= 1.3.
+Títulos, subtítulos y avisos clave no se truncan; UrbanKeyValue apila etiqueta y
+valor con poco espacio o texto grande. Catálogo separa precio de nombre y
+descripción, y no presenta fallos/carga como ausencia de barberos. Pedidos cancela
+consulta y paginación anteriores al recargar; carga más bloquea duplicados,
+conserva filas al fallar y limpia errores al reintentar. Acciones de pedido se
+apilan y se bloquean durante su operación. Revalidación física pendiente.
+
+Comprobantes lee todas las páginas de compras y deduplica por ID antes del
+resumen. Fallos de pagos conservan los últimos datos y permiten reintento; no
+deben cancelar el ViewModel por una excepción de coroutine hija.
+
+Catálogo respeta UserExperience.canBook: barbero/ingeniero consultan servicios
+y perfiles, sin acceso ni botón Reservar. Invitado conserva exploración y reserva
+con autenticación posterior; cliente y roles autorizados conservan su recorrido.

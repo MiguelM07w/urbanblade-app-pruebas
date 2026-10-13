@@ -26,6 +26,7 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -128,4 +129,35 @@ class OrdersViewModelTest {
 
         assertEquals("Pedido cancelado. El stock volvió al inventario.", vm.state.value.notice)
     }
+    @Test
+    fun `reintentar paginacion conserva filas y limpia el error`() = runTest(dispatcher) {
+        whenever(repo.orders(eq(2), anyOrNull(), anyOrNull())).thenThrow(RuntimeException("sin red"))
+        val vm = OrdersViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        vm.loadMore()
+        advanceUntilIdle()
+        assertEquals(listOf("a"), vm.state.value.items.map { it.id })
+        assertTrue(vm.state.value.error != null)
+        doReturn(OrdersResponse(listOf(OrderRow(id = "b")), OrderMeta(2, 2, 2, null)))
+            .whenever(repo).orders(eq(2), anyOrNull(), anyOrNull())
+        vm.loadMore()
+        advanceUntilIdle()
+        assertEquals(listOf("a", "b"), vm.state.value.items.map { it.id })
+        assertNull(vm.state.value.error)
+    }
+
+    @Test
+    fun `recarga bloquea paginacion antes de iniciar su coroutine`() = runTest(dispatcher) {
+        val vm = OrdersViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        // Una recarga debe bloquear paginación repetida antes de iniciar su coroutine.
+        vm.load()
+        vm.loadMore()
+        advanceUntilIdle()
+        assertEquals(listOf("a"), vm.state.value.items.map { it.id })
+        assertFalse(vm.state.value.loadingMore)
+    }
+
 }

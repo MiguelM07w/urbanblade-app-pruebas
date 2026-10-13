@@ -170,3 +170,32 @@ Nueva compilación preparada para teléfono; revalidación física pendiente.
 Validación 13-oct: build debug correcto contra API publicada, 327 pruebas JVM
 (326 aprobadas y una omitida), lint sin errores. El último ajuste de nombres
 y fechas no se ha revisado en teléfono. Frontend y backend limpios con CI verde.
+
+
+### Kit adaptable y pedidos recuperables (13-oct-2026, TT32 / HT-12)
+
+Mosaicos comparten una columna con ancho menor de 340 dp o fontScale >= 1.3.
+Títulos, subtítulos y avisos clave no se truncan; UrbanKeyValue apila etiqueta y
+valor con poco espacio o texto grande. Catálogo separa precio de nombre y
+descripción, y no presenta fallos/carga como ausencia de barberos. Pedidos cancela
+consulta y paginación anteriores al recargar; carga más bloquea duplicados,
+conserva filas al fallar y limpia errores al reintentar. Acciones de pedido se
+apilan y se bloquean durante su operación. Revalidación física pendiente.
+
+Comprobantes lee todas las páginas de compras y deduplica por ID antes del
+resumen. Fallos de pagos conservan los últimos datos y permiten reintento; no
+deben cancelar el ViewModel por una excepción de coroutine hija.
+
+Catálogo respeta UserExperience.canBook: barbero/ingeniero consultan servicios
+y perfiles, sin acceso ni botón Reservar. Invitado conserva exploración y reserva
+con autenticación posterior; cliente y roles autorizados conservan su recorrido.
+
+Checklist de aceptación física restante: Inicio/Catálogo/Cuenta/beneficios con
+fuente del sistema >= 1.3 y temas claro/oscuro; Pedidos con filtros y reintento;
+Comprobantes con consultas y PDF; formularios con teclado y vuelta atrás. La
+revisión de código y pruebas no certifica que todas las pantallas estén pulidas.
+Ingeniero sigue pendiente de cuenta real; cobros y cambios reales no ejecutados.
+
+Validación final de entrega: 331 pruebas JVM (330 aprobadas, una omitida),
+compilación debug correcta y lint sin errores. APK contra API publicada; no
+instalada para esta tanda por ausencia de teléfono conectado.

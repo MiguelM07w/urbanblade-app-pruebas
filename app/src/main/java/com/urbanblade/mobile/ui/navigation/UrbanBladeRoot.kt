@@ -297,6 +297,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 composable("catalog") {
                     CatalogScreen(
                         canFavorite = clientOnly,
+                        canBook = com.urbanblade.mobile.core.access.UserExperience.canBook(user.roles),
                         onBook = { serviceId, barberId -> nav.openBooking(bookingRoute(serviceId, barberId)) },
                         onOpenStore = { nav.navigate("store") },
                         onOpenInspiration = { nav.navigate("social") },

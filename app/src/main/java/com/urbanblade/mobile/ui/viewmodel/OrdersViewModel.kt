@@ -6,6 +6,9 @@ import com.urbanblade.mobile.core.network.AppContainer
 import com.urbanblade.mobile.data.model.OrderRow
 import com.urbanblade.mobile.data.model.OrderStats
 import com.urbanblade.mobile.data.repository.UrbanRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,12 +51,18 @@ class OrdersViewModel @JvmOverloads constructor(
     private val _state = MutableStateFlow(OrdersState())
     val state: StateFlow<OrdersState> = _state.asStateFlow()
 
+    private var listRequest: Job? = null
+    private var pageRequest: Job? = null
+
     fun load() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, error = null)
+        pageRequest?.cancel()
+        listRequest?.cancel()
+        listRequest = viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, loadingMore = false, error = null)
             try {
                 val s = _state.value
                 val response = repo.orders(1, s.filter.param, s.query.trim().ifEmpty { null })
+                ensureActive()
                 val meta = response.meta
                 _state.value = _state.value.copy(
                     items = response.data,
@@ -63,6 +72,8 @@ class OrdersViewModel @JvmOverloads constructor(
                     lastPage = meta?.lastPage ?: 1,
                     loading = false
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _state.value = _state.value.copy(loading = false, error = e.toFriendlyMessage("No se pudieron cargar los pedidos."))
             }
@@ -71,11 +82,12 @@ class OrdersViewModel @JvmOverloads constructor(
 
     fun loadMore() {
         val s = _state.value
-        if (s.loadingMore || s.loading || !s.hasMore) return
-        viewModelScope.launch {
-            _state.value = _state.value.copy(loadingMore = true)
+        if (s.loadingMore || s.loading || listRequest?.isActive == true || pageRequest?.isActive == true || !s.hasMore) return
+        pageRequest = viewModelScope.launch {
+            _state.value = _state.value.copy(loadingMore = true, error = null)
             try {
                 val response = repo.orders(s.page + 1, s.filter.param, s.query.trim().ifEmpty { null })
+                ensureActive()
                 val known = _state.value.items.map { it.id }.toSet()
                 _state.value = _state.value.copy(
                     items = _state.value.items + response.data.filter { it.id !in known },
@@ -83,6 +95,8 @@ class OrdersViewModel @JvmOverloads constructor(
                     lastPage = response.meta?.lastPage ?: s.lastPage,
                     loadingMore = false
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _state.value = _state.value.copy(loadingMore = false, error = e.toFriendlyMessage("No se pudieron cargar más pedidos."))
             }

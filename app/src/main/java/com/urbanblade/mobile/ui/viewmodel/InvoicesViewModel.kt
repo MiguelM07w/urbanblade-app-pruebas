@@ -62,11 +62,18 @@ class InvoicesViewModel @JvmOverloads constructor(
         loadRequest = viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
             try {
-                val payments = async { repo.payments() }
+                val payments = async { readSection { repo.payments() } }
                 // Si los pedidos fallan se siguen mostrando las citas.
-                val orders = async { readSection { repo.orders().data } }
+                val orders = async { readSection {
+                    val first = repo.orders()
+                    val rows = first.data.toMutableList()
+                    for (page in 2..(first.meta?.lastPage ?: 1)) {
+                        rows.addAll(repo.orders(page).data)
+                    }
+                    rows.distinctBy { it.id }
+                } }
                 val memberships = async { readSection { repo.membershipInvoices() } }
-                val p = payments.await()
+                val p = payments.await().getOrThrow()
                 val mResult = memberships.await()
                 val m = mResult.getOrNull()
                 val o = orders.await()

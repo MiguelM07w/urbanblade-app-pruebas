@@ -491,9 +491,18 @@ fun UrbanFieldLabel(text: String) {
 
 @Composable
 fun UrbanKeyValue(label: String, value: String, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-        Spacer(Modifier.width(12.dp))
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        if (maxWidth < 300.dp || androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                Text(value, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink)
+            }
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                Text(value, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End)
+            }
+        }
     }
 }

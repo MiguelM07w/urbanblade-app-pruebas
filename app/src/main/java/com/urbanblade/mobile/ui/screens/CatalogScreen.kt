@@ -37,6 +37,7 @@ import com.urbanblade.mobile.ui.viewmodel.CatalogViewModel
 fun CatalogScreen(
     isGuest: Boolean = false,
     canFavorite: Boolean = true,
+    canBook: Boolean = true,
     onBook: (serviceId: String?, barberId: String?) -> Unit,
     onOpenStore: (() -> Unit)? = null,
     onOpenInspiration: (() -> Unit)? = null,
@@ -67,9 +68,9 @@ fun CatalogScreen(
     ) {
         item {
             UrbanPageHeader(
-                title = "Reservar",
-                subtitle = "Elige un servicio o un barbero y un horario real.",
-                eyebrow = "Reserva"
+                title = if (canBook) "Reservar" else "Servicios y barberos",
+                subtitle = if (canBook) "Elige un servicio o un barbero y un horario real." else "Consulta servicios, precios y perfiles del equipo.",
+                eyebrow = if (canBook) "Reserva" else "Catálogo"
             )
         }
         if (isGuest) {
@@ -92,16 +93,16 @@ fun CatalogScreen(
         }
         item {
             UrbanHeroCard {
-                UrbanHeroLabel("¿Ya sabes qué quieres?")
+                UrbanHeroLabel(if (canBook) "¿Ya sabes qué quieres?" else "El catálogo UrbanBlade")
                 Spacer(Modifier.height(6.dp))
-                Text("Reserva en menos de un minuto", style = MaterialTheme.typography.headlineSmall, color = UrbanColors.Ink)
+                Text(if (canBook) "Reserva en menos de un minuto" else "Servicios para cada estilo", style = MaterialTheme.typography.headlineSmall, color = UrbanColors.Ink)
                 Text(
-                    "${UrbanFormat.count(services.size, "servicio", "servicios")} · ${UrbanFormat.count(barbers.size, "barbero", "barberos")} · horarios reales",
+                    if (loading) "Consultando servicios y equipo…" else if (error != null) "Consulta incompleta. Reintenta para actualizar el catálogo." else "${UrbanFormat.count(services.size, "servicio", "servicios")} · ${UrbanFormat.count(barbers.size, "barbero", "barberos")} · horarios reales",
                     style = MaterialTheme.typography.bodySmall,
                     color = UrbanColors.Muted
                 )
                 Spacer(Modifier.height(16.dp))
-                UrbanPrimaryButton(
+                if (canBook) UrbanPrimaryButton(
                     text = "Reservar ahora",
                     onClick = { onBook(null, null) },
                     icon = Icons.Default.CalendarMonth,
@@ -113,7 +114,10 @@ fun CatalogScreen(
         if (error != null && services.isEmpty() && !loading) {
             item { UrbanMascotState(UrbanStateKind.ERROR, "No pudimos cargar el catálogo", error, "Reintentar") { vm.load() } }
         } else {
-            error?.let { item { UrbanErrorBanner(it) } }
+            error?.let {
+                item { UrbanErrorBanner(it) }
+                if (!loading) item { UrbanOutlineButton("Reintentar catálogo", { vm.load() }, modifier = Modifier.fillMaxWidth()) }
+            }
         }
 
         if (services.isNotEmpty()) {
@@ -156,7 +160,7 @@ fun CatalogScreen(
                 if (filtering) UrbanFormat.count(visible.size, "resultado", "resultados") else "Precio y duración reales; toca uno para reservar."
             )
         }
-        items(visible, key = { it.id }) { service -> ServiceCard(service) { onBook(service.id, null) } }
+        items(visible, key = { it.id }) { service -> ServiceCard(service, canBook) { onBook(service.id, null) } }
         if (filtering && visible.isEmpty()) item {
             UrbanMascotState(
                 UrbanStateKind.EMPTY,
@@ -180,7 +184,7 @@ fun CatalogScreen(
                 onOpen = { if (onOpenBarber != null && slug != null) onOpenBarber(slug) else onBook(null, barber.id) }
             )
         }
-        if (!loading && barbers.isEmpty()) item { UrbanEmptyState("Sin barberos disponibles", null, Icons.Default.Groups) }
+        if (!loading && error == null && barbers.isEmpty()) item { UrbanEmptyState("Sin barberos disponibles", null, Icons.Default.Groups) }
         item { Spacer(Modifier.height(8.dp)) }
     }
 }
@@ -191,9 +195,10 @@ private fun catalogChipColors() = FilterChipDefaults.filterChipColors(
     selectedLabelColor = UrbanColors.OnGold
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ServiceCard(service: ServiceItem, onBook: () -> Unit) {
-    UrbanPremiumCard(Modifier.fillMaxWidth(), onClick = onBook) {
+private fun ServiceCard(service: ServiceItem, canBook: Boolean, onBook: () -> Unit) {
+    UrbanPremiumCard(Modifier.fillMaxWidth(), onClick = if (canBook) onBook else null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Foto del servicio (la que sube el administrador); sin foto o si no carga, el ícono.
             var photoFailed by remember(service.imagen) { mutableStateOf(false) }
@@ -227,14 +232,15 @@ private fun ServiceCard(service: ServiceItem, onBook: () -> Unit) {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
-            Spacer(Modifier.width(10.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text("${UrbanFormat.moneyShort(service.precio)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
-                Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Reservar", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
-                    Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Gold, modifier = Modifier.size(18.dp))
-                }
+        }
+        Spacer(Modifier.height(14.dp))
+        HorizontalDivider(color = UrbanColors.Line)
+        Spacer(Modifier.height(10.dp))
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(UrbanFormat.moneyShort(service.precio), style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
+            if (canBook) Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Reservar", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
+                Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.GoldText, modifier = Modifier.size(18.dp))
             }
         }
     }
