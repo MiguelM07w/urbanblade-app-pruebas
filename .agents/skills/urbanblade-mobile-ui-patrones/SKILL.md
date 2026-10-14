@@ -408,3 +408,22 @@ UrbanStepProgress muestra números, confirmación de pasos completados y el nomb
 del paso actual, con descripción accesible. Es informativo: no permite saltar
 validaciones ni cambia el envío de una reserva. El resumen de selección se muestra
 completo y la invitación a reservar no promete una duración sin evidencia.
+### 14 de octubre — Muro de inspiración con navegación social
+
+UrbanWorkGallery es el carrusel compartido de trabajos: deslizar fotos y videos,
+contador de medios, indicadores de página, doble toque para dar me gusta, ampliación
+de foto y video bajo demanda. WorkMediaThumb muestra carga y recuperación visual
+cuando no hay imagen o falla la miniatura. No hay historias temporales, seguidores
+ni reproducción automática: la API no ofrece esos contratos.
+
+SocialFeedScreen muestra autor con avatar y enlace a perfil público, fecha real del
+trabajo, medios protagonistas, acciones de reacción/comentario/guardado y descripción
+completa. Los comentarios se abren en ModalBottomSheet con UrbanTextField, límite de
+500 caracteres y borrador conservado si falla. El servidor devuelve tres recientes;
+la pantalla identifica esa muestra y conserva el contador total, sin inventar el resto.
+
+SocialFeedViewModel serializa acciones por publicación, bloquea consulta durante
+envíos y consulta páginas adicionales mediante el page existente del backend.
+Reservar con el barbero solo aparece para cliente y resuelve el user.id del muro al
+perfil.id del catálogo de barberos, que es el identificador del contrato de reserva.
+No se cambia el servidor ni se publica un comentario o reacción real en la validación.

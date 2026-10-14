@@ -349,6 +349,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 composable("social") {
                     SocialFeedScreen(
                         onBack = { nav.popBackStack() },
+                        onOpenBarber = { slug -> nav.navigate("barber_profile/${android.net.Uri.encode(slug)}") },
                         // Solo el cliente reserva desde el muro; el personal lo ve como galería.
                         onBookBarber = if (clientOnly) { barberId -> nav.openBooking(bookingRoute(null, barberId)) } else null
                     )

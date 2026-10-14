@@ -267,3 +267,25 @@ validaciones ni cambia el envío de una reserva. El resumen de selección se mue
 completo y la invitación a reservar no promete una duración sin evidencia.
 
 Validación del recorrido de visita: compilación debug y lint correctos, cero errores, 32 advertencias y 3 hints sin avisos nuevos en los componentes tocados. Son cambios de presentación; la última suite funcional ejecutada sigue en 339 pruebas aprobadas y cero omitidas. CI ejecutará nuevamente la suite del commit. Revisión física de Inicio y del progreso de reserva pendiente; se conserva 31cf6ca en el teléfono.
+
+### 14 de octubre — Muro de inspiración con navegación social
+
+UrbanWorkGallery es el carrusel compartido de trabajos: deslizar fotos y videos,
+contador de medios, indicadores de página, doble toque para dar me gusta, ampliación
+de foto y video bajo demanda. WorkMediaThumb muestra carga y recuperación visual
+cuando no hay imagen o falla la miniatura. No hay historias temporales, seguidores
+ni reproducción automática: la API no ofrece esos contratos.
+
+SocialFeedScreen muestra autor con avatar y enlace a perfil público, fecha real del
+trabajo, medios protagonistas, acciones de reacción/comentario/guardado y descripción
+completa. Los comentarios se abren en ModalBottomSheet con UrbanTextField, límite de
+500 caracteres y borrador conservado si falla. El servidor devuelve tres recientes;
+la pantalla identifica esa muestra y conserva el contador total, sin inventar el resto.
+
+SocialFeedViewModel serializa acciones por publicación, bloquea consulta durante
+envíos y consulta páginas adicionales mediante el page existente del backend.
+Reservar con el barbero solo aparece para cliente y resuelve el user.id del muro al
+perfil.id del catálogo de barberos, que es el identificador del contrato de reserva.
+No se cambia el servidor ni se publica un comentario o reacción real en la validación.
+
+Validación final del muro: 343 pruebas JVM, todas aprobadas, cero omitidas y cero fallos. Compilación debug y lint correctos: cero errores, 32 advertencias y 3 hints, sin avisos nuevos en el área social. Pruebas de acciones y comentarios usan mocks; no se modificaron publicaciones reales. Carrusel, visor, panel de comentarios, paginación, perfiles y fuente grande requieren revisión física posterior. Se conserva 31cf6ca en el teléfono.

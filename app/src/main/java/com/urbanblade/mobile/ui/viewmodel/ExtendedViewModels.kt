@@ -433,42 +433,85 @@ class ReportsViewModel : ViewModel() {
 }
 
 
-class SocialFeedViewModel : ViewModel() {
-    private val repo = AppContainer.urbanRepository
+class SocialFeedViewModel @JvmOverloads constructor(private val repo: UrbanRepository = AppContainer.urbanRepository) : ViewModel() {
     private val _feed = MutableStateFlow(SocialFeedResponse()); val feed = _feed.asStateFlow()
     private val _busy = MutableStateFlow(false); val busy = _busy.asStateFlow()
     private val _error = MutableStateFlow<String?>(null); val error = _error.asStateFlow()
+    private val _pending = MutableStateFlow<Set<String>>(emptySet()); val pending = _pending.asStateFlow()
+    private val _bookingIds = MutableStateFlow<Map<String, String>>(emptyMap()); val bookingIds = _bookingIds.asStateFlow()
+    private val _hasMore = MutableStateFlow(false); val hasMore = _hasMore.asStateFlow()
+    private var page = 1
+    private fun lastPage(response: SocialFeedResponse) = runCatching { response.meta?.get("last_page")?.asInt }.getOrNull() ?: 1
 
-    fun load() = viewModelScope.launch {
+    fun load(canBook: Boolean = false) {
+        if (_busy.value || _pending.value.isNotEmpty()) return
         _busy.value = true; _error.value = null
-        try { _feed.value = repo.socialFeed() }
-        catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo cargar el muro social.") }
-        finally { _busy.value = false }
+        _bookingIds.value = emptyMap()
+        viewModelScope.launch {
+            try {
+                val response = repo.socialFeed(1)
+                ensureActive()
+                _feed.value = response; page = 1; _hasMore.value = page < lastPage(response)
+                if (canBook) {
+                    val barbers = repo.barbers()
+                    ensureActive()
+                    _bookingIds.value = barbers.mapNotNull { barber -> barber.user?.id?.let { it to barber.id } }.toMap()
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo actualizar el muro o preparar la reserva. Reintenta la consulta.") }
+            finally { _busy.value = false }
+        }
+    }
+
+    fun loadMore() {
+        if (_busy.value || !_hasMore.value || _pending.value.isNotEmpty()) return
+        _busy.value = true; _error.value = null
+        viewModelScope.launch {
+            try {
+                val response = repo.socialFeed(page + 1)
+                ensureActive()
+                _feed.value = response.copy(data = (_feed.value.data + response.data).distinctBy { it.id })
+                page += 1; _hasMore.value = page < lastPage(response)
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar más publicaciones.") }
+            finally { _busy.value = false }
+        }
+    }
+
+    private fun action(id: String, fallback: String, block: suspend () -> Unit) {
+        if (_busy.value || id in _pending.value) return
+        _pending.value += id; _error.value = null
+        viewModelScope.launch {
+            try { block() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage(fallback) }
+            finally { _pending.value -= id }
+        }
     }
 
     private fun updateWork(id: String, transform: (SocialWork) -> SocialWork) {
         _feed.value = _feed.value.copy(data = _feed.value.data.map { if (it.id == id) transform(it) else it })
     }
 
-    fun toggleReaction(id: String) = viewModelScope.launch {
-        try {
+    fun toggleReaction(id: String) = action(id, "No se pudo reaccionar.") {
             val res = repo.reactWork(id)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
             updateWork(id) { it.copy(isReacted = res.status == "added", reactionsCount = res.count ?: it.reactionsCount) }
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo reaccionar.") }
     }
 
-    fun toggleSave(id: String) = viewModelScope.launch {
-        try {
+    fun toggleSave(id: String) = action(id, "No se pudo guardar.") {
             val res = repo.saveWork(id)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
             val added = res.status == "added"
-            updateWork(id) { it.copy(isSaved = added, savedCount = it.savedCount + if (added) 1 else -1) }
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo guardar.") }
+            updateWork(id) { it.copy(isSaved = added, savedCount = (it.savedCount + if (added) 1 else -1).coerceAtLeast(0)) }
     }
 
-    fun comment(id: String, text: String, onDone: () -> Unit) = viewModelScope.launch {
-        if (text.isBlank()) return@launch
-        try {
-            val res = repo.commentWork(id, text)
+    fun comment(id: String, text: String, onDone: () -> Unit) {
+        val comment = text.trim()
+        if (comment.isEmpty() || comment.length > 500) return
+        action(id, "No se pudo publicar el comentario.") {
+            val res = repo.commentWork(id, comment)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
             val newComment = res.data
             updateWork(id) {
                 it.copy(
@@ -477,7 +520,7 @@ class SocialFeedViewModel : ViewModel() {
                 )
             }
             onDone()
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo publicar el comentario.") }
+        }
     }
 }
 

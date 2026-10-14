@@ -169,7 +169,7 @@ interface UrbanBladeApi {
     @POST("notifications/{id}/read") suspend fun markNotificationRead(@Path("id") id: String): MessageResponse
     @DELETE("notifications/{id}") suspend fun deleteNotification(@Path("id") id: String): MessageResponse
 
-    @GET("social/feed") suspend fun socialFeed(): SocialFeedResponse
+    @GET("social/feed") suspend fun socialFeed(@Query("page") page: Int = 1): SocialFeedResponse
     @POST("social/work/{id}/react") suspend fun reactWork(@Path("id") id: String): SocialActionResponse
     @POST("social/work/{id}/save") suspend fun saveWork(@Path("id") id: String): SocialActionResponse
     @POST("social/work/{id}/comment") suspend fun commentWork(@Path("id") id: String, @Body body: PostCommentRequest): PostCommentResponse
