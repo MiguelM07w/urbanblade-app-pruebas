@@ -232,3 +232,23 @@ bloquea durante envío para evitar duplicados y después consulta el estado del
 servidor. Las pruebas utilizan repositorio simulado; no se marcaron avisos reales.
 
 Validación de Notificaciones: 337 pruebas JVM (336 aprobadas, una omitida), sin fallos. Lint: cero errores, 32 advertencias y 4 hints existentes. APK debug compilada contra la API habitual. Esta tanda requiere revisión física posterior y no sustituye 31cf6ca durante la revisión del usuario.
+
+### 13 de octubre — Kit de analítica renovado (TT32 / HT-12)
+
+UrbanAnalyticsCard comparte el marco de dashboard, análisis, insights y reportes:
+título completo, cifra en su propia línea, contexto y visualización sobre el fondo
+degradado del tema. UrbanChartColors usa seis colores categóricos diferenciados,
+con tonos de mayor contraste en Libreta. Los colores de alerta siguen indicando
+estado; no representan categorías ni cambian el sentido de los datos.
+
+Donas: gráfico de 156 dp centrado y leyenda debajo con nombre completo, valor y
+porcentaje. Rankings: etiqueta y cifra separadas, barra degradada y color propio.
+Series temporales: azul para líneas y verde para barras, con selección de valores.
+Cuatro pestañas de analítica se muestran en dos filas del mismo UrbanPillTabs.
+No introducir otra tarjeta local ni una paleta de transparencias del mismo oro.
+Filtrar series por pares etiqueta/valor (analyticsChartSeries), nunca mapNotNull
+solo sobre valores: desplazaría etiquetas si el servidor manda un dato inválido.
+
+La comprobación del pin HTTPS público de producción es obligatoria (sin Bearer ni datos de usuario). CI comprueba además que los reportes JVM existan y no contengan pruebas omitidas. El rediseño requiere revisión física en temas, fuentes grandes, Analítica y Reportes; no se instala durante la revisión de 31cf6ca.
+
+Validación final del rediseño: 339 pruebas JVM, todas aprobadas, cero omitidas y cero fallos. La comprobación HTTPS real y las dos regresiones de series analíticas pasaron. Compilación y lint finales correctos; revisión física de la nueva presentación pendiente.

@@ -222,7 +222,7 @@ request de Retrofit quedan idénticos.
 | `UrbanSwitch` / `UrbanSwitchRow(title, subtitle, checked, onCheckedChange)` | Hecho (26-sep) | Los 9 `Switch` sueltos: `AccountKit`, `AdminModuleScreens`, `BarbersAdminScreen` (2), `OffersAdminScreen` (2), `ServicesAdminScreen` (2), `SettingsScreen`. Fila completa tocable, pista dorada encendida, `Role.Switch` para TalkBack. |
 | `UrbanChoiceTiles(options, selected, onSelect)` con `UrbanChoice(value, title, subtitle, icon)` | Hecho (26-sep) | Los mosaicos de la "Propuesta A" (25-sep) de `BookingPayment` pasaron al kit sin cambiar su aspecto, y ahora también se usan al pagar una cita en `AppointmentsScreen` (antes eran dos botones sin estado seleccionado). Los `FilterChip` de propina y filtros se quedan (son filtros, no métodos). |
 | `UrbanStatCard` + `UrbanTrendPill` (`UrbanStatCard.kt`) | Hecho (10-oct) | KPI de los inicios por rol: etiqueta, valor y variación contra el periodo anterior ("+12.6 % vs mes pasado"). La variación no siempre es verde —más cancelaciones es rojo, con `positiveIsGood`— y si no hay periodo anterior no se inventa: se muestra el texto de `caption` y nada más. |
-| `UrbanDashboardChart` + `chartSeries()` (`DashboardCharts.kt`) | Hecho (26-sep) | Gráfica principal en cada inicio con los mismos datos de GET /dashboard que la web: admin (ingresos por semana, servicios), recepción (citas por hora), barbero (su semana, sus servicios). `spanishChartLabel()` traduce "Mon"/"03 Aug" que barber manda en inglés. La dona de `UrbanCharts` ahora usa tonos del oro. El cliente no lleva gráfica: su inicio es para reservar. |
+| `UrbanDashboardChart` + `chartSeries()` (`DashboardCharts.kt`) | Hecho (26-sep) | Gráfica principal en cada inicio con los mismos datos de GET /dashboard que la web: admin (ingresos por semana, servicios), recepción (citas por hora), barbero (su semana, sus servicios). `spanishChartLabel()` traduce "Mon"/"03 Aug" que barber manda en inglés. La dona de `UrbanCharts` usa la paleta categórica compartida `UrbanChartColors`. El cliente no lleva gráfica: su inicio es para reservar. |
 | `UrbanRow` + `UrbanRowGroup` + `UrbanRowDivider` (`UrbanDataTable.kt`) | Hecho (10-oct) | Tabla/lista compacta: filas con separador dentro de una sola tarjeta, con badge de estado y cifra o acción al final. Es la conclusión P0 de la auditoría ("reducir el uso de tarjetas; usar filas y separadores para listas") y reemplaza las tarjetas-por-elemento. Para listas largas, `UrbanRow` y `UrbanRowDivider` dentro del LazyColumn de la pantalla. |
 
 - `UrbanFormat.money()` / `moneyShort()` / `percent()` / `delta()` (`UrbanFormat.kt`): **todo** dinero y porcentaje de la app. Había once copias locales de `money()` con formatos distintos (%,.0f, %,.2f, %.0f, con y sin `Locale`); el texto es el mismo de `money()` y `fmtMoney()` de la web. Al tocar una pantalla, migrar su copia a estas. `delta()` devuelve `null` cuando no hay con qué comparar, nunca un "+100 %".
@@ -381,3 +381,18 @@ Tienda explicita Crear pedido y pago/recogida en sucursal según el backend.
 Tiene Volver visible; barbero/ingeniero no ven el acceso de pedidos.
 
 Notificaciones: conservar la lista ante errores, mostrar UrbanErrorBanner con Reintentar consulta y no afirmar Estás al día mientras carga o falla. Marcar como leídas bloquea envíos duplicados y vuelve a consultar el servidor.
+### 13 de octubre — Kit de analítica renovado (TT32 / HT-12)
+
+UrbanAnalyticsCard comparte el marco de dashboard, análisis, insights y reportes:
+título completo, cifra en su propia línea, contexto y visualización sobre el fondo
+degradado del tema. UrbanChartColors usa seis colores categóricos diferenciados,
+con tonos de mayor contraste en Libreta. Los colores de alerta siguen indicando
+estado; no representan categorías ni cambian el sentido de los datos.
+
+Donas: gráfico de 156 dp centrado y leyenda debajo con nombre completo, valor y
+porcentaje. Rankings: etiqueta y cifra separadas, barra degradada y color propio.
+Series temporales: azul para líneas y verde para barras, con selección de valores.
+Cuatro pestañas de analítica se muestran en dos filas del mismo UrbanPillTabs.
+No introducir otra tarjeta local ni una paleta de transparencias del mismo oro.
+Filtrar series por pares etiqueta/valor (analyticsChartSeries), nunca mapNotNull
+solo sobre valores: desplazaría etiquetas si el servidor manda un dato inválido.

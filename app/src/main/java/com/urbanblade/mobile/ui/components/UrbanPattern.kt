@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -336,14 +337,14 @@ fun urbanFilterChipColors() = androidx.compose.material3.FilterChipDefaults.filt
 @Composable
 fun UrbanPillTabs(tabs: List<Pair<String, ImageVector>>, selected: Int, onSelect: (Int) -> Unit) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val stacked = maxWidth < 300.dp || LocalDensity.current.fontScale >= 1.3f
+        val stacked = maxWidth < 300.dp || LocalDensity.current.fontScale >= 1.3f || tabs.size > 3
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = UrbanColors.Card,
             border = BorderStroke(1.dp, UrbanColors.Line),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(Modifier.padding(4.dp).selectableGroup()) {
+            FlowRow(Modifier.padding(4.dp).selectableGroup(), maxItemsInEachRow = if (tabs.size > 3) 2 else tabs.size) {
                 tabs.forEachIndexed { index, (label, icon) ->
                     val isSelected = index == selected
                     val background by animateColorAsState(if (isSelected) UrbanColors.Gold else Color.Transparent, label = "tab")

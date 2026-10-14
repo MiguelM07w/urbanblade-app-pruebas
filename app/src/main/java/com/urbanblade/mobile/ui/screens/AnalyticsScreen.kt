@@ -2,20 +2,16 @@ package com.urbanblade.mobile.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.gson.JsonElement
 import com.urbanblade.mobile.data.model.AnalyticsGraph
 import com.urbanblade.mobile.data.model.AnalyticsInsightItem
 import com.urbanblade.mobile.data.model.AnalyticsSection
@@ -24,12 +20,9 @@ import com.urbanblade.mobile.ui.theme.UrbanColors
 import com.urbanblade.mobile.ui.viewmodel.AnalyticsViewModel
 
 /**
- * Simplificación consciente: el backend manda "grafica" con la forma exacta
- * que espera Chart.js en la web (line/bar/doughnut/heatmap/radar/matrix/
- * factor-list). Reconstruir los 7 tipos nativamente es un proyecto aparte --
- * aquí se muestra una sola representación genérica (barras horizontales
- * proporcionales) para cualquier insight con datos graficables, priorizando
- * que el contenido real (título, mensaje, valor destacado) sí esté completo.
+ * Consume la misma serie del backend que la web: líneas para evolución,
+ * dona para distribución y ranking para las otras series numéricas disponibles.
+ * No reconstruye matrices ni inventa valores a partir de datos no numéricos.
  */
 private fun colorFor(name: String?): androidx.compose.ui.graphics.Color = when (name) {
     "success" -> UrbanColors.Success
@@ -40,32 +33,25 @@ private fun colorFor(name: String?): androidx.compose.ui.graphics.Color = when (
     else -> UrbanColors.Gold
 }
 
-private fun JsonElement.toNumberOrNull(): Double? = try {
-    when {
-        isJsonPrimitive && asJsonPrimitive.isNumber -> asDouble
-        isJsonPrimitive -> asString.replace(",", "").replace("%", "").replace("$", "").trim().toDoubleOrNull()
-        else -> null
-    }
-} catch (e: Exception) { null }
-
 @Composable
 private fun InsightGraph(graph: AnalyticsGraph) {
-    val values = graph.valores.mapNotNull { it.toNumberOrNull() }
+    val series = analyticsChartSeries(graph)
+    val values = series.values
     if (values.isEmpty()) return
     // Series de tiempo -> línea; distribuciones -> dona; el resto conserva las barras proporcionales.
     when (graph.tipo?.lowercase()) {
         "line" -> if (values.size >= 2) {
-            UrbanLineChart(graph.labels, values, Modifier.padding(top = 10.dp))
+            UrbanLineChart(series.labels, values, Modifier.padding(top = 10.dp))
             return
         }
         "doughnut", "pie" -> if (values.any { it > 0 }) {
-            UrbanDonutChart(graph.labels, values, Modifier.padding(top = 10.dp))
+            UrbanDonutChart(series.labels, values, Modifier.padding(top = 10.dp))
             return
         }
     }
     // Cualquier otro tipo de gráfica: ranking en barras horizontales del kit común.
     UrbanHBars(
-        labels = values.indices.map { graph.labels.getOrNull(it).orEmpty() },
+        labels = series.labels,
         values = values,
         modifier = Modifier.padding(top = 10.dp)
     )
@@ -73,20 +59,13 @@ private fun InsightGraph(graph: AnalyticsGraph) {
 
 @Composable
 private fun InsightCard(insight: AnalyticsInsightItem) {
-    UrbanCard(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Text(insight.titulo ?: "—", style = MaterialTheme.typography.titleMedium)
-                insight.mensaje?.takeIf { it.isNotBlank() }?.let {
-                    Spacer(Modifier.height(4.dp))
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-                }
-            }
-            insight.valorDestacado?.takeIf { it.isNotBlank() }?.let {
-                Spacer(Modifier.width(10.dp))
-                Text(it, style = MaterialTheme.typography.titleLarge, color = colorFor(insight.color))
-            }
-        }
+    UrbanAnalyticsCard(
+        title = insight.titulo ?: "Indicador",
+        subtitle = insight.mensaje,
+        metric = insight.valorDestacado,
+        accent = colorFor(insight.color),
+        eyebrow = "LECTURA DEL NEGOCIO"
+    ) {
         if (insight.hasRenderableVisual) {
             insight.grafica?.let { InsightGraph(it) }
         }
@@ -115,7 +94,7 @@ fun AnalyticsScreen(onBack: () -> Unit, vm: AnalyticsViewModel = viewModel()) {
     val data by vm.data.collectAsState()
     val busy by vm.busy.collectAsState()
     val error by vm.error.collectAsState()
-    var tab by remember { mutableStateOf(0) }
+    var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) { vm.load() }
 
@@ -126,7 +105,8 @@ fun AnalyticsScreen(onBack: () -> Unit, vm: AnalyticsViewModel = viewModel()) {
         "Predicción" to data.secciones.prediccion,
     )
 
-    val hasData = data.kpis.isNotEmpty() || data.operational != null || data.sparkFlow.isNotEmpty()
+    val hasData = data.kpis.isNotEmpty() || data.operational != null || data.sparkFlow.isNotEmpty() ||
+        tabs.any { it.second.insights.isNotEmpty() } || data.diagnosticoInsights.isNotEmpty()
 
     UrbanModuleScreen(
         eyebrow = "ANÁLISIS",
@@ -149,16 +129,17 @@ fun AnalyticsScreen(onBack: () -> Unit, vm: AnalyticsViewModel = viewModel()) {
         val heroKpis = data.kpis.take(2)
         if (heroKpis.isNotEmpty()) {
             item {
-                UrbanHeroCard {
-                    UrbanHeroLabel("Indicadores clave")
-                    Spacer(Modifier.height(6.dp))
-                    Text(heroKpis.first().value ?: "—", style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
-                    Text(heroKpis.first().label ?: "—", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                UrbanAnalyticsCard(
+                    title = heroKpis.first().label ?: "Indicadores clave",
+                    metric = heroKpis.first().value,
+                    subtitle = heroKpis.first().detail,
+                    eyebrow = "PULSO DEL NEGOCIO"
+                ) {
                     heroKpis.getOrNull(1)?.let { second ->
                         Spacer(Modifier.height(16.dp))
                         HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
                         Spacer(Modifier.height(14.dp))
-                        UrbanHeroStat(second.label ?: "—", second.value ?: "—", Icons.Default.TrendingUp)
+                        UrbanKeyValue(second.label ?: "—", second.value ?: "—")
                     }
                     data.ultimaActualizacion?.let {
                         Spacer(Modifier.height(10.dp))
@@ -172,14 +153,7 @@ fun AnalyticsScreen(onBack: () -> Unit, vm: AnalyticsViewModel = viewModel()) {
         if (restKpis.isNotEmpty()) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    restKpis.chunked(2).forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            row.forEach { kpi ->
-                                UrbanMetricCard(kpi.label ?: "—", kpi.value ?: "—", Icons.Default.TrendingUp, Modifier.weight(1f))
-                            }
-                            if (row.size == 1) Spacer(Modifier.weight(1f))
-                        }
-                    }
+                    restKpis.chunked(3).forEach { row -> UrbanStatStrip(row.mapIndexed { index, kpi -> Triple(kpi.label ?: "—", kpi.value ?: "—", UrbanChartColors.at(index)) }) }
                 }
             }
         }
@@ -188,14 +162,7 @@ fun AnalyticsScreen(onBack: () -> Unit, vm: AnalyticsViewModel = viewModel()) {
             item { UrbanSectionTitle("Operación de hoy", "Citas, pagos y pendientes") }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    operational.kpis.chunked(2).forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            row.forEach { kpi ->
-                                UrbanMetricCard(kpi.label ?: "—", kpi.value.toInt().toString(), Icons.Default.Today, Modifier.weight(1f))
-                            }
-                            if (row.size == 1) Spacer(Modifier.weight(1f))
-                        }
-                    }
+                    operational.kpis.chunked(3).forEach { row -> UrbanStatStrip(row.mapIndexed { index, kpi -> Triple(kpi.label ?: "—", kpi.value.toInt().toString(), UrbanChartColors.at(index)) }) }
                 }
             }
             if (operational.actions.isNotEmpty()) {
@@ -227,16 +194,8 @@ fun AnalyticsScreen(onBack: () -> Unit, vm: AnalyticsViewModel = viewModel()) {
 
         item { UrbanSectionTitle("Secciones", "Detalle por área") }
         item {
-            ScrollableTabRow(
-                selectedTabIndex = tab,
-                containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                contentColor = UrbanColors.Gold,
-                edgePadding = 0.dp
-            ) {
-                tabs.forEachIndexed { index, (label, _) ->
-                    Tab(selected = tab == index, onClick = { tab = index }, text = { Text(label) })
-                }
-            }
+            val icons = listOf(Icons.Default.Insights, Icons.Default.Today, Icons.Default.People, Icons.Default.AutoGraph)
+            UrbanPillTabs(tabs.mapIndexed { index, pair -> pair.first to icons[index] }, tab) { tab = it }
         }
         item { SectionContent(tabs[tab].second) }
 
