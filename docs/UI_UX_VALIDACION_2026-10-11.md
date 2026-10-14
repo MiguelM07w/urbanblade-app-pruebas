@@ -252,3 +252,18 @@ solo sobre valores: desplazaría etiquetas si el servidor manda un dato inválid
 La comprobación del pin HTTPS público de producción es obligatoria (sin Bearer ni datos de usuario). CI comprueba además que los reportes JVM existan y no contengan pruebas omitidas. El rediseño requiere revisión física en temas, fuentes grandes, Analítica y Reportes; no se instala durante la revisión de 31cf6ca.
 
 Validación final del rediseño: 339 pruebas JVM, todas aprobadas, cero omitidas y cero fallos. La comprobación HTTPS real y las dos regresiones de series analíticas pasaron. Compilación y lint finales correctos; revisión física de la nueva presentación pendiente.
+
+### 13 de octubre — Recorrido de visita del cliente
+
+UrbanVisitSummary comparte la identidad de una visita: servicio completo, avatar,
+nombre del barbero y precio en una fila aparte mediante UrbanKeyValue. Inicio
+separa estado, fecha y hora de estos datos, añade Ver mi cita como acción explícita
+y reutiliza el resumen al reservar de nuevo. Solo muestra importes recibidos del
+servidor: distingue Importe de la cita de Precio del servicio.
+
+UrbanStepProgress muestra números, confirmación de pasos completados y el nombre
+del paso actual, con descripción accesible. Es informativo: no permite saltar
+validaciones ni cambia el envío de una reserva. El resumen de selección se muestra
+completo y la invitación a reservar no promete una duración sin evidencia.
+
+Validación del recorrido de visita: compilación debug y lint correctos, cero errores, 32 advertencias y 3 hints sin avisos nuevos en los componentes tocados. Son cambios de presentación; la última suite funcional ejecutada sigue en 339 pruebas aprobadas y cero omitidas. CI ejecutará nuevamente la suite del commit. Revisión física de Inicio y del progreso de reserva pendiente; se conserva 31cf6ca en el teléfono.

@@ -445,35 +445,14 @@ private fun BookingHeader(step: BookingStep, summary: String?) {
             eyebrow = "Reserva · paso ${step.ordinal + 1} de ${BookingStep.entries.size}"
         )
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BookingStep.entries.forEach { s ->
-                val active = s.ordinal <= step.ordinal
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(4.dp)
-                        .background(if (active) UrbanColors.Gold else UrbanColors.Line, RoundedCornerShape(2.dp))
-                )
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(Modifier.fillMaxWidth()) {
-            BookingStep.entries.forEach { s ->
-                Text(
-                    s.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (s == step) UrbanColors.GoldText else UrbanColors.Muted,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
+        UrbanStepProgress(BookingStep.entries.map { it.label }, step.ordinal)
         summary?.let {
             Spacer(Modifier.height(10.dp))
             Surface(shape = MaterialTheme.shapes.small, color = UrbanColors.Gold.copy(alpha = 0.10f), modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CheckCircle, null, tint = UrbanColors.Gold, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Ink)
                 }
             }
         }

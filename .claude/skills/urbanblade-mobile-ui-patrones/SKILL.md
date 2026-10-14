@@ -401,3 +401,15 @@ Cuatro pestañas de analítica se muestran en dos filas del mismo UrbanPillTabs.
 No introducir otra tarjeta local ni una paleta de transparencias del mismo oro.
 Filtrar series por pares etiqueta/valor (analyticsChartSeries), nunca mapNotNull
 solo sobre valores: desplazaría etiquetas si el servidor manda un dato inválido.
+### 13 de octubre — Recorrido de visita del cliente
+
+UrbanVisitSummary comparte la identidad de una visita: servicio completo, avatar,
+nombre del barbero y precio en una fila aparte mediante UrbanKeyValue. Inicio
+separa estado, fecha y hora de estos datos, añade Ver mi cita como acción explícita
+y reutiliza el resumen al reservar de nuevo. Solo muestra importes recibidos del
+servidor: distingue Importe de la cita de Precio del servicio.
+
+UrbanStepProgress muestra números, confirmación de pasos completados y el nombre
+del paso actual, con descripción accesible. Es informativo: no permite saltar
+validaciones ni cambia el envío de una reserva. El resumen de selección se muestra
+completo y la invitación a reservar no promete una duración sin evidencia.
