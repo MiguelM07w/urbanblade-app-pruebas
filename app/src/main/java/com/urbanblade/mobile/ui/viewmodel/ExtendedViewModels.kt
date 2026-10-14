@@ -72,15 +72,45 @@ class StoreViewModel @JvmOverloads constructor(private val repo: UrbanRepository
     }
 }
 
-class NotificationsViewModel : ViewModel() {
-    private val repo = AppContainer.urbanRepository
+class NotificationsViewModel @JvmOverloads constructor(private val repo: UrbanRepository = AppContainer.urbanRepository) : ViewModel() {
     private val _data = MutableStateFlow<JsonObject?>(null); val data = _data.asStateFlow()
     private val _busy = MutableStateFlow(false); val busy = _busy.asStateFlow()
     private val _error = MutableStateFlow<String?>(null); val error = _error.asStateFlow()
-    fun load()=viewModelScope.launch{_busy.value=true;try{_data.value=repo.notifications()}catch(e:Exception){_error.value=e.toFriendlyMessage("No se pudieron cargar las notificaciones.")}finally{_busy.value=false}}
-    fun readAll()=viewModelScope.launch{try{repo.markAllNotificationsRead();load()}catch(e:Exception){_error.value=e.toFriendlyMessage("No se pudieron marcar.")}}
-    /** Marca una sola como leída al abrirla; si falla no bloquea nada, solo sigue apareciendo como nueva. */
-    fun read(id: String)=viewModelScope.launch{try{repo.markNotificationRead(id);load()}catch(_:Exception){}}
+    private var loadRequest: Job? = null
+    private var readRequest: Job? = null
+
+    fun load() {
+        if (readRequest?.isActive == true) return
+        loadRequest?.cancel()
+        _busy.value = true; _error.value = null
+        loadRequest = viewModelScope.launch {
+            try {
+                val response = repo.notifications()
+                ensureActive()
+                _data.value = response
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar las notificaciones.") }
+            finally { if (coroutineContext[Job]?.isActive == true) _busy.value = false }
+        }
+    }
+
+    fun readAll() = markRead(null)
+    fun read(id: String) = markRead(id)
+
+    private fun markRead(id: String?) {
+        if (_busy.value) return
+        _busy.value = true; _error.value = null
+        readRequest = viewModelScope.launch {
+            try {
+                if (id == null) repo.markAllNotificationsRead() else repo.markNotificationRead(id)
+                val response = repo.notifications()
+                ensureActive()
+                _data.value = response
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo actualizar el estado de tus avisos. Reintenta la consulta.") }
+            finally { _busy.value = false }
+        }
+    }
 }
 
 class BarberScheduleViewModel : ViewModel() {

@@ -218,3 +218,17 @@ Validación tienda/perfiles: 334 JVM (333 aprobadas y una omitida), compilación
 debug y lint final correctos. UI final incluye búsqueda restaurada y textos de
 compra claros; inventario usa Valor inventario como la web, sin cambiar el dato.
 La APK nueva no se instala durante la revisión del usuario de 4f2d48c.
+
+### 13 de octubre — Notificaciones y entrega al teléfono
+
+Se instaló la APK 31cf6ca con adb install -r (Success) y se abrió MainActivity,
+conservando la sesión. El usuario revisa tienda, carrito y perfiles; el teléfono
+queda libre durante los siguientes cambios.
+
+Notificaciones conserva la lista ante un fallo de consulta, limpia errores al
+reintentar y muestra un aviso recuperable cuando hay datos previos. El encabezado
+no afirma Estás al día durante una consulta o un fallo. Marcar como leídas se
+bloquea durante envío para evitar duplicados y después consulta el estado del
+servidor. Las pruebas utilizan repositorio simulado; no se marcaron avisos reales.
+
+Validación de Notificaciones: 337 pruebas JVM (336 aprobadas, una omitida), sin fallos. Lint: cero errores, 32 advertencias y 4 hints existentes. APK debug compilada contra la API habitual. Esta tanda requiere revisión física posterior y no sustituye 31cf6ca durante la revisión del usuario.

@@ -230,7 +230,13 @@ fun NotificationsScreen(onBack: () -> Unit, onOpen: (String) -> Unit = {}, vm: N
     UrbanModuleScreen(
         eyebrow = "CUENTA",
         title = "Notificaciones",
-        subtitle = if (view.unread > 0) UrbanFormat.count(view.unread, "aviso sin leer", "avisos sin leer") else "Estás al día.",
+        subtitle = when {
+            busy -> "Actualizando tus avisos…"
+            error != null -> "La consulta necesita actualizarse."
+            data == null -> "Tus avisos de UrbanBlade."
+            view.unread > 0 -> UrbanFormat.count(view.unread, "aviso sin leer", "avisos sin leer")
+            else -> "Estás al día."
+        },
         onBack = onBack,
         onRefresh = { vm.load() },
         refreshing = busy
@@ -239,9 +245,14 @@ fun NotificationsScreen(onBack: () -> Unit, onOpen: (String) -> Unit = {}, vm: N
             UrbanOutlineButton(
                 text = "Marcar todas como leídas",
                 onClick = { vm.readAll() },
+                enabled = !busy,
                 icon = Icons.Default.DoneAll,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+        if (error != null && view.items.isNotEmpty()) item {
+            UrbanErrorBanner(error!!)
+            UrbanOutlineButton("Reintentar consulta", { vm.load() }, enabled = !busy, modifier = Modifier.fillMaxWidth())
         }
         when {
             error != null && view.items.isEmpty() -> item {

@@ -384,3 +384,5 @@ El teléfono queda disponible para la revisión del usuario, sin automatizarlo.
 
 Tienda explicita Crear pedido y pago/recogida en sucursal según el backend.
 Tiene Volver visible; barbero/ingeniero no ven el acceso de pedidos.
+
+Notificaciones: conservar la lista ante errores, mostrar UrbanErrorBanner con Reintentar consulta y no afirmar Estás al día mientras carga o falla. Marcar como leídas bloquea envíos duplicados y vuelve a consultar el servidor.
