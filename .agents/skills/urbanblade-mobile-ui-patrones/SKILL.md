@@ -438,3 +438,21 @@ Los botones dicen Elegir horario, Elegir extras, Revisar reserva o Continuar sin
 extras y Reservar cita. Con fuente grande, las acciones se apilan para conservar
 sus nombres completos. Se mantienen canAdvance, comprobación de disponibilidad,
 consentimiento, protección de envío y los mismos datos enviados a la API.
+### 14 de octubre — Límites de scroll, teclado y contenido
+
+El tema comparte LocalOverscrollFactory = null: las listas y carruseles que usan el
+comportamiento de Compose no estiran visualmente el contenido al llegar al extremo.
+Se conserva el desplazamiento y su límite real; no se añaden bloqueos de gestos.
+
+Reservar tiene un único contenedor vertical, medido por el espacio disponible y
+recortado a su viewport. Encabezado, contenido, errores y consentimiento se desplazan
+juntos; total y acciones quedan fuera de esa zona. Cambiar de paso reinicia su
+posición. Los subpasos no crean otros scrolls verticales ni una grilla vertical
+anidada. La lista corta de servicios usa filas con clave dentro del flujo común.
+Se elimina el espacio extra de 96 dp al final de Pago y se consume el padding de
+Scaffold antes del imePadding para no contar dos veces el espacio del sistema.
+
+Comentarios usa un panel expandido proporcional al área disponible: lista y
+borrador se desplazan dentro de un viewport acotado, y Publicar comentario queda
+fuera de la lista. UrbanTextField añade maxLines opcional; el comentario usa de
+dos a cuatro líneas, manteniendo los 500 caracteres y desplazamiento interno.

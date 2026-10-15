@@ -303,3 +303,24 @@ sus nombres completos. Se mantienen canAdvance, comprobación de disponibilidad,
 consentimiento, protección de envío y los mismos datos enviados a la API.
 
 Validación de la guía de reserva: compilación debug y lint correctos, cero errores, 32 advertencias y 3 hints, sin avisos nuevos en los archivos tocados. Son cambios de presentación; la última suite funcional local fue de 343 pruebas aprobadas sin omisiones. GitHub también aprobó pruebas, builds y CodeQL de 4fb70ba, última instalación confirmada en el teléfono. La nueva guía requiere revisión física de pasos, fuente grande y temas; se conserva 4fb70ba instalada durante la revisión del usuario.
+
+### 14 de octubre — Límites de scroll, teclado y contenido
+
+El tema comparte LocalOverscrollFactory = null: las listas y carruseles que usan el
+comportamiento de Compose no estiran visualmente el contenido al llegar al extremo.
+Se conserva el desplazamiento y su límite real; no se añaden bloqueos de gestos.
+
+Reservar tiene un único contenedor vertical, medido por el espacio disponible y
+recortado a su viewport. Encabezado, contenido, errores y consentimiento se desplazan
+juntos; total y acciones quedan fuera de esa zona. Cambiar de paso reinicia su
+posición. Los subpasos no crean otros scrolls verticales ni una grilla vertical
+anidada. La lista corta de servicios usa filas con clave dentro del flujo común.
+Se elimina el espacio extra de 96 dp al final de Pago y se consume el padding de
+Scaffold antes del imePadding para no contar dos veces el espacio del sistema.
+
+Comentarios usa un panel expandido proporcional al área disponible: lista y
+borrador se desplazan dentro de un viewport acotado, y Publicar comentario queda
+fuera de la lista. UrbanTextField añade maxLines opcional; el comentario usa de
+dos a cuatro líneas, manteniendo los 500 caracteres y desplazamiento interno.
+
+Validación de límites: 343 pruebas JVM aprobadas, cero omitidas y cero fallos. Compilación debug y lint correctos: cero errores, 32 advertencias y 3 hints; sin avisos nuevos en los archivos modificados. La estructura elimina scrolls verticales anidados y acota viewports. No hay prueba instrumentada de gestos ejecutada en el teléfono: queda revisión física de extremos, teclado, consentimiento de Pago, texto grande y panel de comentarios. Se conserva 4fb70ba instalada mientras el usuario la revisa.

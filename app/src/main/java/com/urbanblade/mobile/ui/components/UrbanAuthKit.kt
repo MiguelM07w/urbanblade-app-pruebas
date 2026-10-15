@@ -160,7 +160,8 @@ fun UrbanTextField(
     isPassword: Boolean = false,
     onBlur: () -> Unit = {},
     /** Más de 1 = campo de varias líneas (p. ej. notas); el teclado conserva la tecla Enter. */
-    minLines: Int = 1
+    minLines: Int = 1,
+    maxLines: Int = Int.MAX_VALUE
 ) {
     var focused by remember { mutableStateOf(false) }
     var reveal by remember { mutableStateOf(false) }
@@ -222,6 +223,7 @@ fun UrbanTextField(
             trailingIcon = trailing,
             singleLine = minLines == 1,
             minLines = minLines,
+            maxLines = maxLines.coerceAtLeast(minLines),
             isError = error != null,
             visualTransformation = if (isPassword && !reveal) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(

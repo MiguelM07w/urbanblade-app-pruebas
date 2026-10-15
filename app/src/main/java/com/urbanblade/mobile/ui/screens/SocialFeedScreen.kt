@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -94,10 +95,12 @@ private fun WorkPost(
     var commentText by rememberSaveable(work.id) { mutableStateOf("") }
     var commenting by rememberSaveable(work.id) { mutableStateOf(false) }
     val barberName = work.barber?.name ?: "Equipo UrbanBlade"
-    if (commenting) ModalBottomSheet(onDismissRequest = { commenting = false }, containerColor = UrbanColors.Surface) {
+    if (commenting) ModalBottomSheet(onDismissRequest = { commenting = false }, containerColor = UrbanColors.Surface,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).imePadding().clipToBounds().padding(horizontal = 18.dp, vertical = 12.dp)) {
         LazyColumn(
-            Modifier.fillMaxWidth().heightIn(max = 560.dp).imePadding(),
-            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
+            Modifier.weight(1f).fillMaxWidth().clipToBounds(),
+            contentPadding = PaddingValues(bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item { UrbanSectionTitle("Comentarios", "${work.commentsCount} en total · muestra reciente") }
@@ -115,15 +118,14 @@ private fun WorkPost(
             }
             error?.let { item { UrbanErrorBanner(it) } }
             item {
-                UrbanTextField(commentText, { commentText = it }, "Tu comentario", minLines = 3,
+                UrbanTextField(commentText, { commentText = it }, "Tu comentario", minLines = 2, maxLines = 4,
                     helper = "${commentText.length}/500 caracteres",
                     error = if (commentText.length > 500) "Máximo 500 caracteres." else null)
             }
-            item {
+        }
                 UrbanPrimaryButton("Publicar comentario", { onComment(commentText) { commentText = "" } },
                     enabled = enabled && commentText.trim().isNotEmpty() && commentText.trim().length <= 500,
                     loading = sending, modifier = Modifier.fillMaxWidth())
-            }
         }
     }
     Surface(shape = MaterialTheme.shapes.large, color = UrbanColors.Card, border = androidx.compose.foundation.BorderStroke(1.dp, UrbanColors.Line), modifier = Modifier.fillMaxWidth()) {

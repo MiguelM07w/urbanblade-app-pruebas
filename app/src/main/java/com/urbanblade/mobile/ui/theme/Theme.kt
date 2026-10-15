@@ -6,6 +6,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -357,6 +359,7 @@ fun UrbanBladeTheme(content: @Composable () -> Unit) {
         colorScheme = colorScheme,
         typography = UrbanTypography,
         shapes = UrbanShapes,
-        content = content
-    )
+    ) {
+        CompositionLocalProvider(LocalOverscrollFactory provides null, content = content)
+    }
 }
