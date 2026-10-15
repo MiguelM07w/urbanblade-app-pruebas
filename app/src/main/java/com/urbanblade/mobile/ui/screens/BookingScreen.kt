@@ -210,6 +210,22 @@ fun BookingScreen(
         BookingStep.SERVICE -> selectedService != null
         else -> validSlot
     }
+    val nextActionHint = when {
+        busy -> "Procesando tu solicitud…"
+        catalogLoading -> "Consultando servicios y barberos…"
+        catalogError != null -> "Reintenta la consulta para continuar."
+        step == BookingStep.SERVICE && selectedService == null -> "Elige un servicio para ver los horarios."
+        step != BookingStep.SERVICE && selectedBarber == null -> "Elige el barbero de tu visita."
+        step != BookingStep.SERVICE && slotsLoading -> "Consultando horarios disponibles…"
+        step != BookingStep.SERVICE && slotsError != null -> "Reintenta la consulta de horarios."
+        step != BookingStep.SERVICE && !validSlot -> "Elige un horario disponible para continuar."
+        step == BookingStep.PAY && !acceptsNoShowFee -> "Revisa y acepta la política de inasistencia para reservar."
+        step == BookingStep.PAY && !reserveArmed -> "Preparando la confirmación…"
+        step == BookingStep.SERVICE -> "Servicio elegido. Ahora selecciona tu horario."
+        step == BookingStep.SCHEDULE -> "Horario elegido. Los extras del siguiente paso son opcionales."
+        step == BookingStep.EXTRAS -> "Añade productos o una nota si lo necesitas; después revisa tu reserva."
+        else -> "Revisa tu cita y el método de pago antes de reservar."
+    }
     // El "atrás" del teléfono regresa un paso; desde el paso en que se entró sale de la reserva.
     androidx.activity.compose.BackHandler(enabled = !confirmed && step.ordinal > firstVisitedStep.ordinal) {
         previousStep()
@@ -259,6 +275,8 @@ fun BookingScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 18.dp)
             ) {
+                Text(nextActionHint, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp))
                 if (step == BookingStep.SCHEDULE && slotsLoading) {
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                     Text("Consultando horarios…", color = UrbanColors.Muted)
@@ -375,9 +393,11 @@ fun BookingScreen(
                     )
                 }
             }
-            Row(
+            FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxItemsInEachRow = if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) 1 else 2
             ) {
                 if (step != BookingStep.SERVICE) {
                     UrbanOutlineButton(
@@ -390,9 +410,10 @@ fun BookingScreen(
                 }
                 UrbanPrimaryButton(
                     text = when (step) {
-                        BookingStep.PAY -> "Reservar"
-                        BookingStep.EXTRAS -> if (cartLines.isEmpty() && notes.isBlank()) "Omitir" else "Continuar"
-                        else -> "Continuar"
+                        BookingStep.SERVICE -> "Elegir horario"
+                        BookingStep.SCHEDULE -> "Elegir extras"
+                        BookingStep.EXTRAS -> if (cartLines.isEmpty() && notes.isBlank()) "Continuar sin extras" else "Revisar reserva"
+                        BookingStep.PAY -> "Reservar cita"
                     },
                     onClick = {
                         if (step == BookingStep.PAY) {

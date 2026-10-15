@@ -432,3 +432,14 @@ envíos y consulta páginas adicionales mediante el page existente del backend.
 Reservar con el barbero solo aparece para cliente y resuelve el user.id del muro al
 perfil.id del catálogo de barberos, que es el identificador del contrato de reserva.
 No se cambia el servidor ni se publica un comentario o reacción real en la validación.
+### 14 de octubre — Reserva guiada y acciones identificables
+
+UrbanStepProgress muestra los nombres de todos los pasos junto a sus números o
+marcas de completado; el estado de cada paso conserva su descripción accesible.
+BookingScreen explica qué falta (servicio, barbero, consulta, horario o aceptación
+de la política) y el siguiente movimiento cuando la selección está lista.
+
+Los botones dicen Elegir horario, Elegir extras, Revisar reserva o Continuar sin
+extras y Reservar cita. Con fuente grande, las acciones se apilan para conservar
+sus nombres completos. Se mantienen canAdvance, comprobación de disponibilidad,
+consentimiento, protección de envío y los mismos datos enviados a la API.

@@ -289,3 +289,17 @@ perfil.id del catálogo de barberos, que es el identificador del contrato de res
 No se cambia el servidor ni se publica un comentario o reacción real en la validación.
 
 Validación final del muro: 343 pruebas JVM, todas aprobadas, cero omitidas y cero fallos. Compilación debug y lint correctos: cero errores, 32 advertencias y 3 hints, sin avisos nuevos en el área social. Pruebas de acciones y comentarios usan mocks; no se modificaron publicaciones reales. Carrusel, visor, panel de comentarios, paginación, perfiles y fuente grande requieren revisión física posterior. Se conserva 31cf6ca en el teléfono.
+
+### 14 de octubre — Reserva guiada y acciones identificables
+
+UrbanStepProgress muestra los nombres de todos los pasos junto a sus números o
+marcas de completado; el estado de cada paso conserva su descripción accesible.
+BookingScreen explica qué falta (servicio, barbero, consulta, horario o aceptación
+de la política) y el siguiente movimiento cuando la selección está lista.
+
+Los botones dicen Elegir horario, Elegir extras, Revisar reserva o Continuar sin
+extras y Reservar cita. Con fuente grande, las acciones se apilan para conservar
+sus nombres completos. Se mantienen canAdvance, comprobación de disponibilidad,
+consentimiento, protección de envío y los mismos datos enviados a la API.
+
+Validación de la guía de reserva: compilación debug y lint correctos, cero errores, 32 advertencias y 3 hints, sin avisos nuevos en los archivos tocados. Son cambios de presentación; la última suite funcional local fue de 343 pruebas aprobadas sin omisiones. GitHub también aprobó pruebas, builds y CodeQL de 4fb70ba, última instalación confirmada en el teléfono. La nueva guía requiere revisión física de pasos, fuente grande y temas; se conserva 4fb70ba instalada durante la revisión del usuario.
