@@ -324,3 +324,21 @@ fuera de la lista. UrbanTextField añade maxLines opcional; el comentario usa de
 dos a cuatro líneas, manteniendo los 500 caracteres y desplazamiento interno.
 
 Validación de límites: 343 pruebas JVM aprobadas, cero omitidas y cero fallos. Compilación debug y lint correctos: cero errores, 32 advertencias y 3 hints; sin avisos nuevos en los archivos modificados. La estructura elimina scrolls verticales anidados y acota viewports. No hay prueba instrumentada de gestos ejecutada en el teléfono: queda revisión física de extremos, teclado, consentimiento de Pago, texto grande y panel de comentarios. Se conserva 4fb70ba instalada mientras el usuario la revisa.
+
+### 14 de octubre — Fluidez sin bloquear contenido visible
+
+StaggerIn conserva el espacio de cada bloque desde su primera composición y cambia
+solo su opacidad con graphicsLayer. La entrada dura 220 ms, con escalonado acotado
+a 105 ms; el tween respeta la escala de animación del sistema. No se desplazan
+controles fuera de su posición ni cambia la altura del formulario al aparecer.
+
+El muro distingue busy de loadingMore. Pedir otra página deja disponibles las
+acciones de trabajos ya cargados, mientras la consulta completa sigue protegida
+contra solapamientos. Al anexar páginas, los trabajos existentes prevalecen para
+conservar reacciones o guardados que hayan cambiado durante la consulta.
+La correspondencia de reserva se conserva durante una actualización normal para
+que su botón no desaparezca; se limpia si el catálogo falla o no corresponde reservar.
+Pruebas nuevas cubren interacción durante paginación y fallo/reintento sin perder
+contenido. Se mantienen los límites de scroll y el control de envíos duplicados.
+
+Validación de fluidez: 345 pruebas JVM aprobadas, cero omitidas y cero fallos, con reportes de la ejecución actual. El proceso inicial se interrumpió después de pruebas y APK; se repitieron lint y compilación con un trabajador y terminaron correctamente. Lint: cero errores, 32 advertencias y 3 hints, sin avisos nuevos en los archivos tocados. Falta revisión física de entrada en Acceso, interacción al paginar y recuperación de conexión; no se afirma una mejora de FPS medida. Se conserva la última instalación confirmada 4fb70ba.

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import com.urbanblade.mobile.data.model.*
 import com.urbanblade.mobile.data.repository.UrbanRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
 import org.junit.After
@@ -19,6 +20,39 @@ class SocialFeedViewModelTest {
     @Before fun setup() { Dispatchers.setMain(dispatcher); repo = mock() }
     @After fun cleanup() { Dispatchers.resetMain() }
     private fun feed(vararg ids: String, pages: Int = 1) = SocialFeedResponse(ids.map { SocialWork(it) }, JsonObject().apply { addProperty("last_page", pages) })
+
+    @Test fun `paginacion permite reaccionar y conserva la reaccion cuando llega otra pagina`() = runTest(dispatcher) {
+        val nextPage = CompletableDeferred<SocialFeedResponse>()
+        whenever(repo.socialFeed(1)).thenReturn(feed("a", pages = 2))
+        // Suspender la consulta permite comprobar la interacción mientras sigue en curso.
+        whenever(repo.socialFeed(2)).doSuspendableAnswer { nextPage.await() }
+        whenever(repo.reactWork("a")).thenReturn(SocialActionResponse("added", 1))
+        val vm = SocialFeedViewModel(repo)
+        vm.load(); advanceUntilIdle()
+        vm.loadMore(); runCurrent()
+        assertTrue(vm.loadingMore.value); assertFalse(vm.busy.value)
+        vm.toggleReaction("a"); runCurrent()
+        assertTrue(vm.feed.value.data.single().isReacted)
+        vm.load()
+        nextPage.complete(feed("a", "b", pages = 2)); advanceUntilIdle()
+        assertEquals(listOf("a", "b"), vm.feed.value.data.map { it.id })
+        assertTrue(vm.feed.value.data.first().isReacted)
+        assertFalse(vm.loadingMore.value)
+        verify(repo, times(1)).socialFeed(1)
+    }
+
+    @Test fun `fallo de paginacion conserva contenido y admite reintentar`() = runTest(dispatcher) {
+        whenever(repo.socialFeed(1)).thenReturn(feed("a", pages = 2))
+        whenever(repo.socialFeed(2)).thenThrow(RuntimeException("sin red")).thenReturn(feed("b", pages = 2))
+        val vm = SocialFeedViewModel(repo)
+        vm.load(); advanceUntilIdle()
+        vm.loadMore(); advanceUntilIdle()
+        assertEquals(listOf("a"), vm.feed.value.data.map { it.id })
+        assertNotNull(vm.error.value); assertFalse(vm.loadingMore.value)
+        vm.loadMore(); advanceUntilIdle()
+        assertNull(vm.error.value)
+        assertEquals(listOf("a", "b"), vm.feed.value.data.map { it.id })
+    }
 
     @Test fun `doble toque envia una sola reaccion y bloquea consulta mientras se envia`() = runTest(dispatcher) {
         whenever(repo.socialFeed(1)).thenReturn(feed("a"))

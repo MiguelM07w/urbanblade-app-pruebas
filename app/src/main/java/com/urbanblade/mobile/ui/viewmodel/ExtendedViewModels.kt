@@ -440,20 +440,23 @@ class SocialFeedViewModel @JvmOverloads constructor(private val repo: UrbanRepos
     private val _pending = MutableStateFlow<Set<String>>(emptySet()); val pending = _pending.asStateFlow()
     private val _bookingIds = MutableStateFlow<Map<String, String>>(emptyMap()); val bookingIds = _bookingIds.asStateFlow()
     private val _hasMore = MutableStateFlow(false); val hasMore = _hasMore.asStateFlow()
+    private val _loadingMore = MutableStateFlow(false); val loadingMore = _loadingMore.asStateFlow()
     private var page = 1
     private fun lastPage(response: SocialFeedResponse) = runCatching { response.meta?.get("last_page")?.asInt }.getOrNull() ?: 1
 
     fun load(canBook: Boolean = false) {
-        if (_busy.value || _pending.value.isNotEmpty()) return
+        if (_busy.value || _loadingMore.value || _pending.value.isNotEmpty()) return
         _busy.value = true; _error.value = null
-        _bookingIds.value = emptyMap()
+        if (!canBook) _bookingIds.value = emptyMap()
         viewModelScope.launch {
             try {
                 val response = repo.socialFeed(1)
                 ensureActive()
                 _feed.value = response; page = 1; _hasMore.value = page < lastPage(response)
                 if (canBook) {
-                    val barbers = repo.barbers()
+                    val barbers = try { repo.barbers() }
+                    catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { _bookingIds.value = emptyMap(); throw e }
                     ensureActive()
                     _bookingIds.value = barbers.mapNotNull { barber -> barber.user?.id?.let { it to barber.id } }.toMap()
                 }
@@ -464,8 +467,8 @@ class SocialFeedViewModel @JvmOverloads constructor(private val repo: UrbanRepos
     }
 
     fun loadMore() {
-        if (_busy.value || !_hasMore.value || _pending.value.isNotEmpty()) return
-        _busy.value = true; _error.value = null
+        if (_busy.value || _loadingMore.value || !_hasMore.value || _pending.value.isNotEmpty()) return
+        _loadingMore.value = true; _error.value = null
         viewModelScope.launch {
             try {
                 val response = repo.socialFeed(page + 1)
@@ -474,7 +477,7 @@ class SocialFeedViewModel @JvmOverloads constructor(private val repo: UrbanRepos
                 page += 1; _hasMore.value = page < lastPage(response)
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar más publicaciones.") }
-            finally { _busy.value = false }
+            finally { _loadingMore.value = false }
         }
     }
 

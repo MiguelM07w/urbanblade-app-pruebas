@@ -30,6 +30,7 @@ fun SocialFeedScreen(
 ) {
     val feed by vm.feed.collectAsState()
     val busy by vm.busy.collectAsState()
+    val loadingMore by vm.loadingMore.collectAsState()
     val error by vm.error.collectAsState()
     val pending by vm.pending.collectAsState()
     val bookingIds by vm.bookingIds.collectAsState()
@@ -55,7 +56,7 @@ fun SocialFeedScreen(
             else -> {
                 error?.let { item {
                     UrbanErrorBanner(it)
-                    UrbanOutlineButton("Actualizar muro", { vm.load(canBook) }, enabled = !busy && pending.isEmpty(), modifier = Modifier.fillMaxWidth())
+                    UrbanOutlineButton("Actualizar muro", { vm.load(canBook) }, enabled = !busy && !loadingMore && pending.isEmpty(), modifier = Modifier.fillMaxWidth())
                 } }
                 items(feed.data, key = { it.id }) { work ->
                     val profileId = work.barber?.id?.let(bookingIds::get)
@@ -72,7 +73,7 @@ fun SocialFeedScreen(
                     )
                 }
                 if (hasMore) item {
-                    UrbanOutlineButton(if (busy) "Cargando publicaciones…" else "Ver más trabajos", { vm.loadMore() }, enabled = !busy && pending.isEmpty(), modifier = Modifier.fillMaxWidth())
+                    UrbanOutlineButton(if (loadingMore) "Cargando publicaciones…" else "Ver más trabajos", { vm.loadMore() }, enabled = !busy && !loadingMore && pending.isEmpty(), modifier = Modifier.fillMaxWidth())
                 }
             }
         }

@@ -456,3 +456,18 @@ Comentarios usa un panel expandido proporcional al área disponible: lista y
 borrador se desplazan dentro de un viewport acotado, y Publicar comentario queda
 fuera de la lista. UrbanTextField añade maxLines opcional; el comentario usa de
 dos a cuatro líneas, manteniendo los 500 caracteres y desplazamiento interno.
+### 14 de octubre — Fluidez sin bloquear contenido visible
+
+StaggerIn conserva el espacio de cada bloque desde su primera composición y cambia
+solo su opacidad con graphicsLayer. La entrada dura 220 ms, con escalonado acotado
+a 105 ms; el tween respeta la escala de animación del sistema. No se desplazan
+controles fuera de su posición ni cambia la altura del formulario al aparecer.
+
+El muro distingue busy de loadingMore. Pedir otra página deja disponibles las
+acciones de trabajos ya cargados, mientras la consulta completa sigue protegida
+contra solapamientos. Al anexar páginas, los trabajos existentes prevalecen para
+conservar reacciones o guardados que hayan cambiado durante la consulta.
+La correspondencia de reserva se conserva durante una actualización normal para
+que su botón no desaparezca; se limpia si el catálogo falla o no corresponde reservar.
+Pruebas nuevas cubren interacción durante paginación y fallo/reintento sin perder
+contenido. Se mantienen los límites de scroll y el control de envíos duplicados.
