@@ -8,48 +8,109 @@ import com.urbanblade.mobile.data.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import com.urbanblade.mobile.data.repository.UrbanRepository
 
-class StoreViewModel : ViewModel() {
-    private val repo = AppContainer.urbanRepository
+class StoreViewModel @JvmOverloads constructor(private val repo: UrbanRepository = AppContainer.urbanRepository) : ViewModel() {
     private val _products = MutableStateFlow<List<ProductItem>>(emptyList())
     val products = _products.asStateFlow()
+    private val _knownProducts = MutableStateFlow<Map<String, ProductItem>>(emptyMap())
+    val knownProducts = _knownProducts.asStateFlow()
     private val _cart = MutableStateFlow<Map<String, Int>>(emptyMap())
     val cart = _cart.asStateFlow()
+    val estimatedTotal: Double get() = _cart.value.entries.sumOf { (id, quantity) -> (_knownProducts.value[id]?.precioVenta ?: 0.0) * quantity }
     private val _busy = MutableStateFlow(false); val busy = _busy.asStateFlow()
     private val _message = MutableStateFlow<String?>(null); val message = _message.asStateFlow()
     private val _error = MutableStateFlow<String?>(null); val error = _error.asStateFlow()
+    private var loadRequest: Job? = null
+    private var checkoutRequest: Job? = null
 
-    fun load(q: String? = null) = viewModelScope.launch {
+    fun load(q: String? = null) {
+        if (checkoutRequest?.isActive == true) return
+        loadRequest?.cancel()
         _busy.value = true; _error.value = null
-        try { _products.value = repo.products(q) }
-        catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo cargar la tienda.") }
-        finally { _busy.value = false }
+        loadRequest = viewModelScope.launch {
+            try {
+                val loaded = repo.products(q)
+                ensureActive()
+                _products.value = loaded
+                _knownProducts.value = _knownProducts.value + loaded.associateBy { it.id }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo cargar la tienda.") }
+            finally { if (coroutineContext[Job]?.isActive == true) _busy.value = false }
+        }
     }
-    fun add(id: String) { _cart.value = _cart.value.toMutableMap().apply { this[id] = (this[id] ?: 0) + 1 } }
-    fun remove(id: String) { _cart.value = _cart.value.toMutableMap().apply { val n=(this[id]?:0)-1; if(n<=0) remove(id) else this[id]=n } }
+    fun add(id: String) {
+        if (_busy.value) return
+        val product = _knownProducts.value[id] ?: return
+        val quantity = _cart.value[id] ?: 0
+        if (quantity >= product.stockActual) return
+        _cart.value = _cart.value + (id to quantity + 1)
+    }
+    fun remove(id: String) {
+        if (_busy.value) return
+        val quantity = (_cart.value[id] ?: 0) - 1
+        _cart.value = if (quantity <= 0) _cart.value - id else _cart.value + (id to quantity)
+    }
     fun clear() { _cart.value = emptyMap() }
-    fun checkout(onDone: () -> Unit) = viewModelScope.launch {
-        if (_cart.value.isEmpty()) { _error.value = "Tu carrito está vacío."; return@launch }
+    fun checkout(onDone: () -> Unit) {
+        if (_busy.value || checkoutRequest?.isActive == true) return
+        if (_cart.value.isEmpty()) { _error.value = "Tu carrito está vacío."; return }
+        val body = OrderRequest(_cart.value.map { OrderItemRequest(it.key, it.value) })
         _busy.value = true; _error.value = null
-        try {
-            val body = OrderRequest(_cart.value.map { OrderItemRequest(it.key, it.value) })
-            val res = repo.createOrder(body)
-            _message.value = res.message ?: "Pedido creado."
-            clear(); onDone()
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo crear el pedido.") }
-        finally { _busy.value = false }
+        checkoutRequest = viewModelScope.launch {
+            try {
+                val response = repo.createOrder(body)
+                _message.value = response.message ?: "Pedido creado."
+                clear(); onDone()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo crear el pedido.") }
+            finally { _busy.value = false }
+        }
     }
 }
 
-class NotificationsViewModel : ViewModel() {
-    private val repo = AppContainer.urbanRepository
+class NotificationsViewModel @JvmOverloads constructor(private val repo: UrbanRepository = AppContainer.urbanRepository) : ViewModel() {
     private val _data = MutableStateFlow<JsonObject?>(null); val data = _data.asStateFlow()
     private val _busy = MutableStateFlow(false); val busy = _busy.asStateFlow()
     private val _error = MutableStateFlow<String?>(null); val error = _error.asStateFlow()
-    fun load()=viewModelScope.launch{_busy.value=true;try{_data.value=repo.notifications()}catch(e:Exception){_error.value=e.toFriendlyMessage("No se pudieron cargar las notificaciones.")}finally{_busy.value=false}}
-    fun readAll()=viewModelScope.launch{try{repo.markAllNotificationsRead();load()}catch(e:Exception){_error.value=e.toFriendlyMessage("No se pudieron marcar.")}}
-    /** Marca una sola como leída al abrirla; si falla no bloquea nada, solo sigue apareciendo como nueva. */
-    fun read(id: String)=viewModelScope.launch{try{repo.markNotificationRead(id);load()}catch(_:Exception){}}
+    private var loadRequest: Job? = null
+    private var readRequest: Job? = null
+
+    fun load() {
+        if (readRequest?.isActive == true) return
+        loadRequest?.cancel()
+        _busy.value = true; _error.value = null
+        loadRequest = viewModelScope.launch {
+            try {
+                val response = repo.notifications()
+                ensureActive()
+                _data.value = response
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar las notificaciones.") }
+            finally { if (coroutineContext[Job]?.isActive == true) _busy.value = false }
+        }
+    }
+
+    fun readAll() = markRead(null)
+    fun read(id: String) = markRead(id)
+
+    private fun markRead(id: String?) {
+        if (_busy.value) return
+        _busy.value = true; _error.value = null
+        readRequest = viewModelScope.launch {
+            try {
+                if (id == null) repo.markAllNotificationsRead() else repo.markNotificationRead(id)
+                val response = repo.notifications()
+                ensureActive()
+                _data.value = response
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo actualizar el estado de tus avisos. Reintenta la consulta.") }
+            finally { _busy.value = false }
+        }
+    }
 }
 
 class BarberScheduleViewModel : ViewModel() {
@@ -372,42 +433,88 @@ class ReportsViewModel : ViewModel() {
 }
 
 
-class SocialFeedViewModel : ViewModel() {
-    private val repo = AppContainer.urbanRepository
+class SocialFeedViewModel @JvmOverloads constructor(private val repo: UrbanRepository = AppContainer.urbanRepository) : ViewModel() {
     private val _feed = MutableStateFlow(SocialFeedResponse()); val feed = _feed.asStateFlow()
     private val _busy = MutableStateFlow(false); val busy = _busy.asStateFlow()
     private val _error = MutableStateFlow<String?>(null); val error = _error.asStateFlow()
+    private val _pending = MutableStateFlow<Set<String>>(emptySet()); val pending = _pending.asStateFlow()
+    private val _bookingIds = MutableStateFlow<Map<String, String>>(emptyMap()); val bookingIds = _bookingIds.asStateFlow()
+    private val _hasMore = MutableStateFlow(false); val hasMore = _hasMore.asStateFlow()
+    private val _loadingMore = MutableStateFlow(false); val loadingMore = _loadingMore.asStateFlow()
+    private var page = 1
+    private fun lastPage(response: SocialFeedResponse) = runCatching { response.meta?.get("last_page")?.asInt }.getOrNull() ?: 1
 
-    fun load() = viewModelScope.launch {
+    fun load(canBook: Boolean = false) {
+        if (_busy.value || _loadingMore.value || _pending.value.isNotEmpty()) return
         _busy.value = true; _error.value = null
-        try { _feed.value = repo.socialFeed() }
-        catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo cargar el muro social.") }
-        finally { _busy.value = false }
+        if (!canBook) _bookingIds.value = emptyMap()
+        viewModelScope.launch {
+            try {
+                val response = repo.socialFeed(1)
+                ensureActive()
+                _feed.value = response; page = 1; _hasMore.value = page < lastPage(response)
+                if (canBook) {
+                    val barbers = try { repo.barbers() }
+                    catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { _bookingIds.value = emptyMap(); throw e }
+                    ensureActive()
+                    _bookingIds.value = barbers.mapNotNull { barber -> barber.user?.id?.let { it to barber.id } }.toMap()
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo actualizar el muro o preparar la reserva. Reintenta la consulta.") }
+            finally { _busy.value = false }
+        }
+    }
+
+    fun loadMore() {
+        if (_busy.value || _loadingMore.value || !_hasMore.value || _pending.value.isNotEmpty()) return
+        _loadingMore.value = true; _error.value = null
+        viewModelScope.launch {
+            try {
+                val response = repo.socialFeed(page + 1)
+                ensureActive()
+                _feed.value = response.copy(data = (_feed.value.data + response.data).distinctBy { it.id })
+                page += 1; _hasMore.value = page < lastPage(response)
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar más publicaciones.") }
+            finally { _loadingMore.value = false }
+        }
+    }
+
+    private fun action(id: String, fallback: String, block: suspend () -> Unit) {
+        if (_busy.value || id in _pending.value) return
+        _pending.value += id; _error.value = null
+        viewModelScope.launch {
+            try { block() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage(fallback) }
+            finally { _pending.value -= id }
+        }
     }
 
     private fun updateWork(id: String, transform: (SocialWork) -> SocialWork) {
         _feed.value = _feed.value.copy(data = _feed.value.data.map { if (it.id == id) transform(it) else it })
     }
 
-    fun toggleReaction(id: String) = viewModelScope.launch {
-        try {
+    fun toggleReaction(id: String) = action(id, "No se pudo reaccionar.") {
             val res = repo.reactWork(id)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
             updateWork(id) { it.copy(isReacted = res.status == "added", reactionsCount = res.count ?: it.reactionsCount) }
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo reaccionar.") }
     }
 
-    fun toggleSave(id: String) = viewModelScope.launch {
-        try {
+    fun toggleSave(id: String) = action(id, "No se pudo guardar.") {
             val res = repo.saveWork(id)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
             val added = res.status == "added"
-            updateWork(id) { it.copy(isSaved = added, savedCount = it.savedCount + if (added) 1 else -1) }
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo guardar.") }
+            updateWork(id) { it.copy(isSaved = added, savedCount = (it.savedCount + if (added) 1 else -1).coerceAtLeast(0)) }
     }
 
-    fun comment(id: String, text: String, onDone: () -> Unit) = viewModelScope.launch {
-        if (text.isBlank()) return@launch
-        try {
-            val res = repo.commentWork(id, text)
+    fun comment(id: String, text: String, onDone: () -> Unit) {
+        val comment = text.trim()
+        if (comment.isEmpty() || comment.length > 500) return
+        action(id, "No se pudo publicar el comentario.") {
+            val res = repo.commentWork(id, comment)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
             val newComment = res.data
             updateWork(id) {
                 it.copy(
@@ -416,7 +523,7 @@ class SocialFeedViewModel : ViewModel() {
                 )
             }
             onDone()
-        } catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudo publicar el comentario.") }
+        }
     }
 }
 

@@ -65,13 +65,12 @@ Endpoints: `GET/PUT profile`, `POST profile/avatar` (multipart `avatar`, JPG/PNG
 merge: mandar solo el canal que cambió). Tras cambiar nombre, correo o foto se llama
 `AuthViewModel.refreshUser()` para que el resto de la app lo vea sin cerrar sesión.
 
-Avisos: la app muestra solo los canales que hoy entregan algo (**en la app, correo,
-promociones**). `sms`, `whatsapp` y `push` existen en el backend pero no se ofrecen
-hasta que funcionen de punta a punta (push llega con T143).
+Avisos: canales en la app, correo y promociones; push móvil mediante FCM cuando
+el proyecto Firebase está configurado. SMS/WhatsApp no se ofrecen como entregas disponibles.
 
-Pendiente de decidir (no implementado): barbero favorito (`PUT profile/favorite-barber`
-existe, pero `GET profile` no devuelve el actual) y eliminar cuenta (`DELETE profile`,
-irreversible: requiere confirmación del PO).
+Favorito: control en catálogo, `PUT profile/favorite-barber`, estado recibido de
+`GET barbers` (`es_favorito`) y preselección al reservar. Eliminar cuenta ya existe
+en Seguridad, con confirmación y autorización del servidor; no duplicar otro flujo.
 
 Para agregar una sección nueva a Mi cuenta: un `AccountAccordion` en la pestaña que le
 corresponda, su formulario en `AccountSections.kt` y su `AccountSection` para los avisos.
@@ -223,7 +222,7 @@ request de Retrofit quedan idénticos.
 | `UrbanSwitch` / `UrbanSwitchRow(title, subtitle, checked, onCheckedChange)` | Hecho (26-sep) | Los 9 `Switch` sueltos: `AccountKit`, `AdminModuleScreens`, `BarbersAdminScreen` (2), `OffersAdminScreen` (2), `ServicesAdminScreen` (2), `SettingsScreen`. Fila completa tocable, pista dorada encendida, `Role.Switch` para TalkBack. |
 | `UrbanChoiceTiles(options, selected, onSelect)` con `UrbanChoice(value, title, subtitle, icon)` | Hecho (26-sep) | Los mosaicos de la "Propuesta A" (25-sep) de `BookingPayment` pasaron al kit sin cambiar su aspecto, y ahora también se usan al pagar una cita en `AppointmentsScreen` (antes eran dos botones sin estado seleccionado). Los `FilterChip` de propina y filtros se quedan (son filtros, no métodos). |
 | `UrbanStatCard` + `UrbanTrendPill` (`UrbanStatCard.kt`) | Hecho (10-oct) | KPI de los inicios por rol: etiqueta, valor y variación contra el periodo anterior ("+12.6 % vs mes pasado"). La variación no siempre es verde —más cancelaciones es rojo, con `positiveIsGood`— y si no hay periodo anterior no se inventa: se muestra el texto de `caption` y nada más. |
-| `UrbanDashboardChart` + `chartSeries()` (`DashboardCharts.kt`) | Hecho (26-sep) | Gráfica principal en cada inicio con los mismos datos de GET /dashboard que la web: admin (ingresos por semana, servicios), recepción (citas por hora), barbero (su semana, sus servicios). `spanishChartLabel()` traduce "Mon"/"03 Aug" que barber manda en inglés. La dona de `UrbanCharts` ahora usa tonos del oro. El cliente no lleva gráfica: su inicio es para reservar. |
+| `UrbanDashboardChart` + `chartSeries()` (`DashboardCharts.kt`) | Hecho (26-sep) | Gráfica principal en cada inicio con los mismos datos de GET /dashboard que la web: admin (ingresos por semana, servicios), recepción (citas por hora), barbero (su semana, sus servicios). `spanishChartLabel()` traduce "Mon"/"03 Aug" que barber manda en inglés. La dona de `UrbanCharts` usa la paleta categórica compartida `UrbanChartColors`. El cliente no lleva gráfica: su inicio es para reservar. |
 | `UrbanRow` + `UrbanRowGroup` + `UrbanRowDivider` (`UrbanDataTable.kt`) | Hecho (10-oct) | Tabla/lista compacta: filas con separador dentro de una sola tarjeta, con badge de estado y cifra o acción al final. Es la conclusión P0 de la auditoría ("reducir el uso de tarjetas; usar filas y separadores para listas") y reemplaza las tarjetas-por-elemento. Para listas largas, `UrbanRow` y `UrbanRowDivider` dentro del LazyColumn de la pantalla. |
 
 - `UrbanFormat.money()` / `moneyShort()` / `percent()` / `delta()` (`UrbanFormat.kt`): **todo** dinero y porcentaje de la app. Había once copias locales de `money()` con formatos distintos (%,.0f, %,.2f, %.0f, con y sin `Locale`); el texto es el mismo de `money()` y `fmtMoney()` de la web. Al tocar una pantalla, migrar su copia a estas. `delta()` devuelve `null` cuando no hay con qué comparar, nunca un "+100 %".
@@ -261,3 +260,214 @@ equivalencias:
   `adb shell settings put system font_scale 1.0`. Los datos se cambian en el borde (el
   repositorio o el estado del `ViewModel`), nunca editando el diseño; los fallos se reportan
   con su propuesta antes de corregir.
+
+## Cierre de auditoría UI/UX (11-oct-2026)
+
+- Texto de acento: `UrbanColors.GoldText`; fondos/acento de marca: `Gold`. El tema
+  claro adapta estados semánticos. No usar un acento de fondo como tinta pequeña.
+- `BenefitShop` y `BenefitPurchaseViewModel`: compras de paquetes/tarjetas regalo y
+  descarga de tarjeta PDF. Usar el PaymentSheet compartido y confirmación del servidor.
+- `MembershipCardFiles`: descarga autenticada y FileProvider limitado; nunca abrir
+  la URL de la API en navegador ni compartir el token con el visor.
+- Registro conserva datos no sensibles, nunca contraseñas. Atrás del sistema vuelve
+  un paso. Carga/error/vacío de horarios son estados diferentes.
+- Ver contrato, checklist y evidencia en `docs/UI_UX_CONTRATO_MOVIL.md`,
+  `docs/VERIFICACION_MANUAL_P0.md` y `docs/UI_UX_VALIDACION_2026-10-11.md`.
+
+## Sincronización de roles (12-oct-2026)
+
+Usar core/access/UserExperience para Inicio, Cuenta y navegación. Prioridad: administrador, recepcionista, barbero, ingeniero, cliente. No confundir experiencia visual con permisos del servidor. Más reutiliza UrbanRowGroup/UrbanRow. Bladebot se oculta en Cuenta, Reservar y Citas para no tapar acciones. Los avisos de pago usan pago_resuelto, nunca deducen deuda por estar confirmada la cita.
+
+### Pulido de accesos y pestañas (12-oct-2026, TT32 / HT-12)
+
+`UrbanActionRow` reutiliza `UrbanRow` para accesos de Cuenta y Más: icono neutro,
+título de hasta dos líneas y descripción de hasta tres. Agrupar con `UrbanRowGroup`;
+no usar avisos de atención para navegación ordinaria. `UrbanPillTabs` tiene objetivo
+táctil de 48 dp y apila icono/etiqueta en menos de 300 dp o con fuente desde 130 %,
+sin cortar las etiquetas con puntos suspensivos. La misma pieza sirve a todos los roles.
+
+### Reserva recuperable (12-oct-2026, TT32 / HT-12)
+
+El catálogo distingue carga, error y reintento. No avanzar ni confirmar con IDs
+fuera del catálogo ni con una hora sin respuesta vigente para servicio/barbero/día
+(`BookingViewModel.slotsFor`). Restaurar el borrador conserva la elección, pero
+requiere volver a validarla. Cambiar servicio amplía el recorrido para que Atrás
+superior, inferior y sistema vuelvan por el mismo paso; durante la reserva no se
+cambia de paso. El resumen es estimado: Laravel confirma el importe y beneficios.
+
+### Mis citas recuperable (12-oct-2026, TT32 / HT-12)
+
+Actualizar conserva las citas visibles mientras consulta. Cargar más debe estar
+accesible en Próximas e Historial y deshabilitado durante una consulta; los conteos
+parciales se identifican como páginas cargadas. La próxima cita usa `response.next`
+de Laravel cuando está disponible. Una recarga cancela la paginación anterior y
+un reintento correcto limpia su error. Acciones con FlowRow y objetivos de 48 dp,
+sin cambiar los permisos ni inferir pagos del estado de la cita.
+
+La consulta de adeudo conserva el último importe confirmado cuando la conexión
+falla o la API no entrega el total. Muestra un aviso recuperable con Actualizar;
+solo una respuesta válida del servidor puede confirmar un total cero. La respuesta
+antigua se cancela al reconsultar. Esta mejora es de lectura, sin efectuar pagos.
+
+
+### Comprobantes recuperables (12-oct-2026, TT32 / HT-12)
+
+Una consulta fallida de productos o membresías conserva el último dato válido;
+no equivale a una lista vacía ni a un total cero. El aviso identifica la consulta
+incompleta y ofrece reintento con el componente compartido. Una nueva consulta
+cancela la anterior. Las descargas tienen objetivo mínimo de 48 dp.
+Validación visual en teléfono y apertura real de PDF pendientes de reconexión.
+
+
+### Hallazgos en dispositivo por rol (12-oct-2026, TT32 / HT-12)
+
+Cliente, recepción, barbero y administrador revisados en el teléfono con API
+publicada, sin cobros ni cambios de citas. Ingeniero pendiente de cuenta real.
+Citas cuenta filas cargadas para barbero y distingue el motivo de bloqueo
+`motivo_no_iniciar`: no atribuir `puede_iniciar=false` exclusivamente al pago.
+Bladebot ocupa una fila propia sobre la navegación, sin superponerse al contenido.
+Inventario consulta todas las páginas del endpoint y deduplica por ID; el resumen
+es global y la sección de atención corresponde a la vista filtrada.
+
+
+### Agenda premium compartida (12-oct-2026, TT32 / HT-12)
+
+`UrbanAppointmentHeading` separa estado y título completo para evitar la
+competencia horizontal en nombres largos. Tarjetas de cliente usan el gradiente
+del kit premium. Agenda general de personal identifica al cliente y conserva
+barbero y fecha. Cancelar se accede por Más acciones y mantiene su confirmación;
+los permisos, payloads y precios no cambian.
+
+
+### Legibilidad premium sin dispositivo (13-oct-2026, TT32 / HT-12)
+
+Nombres completos de personas ajustan líneas en la agenda. El rail de fecha
+usa mes abreviado (13 OCT), no el día de semana que podía parecer marzo.
+Cabecera de cita, estado y gradiente compartidos; acciones por rol sin cambios.
+Frontend y backend sin cambios para esta tanda: contratos existentes y CI verde.
+Nueva compilación preparada para teléfono; revalidación física pendiente.
+
+
+### Kit adaptable y pedidos recuperables (13-oct-2026, TT32 / HT-12)
+
+Mosaicos comparten una columna con ancho menor de 340 dp o fontScale >= 1.3.
+Títulos, subtítulos y avisos clave no se truncan; UrbanKeyValue apila etiqueta y
+valor con poco espacio o texto grande. Catálogo separa precio de nombre y
+descripción, y no presenta fallos/carga como ausencia de barberos. Pedidos cancela
+consulta y paginación anteriores al recargar; carga más bloquea duplicados,
+conserva filas al fallar y limpia errores al reintentar. Acciones de pedido se
+apilan y se bloquean durante su operación. Revalidación física pendiente.
+
+Comprobantes lee todas las páginas de compras y deduplica por ID antes del
+resumen. Fallos de pagos conservan los últimos datos y permiten reintento; no
+deben cancelar el ViewModel por una excepción de coroutine hija.
+
+Catálogo respeta UserExperience.canBook: barbero/ingeniero consultan servicios
+y perfiles, sin acceso ni botón Reservar. Invitado conserva exploración y reserva
+con autenticación posterior; cliente y roles autorizados conservan su recorrido.
+
+
+### Tienda y perfiles compartidos (13-oct-2026, TT32 / HT-12)
+
+Tienda usa UrbanTextField con búsqueda IME y una estimación basada en todos los
+productos conocidos del carrito, no solo los resultados visibles. No supera
+existencias conocidas ni permite modificar la selección mientras envía; errores
+conservan el carrito y Laravel confirma precio/stock. Precio y cantidades ocupan
+un pie adaptable. Perfil del barbero usa UrbanStatStrip compartido, adaptable
+a fuente grande, y ofrece actualizar conservando información y mostrando fallos.
+El teléfono queda disponible para la revisión del usuario, sin automatizarlo.
+
+Tienda explicita Crear pedido y pago/recogida en sucursal según el backend.
+Tiene Volver visible; barbero/ingeniero no ven el acceso de pedidos.
+
+Notificaciones: conservar la lista ante errores, mostrar UrbanErrorBanner con Reintentar consulta y no afirmar Estás al día mientras carga o falla. Marcar como leídas bloquea envíos duplicados y vuelve a consultar el servidor.
+### 13 de octubre — Kit de analítica renovado (TT32 / HT-12)
+
+UrbanAnalyticsCard comparte el marco de dashboard, análisis, insights y reportes:
+título completo, cifra en su propia línea, contexto y visualización sobre el fondo
+degradado del tema. UrbanChartColors usa seis colores categóricos diferenciados,
+con tonos de mayor contraste en Libreta. Los colores de alerta siguen indicando
+estado; no representan categorías ni cambian el sentido de los datos.
+
+Donas: gráfico de 156 dp centrado y leyenda debajo con nombre completo, valor y
+porcentaje. Rankings: etiqueta y cifra separadas, barra degradada y color propio.
+Series temporales: azul para líneas y verde para barras, con selección de valores.
+Cuatro pestañas de analítica se muestran en dos filas del mismo UrbanPillTabs.
+No introducir otra tarjeta local ni una paleta de transparencias del mismo oro.
+Filtrar series por pares etiqueta/valor (analyticsChartSeries), nunca mapNotNull
+solo sobre valores: desplazaría etiquetas si el servidor manda un dato inválido.
+### 13 de octubre — Recorrido de visita del cliente
+
+UrbanVisitSummary comparte la identidad de una visita: servicio completo, avatar,
+nombre del barbero y precio en una fila aparte mediante UrbanKeyValue. Inicio
+separa estado, fecha y hora de estos datos, añade Ver mi cita como acción explícita
+y reutiliza el resumen al reservar de nuevo. Solo muestra importes recibidos del
+servidor: distingue Importe de la cita de Precio del servicio.
+
+UrbanStepProgress muestra números, confirmación de pasos completados y el nombre
+del paso actual, con descripción accesible. Es informativo: no permite saltar
+validaciones ni cambia el envío de una reserva. El resumen de selección se muestra
+completo y la invitación a reservar no promete una duración sin evidencia.
+### 14 de octubre — Muro de inspiración con navegación social
+
+UrbanWorkGallery es el carrusel compartido de trabajos: deslizar fotos y videos,
+contador de medios, indicadores de página, doble toque para dar me gusta, ampliación
+de foto y video bajo demanda. WorkMediaThumb muestra carga y recuperación visual
+cuando no hay imagen o falla la miniatura. No hay historias temporales, seguidores
+ni reproducción automática: la API no ofrece esos contratos.
+
+SocialFeedScreen muestra autor con avatar y enlace a perfil público, fecha real del
+trabajo, medios protagonistas, acciones de reacción/comentario/guardado y descripción
+completa. Los comentarios se abren en ModalBottomSheet con UrbanTextField, límite de
+500 caracteres y borrador conservado si falla. El servidor devuelve tres recientes;
+la pantalla identifica esa muestra y conserva el contador total, sin inventar el resto.
+
+SocialFeedViewModel serializa acciones por publicación, bloquea consulta durante
+envíos y consulta páginas adicionales mediante el page existente del backend.
+Reservar con el barbero solo aparece para cliente y resuelve el user.id del muro al
+perfil.id del catálogo de barberos, que es el identificador del contrato de reserva.
+No se cambia el servidor ni se publica un comentario o reacción real en la validación.
+### 14 de octubre — Reserva guiada y acciones identificables
+
+UrbanStepProgress muestra los nombres de todos los pasos junto a sus números o
+marcas de completado; el estado de cada paso conserva su descripción accesible.
+BookingScreen explica qué falta (servicio, barbero, consulta, horario o aceptación
+de la política) y el siguiente movimiento cuando la selección está lista.
+
+Los botones dicen Elegir horario, Elegir extras, Revisar reserva o Continuar sin
+extras y Reservar cita. Con fuente grande, las acciones se apilan para conservar
+sus nombres completos. Se mantienen canAdvance, comprobación de disponibilidad,
+consentimiento, protección de envío y los mismos datos enviados a la API.
+### 14 de octubre — Límites de scroll, teclado y contenido
+
+El tema comparte LocalOverscrollFactory = null: las listas y carruseles que usan el
+comportamiento de Compose no estiran visualmente el contenido al llegar al extremo.
+Se conserva el desplazamiento y su límite real; no se añaden bloqueos de gestos.
+
+Reservar tiene un único contenedor vertical, medido por el espacio disponible y
+recortado a su viewport. Encabezado, contenido, errores y consentimiento se desplazan
+juntos; total y acciones quedan fuera de esa zona. Cambiar de paso reinicia su
+posición. Los subpasos no crean otros scrolls verticales ni una grilla vertical
+anidada. La lista corta de servicios usa filas con clave dentro del flujo común.
+Se elimina el espacio extra de 96 dp al final de Pago y se consume el padding de
+Scaffold antes del imePadding para no contar dos veces el espacio del sistema.
+
+Comentarios usa un panel expandido proporcional al área disponible: lista y
+borrador se desplazan dentro de un viewport acotado, y Publicar comentario queda
+fuera de la lista. UrbanTextField añade maxLines opcional; el comentario usa de
+dos a cuatro líneas, manteniendo los 500 caracteres y desplazamiento interno.
+### 14 de octubre — Fluidez sin bloquear contenido visible
+
+StaggerIn conserva el espacio de cada bloque desde su primera composición y cambia
+solo su opacidad con graphicsLayer. La entrada dura 220 ms, con escalonado acotado
+a 105 ms; el tween respeta la escala de animación del sistema. No se desplazan
+controles fuera de su posición ni cambia la altura del formulario al aparecer.
+
+El muro distingue busy de loadingMore. Pedir otra página deja disponibles las
+acciones de trabajos ya cargados, mientras la consulta completa sigue protegida
+contra solapamientos. Al anexar páginas, los trabajos existentes prevalecen para
+conservar reacciones o guardados que hayan cambiado durante la consulta.
+La correspondencia de reserva se conserva durante una actualización normal para
+que su botón no desaparezca; se limpia si el catálogo falla o no corresponde reservar.
+Pruebas nuevas cubren interacción durante paginación y fallo/reintento sin perder
+contenido. Se mantienen los límites de scroll y el control de envíos duplicados.

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,7 +56,7 @@ import java.util.Locale
  * Gráficos propios de analítica, dibujados con Canvas (sin dependencias extra) y con los colores
  * del tema activo. Se animan al aparecer; con "Quitar animaciones" del sistema salen completos.
  */
-private fun chartPalette(): List<Color> = listOf(1f, 0.75f, 0.55f, 0.38f, 0.24f).map { UrbanColors.Gold.copy(alpha = it) }
+private fun chartPalette(): List<Color> = UrbanChartColors.palette()
 
 private fun formatNumber(value: Double): String =
     if (value >= 1000 || value == value.toLong().toDouble()) {
@@ -77,7 +78,7 @@ fun UrbanLineChart(
     labels: List<String>,
     values: List<Double>,
     modifier: Modifier = Modifier,
-    color: Color = UrbanColors.Gold,
+    color: Color = UrbanChartColors.at(1),
     format: (Double) -> String = ::defaultFormat
 ) {
     if (values.size < 2) return
@@ -195,15 +196,15 @@ fun UrbanDonutChart(
     LaunchedEffect(values) { progress.animateTo(1f, tween(durationMillis = 800)) }
     val palette = chartPalette()
 
-    Row(
+    Column(
         modifier
             .fillMaxWidth()
             .semantics { contentDescription = "Gráfica de dona con ${values.size} categorías" },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Canvas(Modifier.size(112.dp)) {
-            val stroke = 20.dp.toPx()
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.size(156.dp)) {
+            val stroke = 22.dp.toPx()
             val diameter = size.minDimension - stroke
             var start = -90f
             values.forEachIndexed { i, v ->
@@ -221,13 +222,18 @@ fun UrbanDonutChart(
                 start += fullSweep
             }
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("100%", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
+            Text("Distribución", style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted)
+        }
+        }
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             values.forEachIndexed { i, v ->
                 if (v <= 0) return@forEachIndexed
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.Top) {
                     Box(
                         Modifier
-                            .size(10.dp)
+                            .padding(top = 5.dp).size(10.dp)
                             .clip(CircleShape)
                             .background(palette[i % palette.size])
                     )
@@ -236,15 +242,16 @@ fun UrbanDonutChart(
                         labels.getOrNull(i).orEmpty().ifBlank { "Categoría ${i + 1}" },
                         style = MaterialTheme.typography.bodySmall,
                         color = UrbanColors.Ink,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
+                    Column(horizontalAlignment = Alignment.End) {
+                    Text(formatNumber(v), style = MaterialTheme.typography.bodySmall, color = UrbanColors.Ink, fontWeight = FontWeight.SemiBold)
                     Text(
-                        String.format(Locale("es", "MX"), "%.0f%%", v / total * 100),
+                        String.format(Locale("es", "MX"), "%.1f%%", v / total * 100),
                         style = MaterialTheme.typography.bodySmall,
                         color = UrbanColors.Muted
                     )
+                    }
                 }
             }
         }
@@ -262,7 +269,7 @@ fun UrbanBarChart(
     labels: List<String>,
     values: List<Double>,
     modifier: Modifier = Modifier,
-    color: Color = UrbanColors.Gold,
+    color: Color = UrbanChartColors.at(0),
     format: (Double) -> String = ::defaultFormat
 ) {
     if (values.isEmpty() || values.all { it <= 0.0 }) return
@@ -309,7 +316,7 @@ fun UrbanBarChart(
                             .fillMaxWidth()
                             .fillMaxHeight(fraction)
                             .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                            .background(if (i == focus) color else color.copy(alpha = 0.32f))
+                            .background(Brush.verticalGradient(listOf(if (i == focus) color else color.copy(alpha = 0.75f), color.copy(alpha = 0.25f))))
                     )
                 }
             }
@@ -337,8 +344,9 @@ fun UrbanHBars(
     labels: List<String>,
     values: List<Double>,
     modifier: Modifier = Modifier,
-    color: Color = UrbanColors.Gold,
-    format: (Double) -> String = ::defaultFormat
+    color: Color = UrbanChartColors.at(0),
+    format: (Double) -> String = ::defaultFormat,
+    multicolor: Boolean = true
 ) {
     if (values.isEmpty() || values.all { it <= 0.0 }) return
     val progress = remember(values) { Animatable(0f) }
@@ -347,27 +355,24 @@ fun UrbanHBars(
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         values.forEachIndexed { i, v ->
+            val tone = if (multicolor) UrbanChartColors.at(i) else color
             Column(Modifier.semantics { contentDescription = "${labels.getOrElse(i) { "" }}: ${format(v)}" }) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        labels.getOrElse(i) { "" },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = UrbanColors.Ink,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(format(v), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = UrbanColors.Ink)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    Box(Modifier.padding(top = 5.dp).size(8.dp).clip(CircleShape).background(tone))
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(labels.getOrElse(i) { "" }, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink)
+                        Text(format(v), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = UrbanColors.Ink)
+                    }
                 }
-                Spacer(Modifier.height(5.dp))
-                Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50)).background(UrbanColors.Line.copy(alpha = 0.5f))) {
+                Spacer(Modifier.height(8.dp))
+                Box(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(50)).background(UrbanColors.Line.copy(alpha = 0.5f))) {
                     Box(
                         Modifier
                             .fillMaxHeight()
                             .fillMaxWidth(((v / max).toFloat() * progress.value).coerceIn(0f, 1f))
                             .clip(RoundedCornerShape(50))
-                            .background(if (i == 0) color else color.copy(alpha = 0.55f))
+                            .background(Brush.horizontalGradient(listOf(tone.copy(alpha = 0.65f), tone)))
                     )
                 }
             }

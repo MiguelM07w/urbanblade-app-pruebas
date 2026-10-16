@@ -118,7 +118,7 @@ fun OrdersScreen(user: AuthUser, onBack: () -> Unit, vm: OrdersViewModel = viewM
                 state.stats?.let { stats ->
                     item {
                         UrbanPremiumCard(Modifier.fillMaxWidth()) {
-                            Text("POR COBRAR", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                            Text("POR COBRAR", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                             Text(moneyShort(stats.porCobrar), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
                             Text("en pedidos pendientes de entregar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
                             HorizontalDivider(Modifier.padding(vertical = 10.dp), color = UrbanColors.Line)
@@ -183,6 +183,7 @@ fun OrdersScreen(user: AuthUser, onBack: () -> Unit, vm: OrdersViewModel = viewM
                         text = if (state.loadingMore) "Cargando…" else "Cargar más pedidos",
                         onClick = { vm.loadMore() },
                         icon = Icons.Default.ExpandMore,
+                        enabled = !state.loading && !state.loadingMore,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -243,10 +244,10 @@ private fun OrderCard(order: OrderRow, staff: Boolean, busy: Boolean, onCancel: 
         }
         if (order.estado == "pendiente") {
             Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                UrbanOutlineButton("Cancelar", onCancel, Modifier.weight(1f))
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                UrbanOutlineButton("Cancelar", onCancel, Modifier.fillMaxWidth(), enabled = !busy)
                 if (staff) {
-                    UrbanPrimaryButton("Entregar y cobrar", onDeliver, Modifier.weight(1f), enabled = !busy, loading = busy)
+                    UrbanPrimaryButton("Entregar y cobrar", onDeliver, Modifier.fillMaxWidth(), enabled = !busy, loading = busy)
                 }
             }
         }

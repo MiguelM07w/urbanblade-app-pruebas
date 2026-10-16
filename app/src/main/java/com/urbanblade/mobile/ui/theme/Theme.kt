@@ -6,6 +6,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -47,9 +49,8 @@ val UrbanTheme.mascotDrawable: Int
     }
 
 /**
- * Mismos campos que expone UrbanColors -- Success/Warning/Danger/Info NO
- * viven aquí porque en el sitio web no varían por tema (son clases
- * Tailwind fijas), así que en Android tampoco cambian con el tema.
+ * Fondos y acentos de marca compartidos con la web. UrbanColors adapta la tinta de
+ * acento y los tonos semánticos para que también sean legibles en el tema claro.
  */
 private data class UrbanPalette(
     val background: Color,
@@ -117,7 +118,7 @@ private val palettes = mapOf(
         gold = Color(0xFFB8860B),
         goldDim = Color(0xFF8A6608),
         ink = Color(0xFF241E18),
-        muted = Color(0xFF7A6F60),
+        muted = Color(0xFF685E50),
         gradientTop = Color(0xFFFBF6EA),
         gradientBottom = Color(0xFFEFE6D2),
     ),
@@ -159,14 +160,20 @@ object UrbanColors {
     var GradientBottom by mutableStateOf(default.gradientBottom)
         private set
 
-    // Fijos: no varían por tema en el sitio web tampoco (clases Tailwind).
-    val Success = Color(0xFF4BB983)
-    val Warning = Color(0xFFE2A84D)
-    val Danger = Color(0xFFE36D6D)
+    // Los fondos conservan el acento de marca; el texto y los estados se oscurecen en Libreta.
+    var GoldText by mutableStateOf(default.gold)
+        private set
+    var Success by mutableStateOf(Color(0xFF4BB983))
+        private set
+    var Warning by mutableStateOf(Color(0xFFE2A84D))
+        private set
+    var Danger by mutableStateOf(Color(0xFFE36D6D))
+        private set
 
     /** Texto/ícono sobre fondos dorados (botones, chips seleccionados): oscuro en los 4 temas. */
     val OnGold = Color(0xFF080808)
-    val Info = Color(0xFF72A5D8)
+    var Info by mutableStateOf(Color(0xFF72A5D8))
+        private set
 
     fun applyTheme(theme: UrbanTheme) {
         val p = palettes.getValue(theme)
@@ -178,6 +185,15 @@ object UrbanColors {
         Line = p.line
         Gold = p.gold
         GoldDim = p.goldDim
+        GoldText = when (theme) {
+            UrbanTheme.LIBRETA -> Color(0xFF795806)
+            UrbanTheme.ACERO -> Color(0xFFD28B5A)
+            else -> p.gold
+        }
+        Success = if (theme.isLight) Color(0xFF236541) else Color(0xFF4BB983)
+        Warning = if (theme.isLight) Color(0xFF80520D) else Color(0xFFE2A84D)
+        Danger = if (theme.isLight) Color(0xFFAA3030) else Color(0xFFE36D6D)
+        Info = if (theme.isLight) Color(0xFF285C8F) else Color(0xFF72A5D8)
         Ink = p.ink
         Muted = p.muted
         GradientTop = p.gradientTop
@@ -280,7 +296,7 @@ fun UrbanBladeTheme(content: @Composable () -> Unit) {
 
     val colorScheme = if (UrbanColors.current.isLight) {
         lightColorScheme(
-            primary = UrbanColors.Gold,
+            primary = UrbanColors.GoldText,
             onPrimary = Color(0xFFFFFBF3),
             primaryContainer = Color(0xFFF0DFB0),
             onPrimaryContainer = Color(0xFF4A3B08),
@@ -305,7 +321,7 @@ fun UrbanBladeTheme(content: @Composable () -> Unit) {
         )
     } else {
         darkColorScheme(
-            primary = UrbanColors.Gold,
+            primary = UrbanColors.GoldText,
             onPrimary = Color(0xFF0A0A0A),
             primaryContainer = Color(0xFF332B12),
             onPrimaryContainer = Color(0xFFF4D978),
@@ -343,6 +359,7 @@ fun UrbanBladeTheme(content: @Composable () -> Unit) {
         colorScheme = colorScheme,
         typography = UrbanTypography,
         shapes = UrbanShapes,
-        content = content
-    )
+    ) {
+        CompositionLocalProvider(LocalOverscrollFactory provides null, content = content)
+    }
 }

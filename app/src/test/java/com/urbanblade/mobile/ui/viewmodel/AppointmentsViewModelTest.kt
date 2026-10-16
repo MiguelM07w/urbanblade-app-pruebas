@@ -5,10 +5,16 @@ import android.net.Uri
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.anyOrNull
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.delay
+import org.mockito.kotlin.doSuspendableAnswer
+import org.mockito.kotlin.times
+import org.junit.Assert.assertNotNull
 import kotlinx.coroutines.runBlocking
 import com.urbanblade.mobile.data.model.PageMeta
 import com.urbanblade.mobile.data.model.AppointmentsResponse
 import com.urbanblade.mobile.data.model.AppointmentRow
+import com.urbanblade.mobile.data.model.NoShowFeesResponse
 import com.urbanblade.mobile.data.model.StripeIntentResponseData
 import com.urbanblade.mobile.data.model.UploadPaymentReceiptData
 import com.urbanblade.mobile.data.model.UploadPaymentReceiptResponse
@@ -97,6 +103,72 @@ class AppointmentsViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test
+    fun `reintentar una pagina conserva citas y limpia el error al recuperar`() = runTest(dispatcher) {
+        val first = AppointmentsResponse(data = listOf(appointment()), meta = PageMeta(page = 1, hasMore = true))
+        val second = AppointmentsResponse(data = listOf(appointment().copy(id = "2")), meta = PageMeta(page = 2, hasMore = false))
+        whenever(repo.appointments(eq(1), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(first)
+        whenever(repo.appointments(eq(2), anyOrNull(), anyOrNull(), anyOrNull()))
+            .thenAnswer { throw java.io.IOException("offline") }.thenReturn(second)
+        val vm = AppointmentsViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        vm.loadMore()
+        advanceUntilIdle()
+        assertEquals(listOf("1"), vm.data.value.data.map { it.id })
+        assertTrue(vm.hasMore.value)
+        assertNotNull(vm.error.value)
+        vm.loadMore()
+        advanceUntilIdle()
+        assertEquals(listOf("1", "2"), vm.data.value.data.map { it.id })
+        assertNull(vm.error.value)
+        assertFalse(vm.loadingMore.value)
+    }
+
+    @Test
+    fun `actualizar cancela pagina anterior y evita pedir mas durante la recarga`() = runTest(dispatcher) {
+        val first = AppointmentsResponse(data = listOf(appointment()), meta = PageMeta(page = 1, hasMore = true))
+        val refreshed = first.copy(data = listOf(appointment().copy(id = "actualizada")))
+        whenever(repo.appointments(eq(1), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(first, refreshed)
+        whenever(repo.appointments(eq(2), anyOrNull(), anyOrNull(), anyOrNull())).doSuspendableAnswer {
+            delay(1000)
+            AppointmentsResponse(data = listOf(appointment().copy(id = "obsoleta")))
+        }
+        val vm = AppointmentsViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        vm.loadMore()
+        vm.loadMore()
+        runCurrent()
+        assertTrue(vm.loadingMore.value)
+        vm.load()
+        vm.loadMore()
+        advanceUntilIdle()
+        assertEquals(listOf("actualizada"), vm.data.value.data.map { it.id })
+        assertNull(vm.error.value)
+        assertFalse(vm.loading.value)
+        assertFalse(vm.loadingMore.value)
+        verify(repo, times(1)).appointments(eq(2), anyOrNull(), anyOrNull(), anyOrNull())
+    }
+
+    @Test
+    fun `una recarga anterior no reemplaza la respuesta mas reciente`() = runTest(dispatcher) {
+        var calls = 0
+        whenever(repo.appointments(eq(1), anyOrNull(), anyOrNull(), anyOrNull())).doSuspendableAnswer {
+            val call = ++calls
+            if (call == 1) delay(1000)
+            AppointmentsResponse(data = listOf(appointment().copy(id = call.toString())))
+        }
+        val vm = AppointmentsViewModel(repo)
+        vm.load()
+        runCurrent()
+        vm.load()
+        advanceUntilIdle()
+        assertEquals("2", vm.data.value.data.single().id)
+        assertNull(vm.error.value)
+        assertFalse(vm.loading.value)
+    }
+
     private fun httpException(code: Int, message: String? = null): HttpException {
         val body = if (message != null) "{\"message\":\"$message\"}" else ""
         return HttpException(Response.error<Any>(code, body.toResponseBody("application/json".toMediaType())))
@@ -104,6 +176,32 @@ class AppointmentsViewModelTest {
 
     private fun appointment(code: String = "abc123", estado: String = "pendiente") =
         AppointmentRow(id = "1", code = code, fecha = "2026-10-01", horaInicio = "10:00:00", estado = estado)
+
+    @Test
+    fun `fallo de consulta no elimina el adeudo y solo el servidor confirma cero`() = runTest(dispatcher) {
+        whenever(repo.noShowFees(anyOrNull()))
+            .thenReturn(NoShowFeesResponse(adeudoTotal = 75.0))
+            .thenAnswer { throw java.io.IOException("offline") }
+            .thenReturn(NoShowFeesResponse(adeudoTotal = null))
+            .thenReturn(NoShowFeesResponse(adeudoTotal = 0.0))
+        val vm = AppointmentsViewModel(repo)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(75.0, vm.debt.value, 0.0)
+        assertNull(vm.debtError.value)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(75.0, vm.debt.value, 0.0)
+        assertNotNull(vm.debtError.value)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(75.0, vm.debt.value, 0.0)
+        assertNotNull(vm.debtError.value)
+        vm.loadDebt()
+        advanceUntilIdle()
+        assertEquals(0.0, vm.debt.value, 0.0)
+        assertNull(vm.debtError.value)
+    }
 
     @Test
     fun `cancelar con 422 muestra el mensaje real del servidor`() = runTest(dispatcher) {

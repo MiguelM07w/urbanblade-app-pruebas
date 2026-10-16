@@ -47,6 +47,8 @@ import com.urbanblade.mobile.BuildConfig
 import com.urbanblade.mobile.core.network.AppContainer
 import com.urbanblade.mobile.data.model.AuthUser
 import com.urbanblade.mobile.ui.components.UrbanAttentionRow
+import com.urbanblade.mobile.ui.components.UrbanActionRow
+import com.urbanblade.mobile.ui.components.UrbanRowGroup
 import com.urbanblade.mobile.ui.components.UrbanFormat
 import com.urbanblade.mobile.ui.components.UrbanMascotState
 import com.urbanblade.mobile.ui.components.UrbanOutlineButton
@@ -81,7 +83,7 @@ fun AccountScreen(
     vm: AccountViewModel = viewModel()
 ) {
     val state by vm.state.collectAsState()
-    val isClient = "cliente" in user.roles
+    val isClient = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pickPhoto = rememberSingleImagePicker { uri -> vm.uploadAvatar(context, uri, onUserChanged) }
@@ -156,10 +158,12 @@ fun AccountScreen(
                 if (isClient) {
                     item { UrbanSectionTitle("Tu actividad", "Beneficios, pagos y compras.") }
                     item {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            UrbanAttentionRow(Icons.Default.Stars, "Beneficios", "Nivel, puntos, membresía y tu código para invitar.", UrbanColors.Gold, onClick = { onNavigate("wallet") })
-                            UrbanAttentionRow(Icons.Default.ReceiptLong, "Mis facturas", "Comprobantes de tus citas y compras.", UrbanColors.Gold, onClick = { onNavigate("payments") })
-                            UrbanAttentionRow(Icons.Default.ShoppingBag, "Mis pedidos", "Compras de la tienda.", UrbanColors.Gold, onClick = { onNavigate("orders") })
+                        UrbanRowGroup(listOf("wallet", "payments", "orders")) { route ->
+                            when (route) {
+                                "wallet" -> UrbanActionRow("Beneficios", "Nivel, puntos, membresía y tu código para invitar.", Icons.Default.Stars) { onNavigate(route) }
+                                "payments" -> UrbanActionRow("Mis facturas", "Comprobantes de tus citas y compras.", Icons.Default.ReceiptLong) { onNavigate(route) }
+                                "orders" -> UrbanActionRow("Mis pedidos", "Compras de la tienda.", Icons.Default.ShoppingBag) { onNavigate(route) }
+                            }
                         }
                     }
                 }
@@ -274,16 +278,16 @@ fun AccountScreen(
             }
         }
 
-        // Documentos legales (los mismos de la web) y cómo pedir el borrado de la cuenta, que en la
-        // app todavía no se hace desde un botón.
+        // Documentos legales y contacto para derechos sobre los datos; el borrado de la cuenta
+        // está en Seguridad para los roles autorizados.
         item {
             val openLegal = com.urbanblade.mobile.ui.components.rememberOpenLegal()
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 androidx.compose.material3.TextButton(onClick = { openLegal(com.urbanblade.mobile.ui.components.UrbanLegal.PRIVACY_URL) }) {
-                    Text("Aviso de Privacidad", color = UrbanColors.Gold)
+                    Text("Aviso de Privacidad", color = UrbanColors.GoldText)
                 }
                 androidx.compose.material3.TextButton(onClick = { openLegal(com.urbanblade.mobile.ui.components.UrbanLegal.TERMS_URL) }) {
-                    Text("Términos y Condiciones", color = UrbanColors.Gold)
+                    Text("Términos y Condiciones", color = UrbanColors.GoldText)
                 }
                 Text(
                     "Para ejercer tus derechos sobre tus datos (acceso, corrección o borrado del historial), escribe a ${com.urbanblade.mobile.ui.components.UrbanLegal.CONTACT_EMAIL}.",

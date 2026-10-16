@@ -37,7 +37,7 @@ object UrbanLegal {
 /** Texto con los enlaces a los Términos y al Aviso de Privacidad (se abren en el navegador). */
 @Composable
 fun LegalLinksText(prefix: String, modifier: Modifier = Modifier) {
-    val linkStyle = TextLinkStyles(SpanStyle(color = UrbanColors.Gold, fontWeight = FontWeight.SemiBold))
+    val linkStyle = TextLinkStyles(SpanStyle(color = UrbanColors.GoldText, fontWeight = FontWeight.SemiBold))
     val text = buildAnnotatedString {
         withStyle(SpanStyle(color = UrbanColors.Muted)) { append(prefix) }
         withLink(LinkAnnotation.Url(UrbanLegal.TERMS_URL, linkStyle)) { append("Términos y Condiciones") }

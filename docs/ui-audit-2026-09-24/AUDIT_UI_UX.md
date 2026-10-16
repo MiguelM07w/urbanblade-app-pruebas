@@ -1,5 +1,5 @@
-> **Estado (10-oct-2026):** los hallazgos de este documento ya se corrigieron y verificaron en el S25.
-> El detalle, con evidencia y lo que queda pendiente, está en [design-qa-2026-10-10.md](design-qa-2026-10-10.md).
+> **Registro histórico:** algunas correcciones se observaron en el S25; eso no certifica todos los recorridos ni el árbol actual.
+> Ver el [contrato vigente](../UI_UX_CONTRATO_MOVIL.md) y su [validación fechada](../UI_UX_VALIDACION_2026-10-11.md).
 
 # Auditoría UI/UX — UrbanBladeMobile
 

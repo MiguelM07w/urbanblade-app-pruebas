@@ -88,12 +88,12 @@ fun InventoryListScreen(user: AuthUser, onBack: () -> Unit, onHistory: () -> Uni
 
             item {
                 UrbanPremiumCard(Modifier.fillMaxWidth()) {
-                    Text("RESUMEN DE EXISTENCIAS", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                    Text("RESUMEN DE EXISTENCIAS", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         InventorySummaryValue("Productos", response.meta.stats.total.toString(), Modifier.weight(1f))
                         InventorySummaryValue("Por reponer", response.meta.stats.bajoStock.toString(), Modifier.weight(1f), response.meta.stats.bajoStock > 0)
-                        InventorySummaryValue("Valor venta", "${UrbanFormat.moneyShort(response.meta.stats.valorTotal)}", Modifier.weight(1f))
+                        InventorySummaryValue("Valor inventario", "${UrbanFormat.moneyShort(response.meta.stats.valorTotal)}", Modifier.weight(1f))
                     }
                 }
             }
@@ -120,7 +120,7 @@ fun InventoryListScreen(user: AuthUser, onBack: () -> Unit, onHistory: () -> Uni
                 item {
                     UrbanSectionTitle(
                         "Requiere atención",
-                        UrbanFormat.count(attentionProducts.size, "producto necesita revisión", "productos necesitan revisión")
+                        UrbanFormat.count(attentionProducts.size, "producto en esta vista necesita revisión", "productos en esta vista necesitan revisión")
                     )
                 }
                 items(attentionProducts, key = { it.id }) { product ->

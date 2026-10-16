@@ -35,20 +35,22 @@ import com.urbanblade.mobile.ui.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewModel()) {
+fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewModel(), onBack: (() -> Unit)? = null) {
     val products by vm.products.collectAsState()
     val cart by vm.cart.collectAsState()
+    val knownProducts by vm.knownProducts.collectAsState()
     val busy by vm.busy.collectAsState()
     val error by vm.error.collectAsState()
     val message by vm.message.collectAsState()
-    var query by remember { mutableStateOf("") }
-    val isClient = user.roles.contains("cliente")
-    val total = products.sumOf { it.precioVenta * (cart[it.id] ?: 0) }
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    val isClient = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
+    val total = remember(cart, knownProducts) { vm.estimatedTotal }
 
-    LaunchedEffect(Unit) { vm.load() }
+    LaunchedEffect(Unit) { vm.load(query.trim().ifBlank { null }) }
 
     Scaffold(
         containerColor = Color.Transparent,
+        topBar = { onBack?.let { UrbanTopBar("", it) } },
         bottomBar = {
             if (cart.isNotEmpty() && isClient) {
                 Surface(
@@ -57,20 +59,20 @@ fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewM
                     border = BorderStroke(1.dp, UrbanColors.Line),
                     shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                 ) {
-                    Row(
+                    Column(
                         Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(Modifier.weight(1f)) {
-                            Text("${cart.values.sum()} artículos", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
-                            Text("${UrbanFormat.money(total)} MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
-                        }
+                        Text("Total estimado · ${UrbanFormat.count(cart.values.sum(), "artículo", "artículos")}", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
+                        Text("${UrbanFormat.money(total)} MXN", style = MaterialTheme.typography.titleLarge, color = UrbanColors.GoldText)
+                        Text("Paga y recoge en sucursal.", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
                         UrbanPrimaryButton(
-                            text = "Pedir",
+                            text = "Crear pedido",
                             onClick = { vm.checkout(onOrders) },
                             loading = busy,
-                            icon = Icons.Default.ShoppingBag
+                            enabled = !busy,
+                            icon = Icons.Default.ShoppingBag,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -88,27 +90,26 @@ fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewM
                     subtitle = "Productos seleccionados para mantener tu estilo.",
                     eyebrow = "UrbanBlade Shop",
                     trailing = {
-                        IconButton(onClick = onOrders) {
+                        if (isClient || user.roles.any { it in listOf("administrador", "recepcionista") }) IconButton(onClick = onOrders) {
                             BadgedBox(badge = { if (cart.isNotEmpty()) Badge { Text(cart.values.sum().toString()) } }) {
-                                Icon(Icons.Default.ReceiptLong, "Mis pedidos", tint = UrbanColors.Gold)
+                                Icon(Icons.Default.ReceiptLong, if (isClient) "Mis pedidos" else "Pedidos", tint = UrbanColors.Gold)
                             }
                         }
                     }
                 )
             }
             item {
-                OutlinedTextField(
-                    query,
-                    { query = it },
-                    placeholder = { Text("Buscar productos") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
-                    trailingIcon = {
-                        IconButton(onClick = { vm.load(query.ifBlank { null }) }) { Icon(Icons.Default.Tune, "Buscar") }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.medium
+                UrbanTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = "Buscar productos",
+                    leadingIcon = Icons.Default.Search,
+                    imeAction = androidx.compose.ui.text.input.ImeAction.Search,
+                    onImeAction = { vm.load(query.trim().ifBlank { null }) },
+                    modifier = Modifier.fillMaxWidth()
                 )
+                UrbanOutlineButton("Buscar", { vm.load(query.trim().ifBlank { null }) }, enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(), icon = Icons.Default.Search)
             }
             if (busy) item { LinearProgressIndicator(Modifier.fillMaxWidth(), color = UrbanColors.Gold) }
             if (error != null && products.isEmpty() && !busy) {
@@ -117,15 +118,16 @@ fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewM
                 error?.let { item { UrbanErrorBanner(it) } }
             }
             message?.let { item { UrbanInfoBanner(it, Icons.Default.CheckCircle) } }
-            if (!isClient) item { UrbanInfoBanner("Puedes explorar la tienda; el checkout está disponible para cuentas cliente.", Icons.Default.Visibility) }
-            item { UrbanSectionTitle("Productos", "${products.size} disponibles") }
+            if (!isClient) item { UrbanInfoBanner("Consulta productos y precios. Los pedidos se crean desde una cuenta de cliente.", Icons.Default.Visibility) }
+            if (!busy && error == null && products.isEmpty()) item { UrbanMascotState(UrbanStateKind.EMPTY, "Sin productos en esta búsqueda", "Prueba con otro nombre o limpia el buscador.") }
+            item { UrbanSectionTitle("Productos", if (busy) "Consultando catálogo…" else UrbanFormat.count(products.size, "resultado", "resultados")) }
             items(products, key = { it.id }) { product ->
                 ProductCard(
                     item = product,
                     qty = cart[product.id] ?: 0,
                     add = { if (isClient) vm.add(product.id) },
                     remove = { if (isClient) vm.remove(product.id) },
-                    canShop = isClient
+                    canShop = isClient && !busy
                 )
             }
             if (products.isEmpty() && !busy && error == null) item {
@@ -136,6 +138,7 @@ fun StoreScreen(user: AuthUser, onOrders: () -> Unit, vm: StoreViewModel = viewM
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: () -> Unit, canShop: Boolean) {
     UrbanPremiumCard(Modifier.fillMaxWidth()) {
@@ -157,7 +160,7 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 item.categoria?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted) }
-                Text(item.nombre, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(item.nombre, style = MaterialTheme.typography.titleMedium)
                 // Muchas descripciones empiezan repitiendo el nombre ("Aceite — producto…"): se quita ese prefijo.
                 item.descripcion
                     ?.removePrefix(item.nombre)
@@ -183,22 +186,23 @@ private fun ProductCard(item: ProductItem, qty: Int, add: () -> Unit, remove: ()
                     }
                 }
             }
-            Spacer(Modifier.width(10.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text("${UrbanFormat.moneyShort(item.precioVenta)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
-                if (canShop) {
-                    Spacer(Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (qty > 0) {
-                            SmallFloatingActionButton(onClick = remove, containerColor = UrbanColors.CardAlt, contentColor = UrbanColors.Ink) { Icon(Icons.Default.Remove, "Quitar del carrito") }
-                            Text(qty.toString(), Modifier.padding(horizontal = 9.dp), style = MaterialTheme.typography.titleMedium)
+        }
+        Spacer(Modifier.height(12.dp))
+        HorizontalDivider(color = UrbanColors.Line)
+        Spacer(Modifier.height(10.dp))
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(UrbanFormat.moneyShort(item.precioVenta), style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink)
+            if (canShop) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (qty > 0) {
+                        SmallFloatingActionButton(onClick = remove, containerColor = UrbanColors.CardAlt, contentColor = UrbanColors.Ink) {
+                            Icon(Icons.Default.Remove, "Quitar ${item.nombre} del carrito")
                         }
-                        if (item.stockActual > 0) {
-                            SmallFloatingActionButton(
-                                onClick = add,
-                                containerColor = UrbanColors.Gold,
-                                contentColor = UrbanColors.OnGold,
-                            ) { Icon(Icons.Default.Add, "Agregar al carrito") }
+                        Text(qty.toString(), Modifier.padding(horizontal = 9.dp), style = MaterialTheme.typography.titleMedium)
+                    }
+                    if (item.stockActual > qty) {
+                        SmallFloatingActionButton(onClick = add, containerColor = UrbanColors.Gold, contentColor = UrbanColors.OnGold) {
+                            Icon(Icons.Default.Add, "Agregar ${item.nombre} al carrito")
                         }
                     }
                 }
@@ -226,7 +230,13 @@ fun NotificationsScreen(onBack: () -> Unit, onOpen: (String) -> Unit = {}, vm: N
     UrbanModuleScreen(
         eyebrow = "CUENTA",
         title = "Notificaciones",
-        subtitle = if (view.unread > 0) UrbanFormat.count(view.unread, "aviso sin leer", "avisos sin leer") else "Estás al día.",
+        subtitle = when {
+            busy -> "Actualizando tus avisos…"
+            error != null -> "La consulta necesita actualizarse."
+            data == null -> "Tus avisos de UrbanBlade."
+            view.unread > 0 -> UrbanFormat.count(view.unread, "aviso sin leer", "avisos sin leer")
+            else -> "Estás al día."
+        },
         onBack = onBack,
         onRefresh = { vm.load() },
         refreshing = busy
@@ -235,9 +245,14 @@ fun NotificationsScreen(onBack: () -> Unit, onOpen: (String) -> Unit = {}, vm: N
             UrbanOutlineButton(
                 text = "Marcar todas como leídas",
                 onClick = { vm.readAll() },
+                enabled = !busy,
                 icon = Icons.Default.DoneAll,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+        if (error != null && view.items.isNotEmpty()) item {
+            UrbanErrorBanner(error!!)
+            UrbanOutlineButton("Reintentar consulta", { vm.load() }, enabled = !busy, modifier = Modifier.fillMaxWidth())
         }
         when {
             error != null && view.items.isEmpty() -> item {
@@ -317,13 +332,15 @@ fun MoreScreen(user: AuthUser, onNavigate: (String) -> Unit) {
     val admin = "administrador" in roles
     val engineer = "ingeniero" in roles
     val barber = "barbero" in roles
-    val client = "cliente" in roles
+    val client = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
 
     val modules = buildList {
-        add(ModuleItem("catalog", "Servicios y barberos", "Explora el catálogo", Icons.Default.ContentCut, "GENERAL"))
+        if (!com.urbanblade.mobile.core.access.UserExperience.isEngineer(user.roles)) {
+            add(ModuleItem("catalog", "Servicios y barberos", "Explora el catálogo", Icons.Default.ContentCut, "GENERAL"))
+            add(ModuleItem("social", "Muro de Inspiración", "Trabajos del equipo", Icons.Default.Groups, "GENERAL"))
+        }
         add(ModuleItem("notifications", "Notificaciones", "Novedades de tu cuenta", Icons.Default.Notifications, "GENERAL"))
         add(ModuleItem("analytics", "Analítica", "Actividad y rendimiento", Icons.Default.QueryStats, "GENERAL"))
-        add(ModuleItem("social", "Muro de Inspiración", "Trabajos del equipo", Icons.Default.Groups, "GENERAL"))
         add(ModuleItem("chatbot", "Bladebot", "Asistente UrbanBlade", Icons.Default.SmartToy, "GENERAL"))
         if (staff || client) {
             add(ModuleItem("payments", "Pagos", "Historial y comprobantes", Icons.Default.Payments, "OPERACIÓN"))
@@ -381,29 +398,18 @@ fun MoreScreen(user: AuthUser, onNavigate: (String) -> Unit) {
         }
         modules.groupBy { it.section }.forEach { (section, group) ->
             item { UrbanSectionTitle(section.replaceFirstChar { it.uppercase() }) }
-            items(group) { module -> ModuleCard(module, onNavigate) }
+            item {
+                UrbanRowGroup(group) { module ->
+                    UrbanActionRow(
+                        title = module.title,
+                        subtitle = module.subtitle,
+                        icon = module.icon,
+                        onClick = { onNavigate(module.route) }
+                    )
+                }
+            }
         }
         item { Spacer(Modifier.height(8.dp)) }
-    }
-}
-
-@Composable
-private fun ModuleCard(module: ModuleItem, onNavigate: (String) -> Unit) {
-    UrbanCard(Modifier.fillMaxWidth(), onClick = { onNavigate(module.route) }) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.CardAlt),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(module.icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.width(13.dp))
-            Column(Modifier.weight(1f)) {
-                Text(module.title, style = MaterialTheme.typography.titleMedium)
-                Text(module.subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-            }
-            Icon(Icons.Default.ChevronRight, null, tint = UrbanColors.Muted)
-        }
     }
 }
 

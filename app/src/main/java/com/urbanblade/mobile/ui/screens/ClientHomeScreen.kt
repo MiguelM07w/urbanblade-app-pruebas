@@ -71,6 +71,7 @@ import com.urbanblade.mobile.ui.theme.mascot
 import com.urbanblade.mobile.ui.viewmodel.AppointmentsViewModel
 import com.urbanblade.mobile.ui.viewmodel.NotificationsViewModel
 import com.urbanblade.mobile.ui.components.UrbanModuleGrid
+import com.urbanblade.mobile.ui.components.UrbanVisitSummary
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -236,72 +237,46 @@ fun ClientHomeScreen(
                 onNavigate = { route -> if (route == "store") onStore() else onNavigate(route) }
             )
         }
-        // Bladebot ya no tiene tarjeta aquí: la burbuja flotante lo abre desde cualquier pantalla principal.
+        // Bladebot se abre desde la fila compartida de navegación.
         item { Spacer(Modifier.height(4.dp)) }
     }
 }
 
 @Composable
 private fun NextAppointmentCard(next: AppointmentRow, onClick: () -> Unit) {
-    UrbanHeroCard(Modifier.clickable(onClick = onClick)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { UrbanHeroLabel("Tu próxima cita") }
-            UrbanStatusPill(next.estado)
-        }
+    UrbanHeroCard {
+        UrbanHeroLabel("Tu próxima visita")
+        Spacer(Modifier.height(8.dp))
+        UrbanStatusPill(next.estado)
         Spacer(Modifier.height(8.dp))
         Text(UrbanFormat.time(next.horaInicio), style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
-        Text(UrbanFormat.date(next.fecha), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+        Text(UrbanFormat.date(next.fecha), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
         Spacer(Modifier.height(16.dp))
         HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
         Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            UrbanAvatar(next.barber?.user?.name ?: "Barbero", Modifier.size(44.dp), imageUrl = rememberBarberPhoto(next.barber))
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(serviceIcon(next.service?.nombre.orEmpty()), null, tint = UrbanColors.Gold, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(next.service?.nombre ?: "Servicio", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
-                }
-                Text(
-                    next.barber?.user?.name ?: "Barbero por confirmar",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = UrbanColors.Muted
-                )
-            }
-            (next.precioCobrado ?: next.service?.precio)?.let {
-                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
-            }
-        }
+        UrbanVisitSummary(
+            service = next.service?.nombre ?: "Servicio",
+            barber = next.barber?.user?.name ?: "Barbero por confirmar",
+            photo = rememberBarberPhoto(next.barber),
+            amount = (next.precioCobrado ?: next.service?.precio)?.let(UrbanFormat::money),
+            amountLabel = if (next.precioCobrado != null) "Importe de la cita" else "Precio del servicio"
+        )
+        Spacer(Modifier.height(16.dp))
+        UrbanOutlineButton("Ver mi cita", onClick, modifier = Modifier.fillMaxWidth(), icon = Icons.Default.CalendarMonth)
     }
 }
 
 @Composable
 private fun RebookCard(visit: AppointmentRow, onRebook: () -> Unit) {
-    UrbanCard(Modifier.fillMaxWidth(), onClick = onRebook) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(UrbanColors.CardAlt),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(serviceIcon(visit.service?.nombre.orEmpty()), null, tint = UrbanColors.Gold, modifier = Modifier.size(22.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(visit.service?.nombre ?: "Servicio", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
-                Text(
-                    listOfNotNull(visit.barber?.user?.name?.let { "Con $it" }, UrbanFormat.dateShort(visit.fecha)).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = UrbanColors.Muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            visit.service?.precio?.let {
-                Spacer(Modifier.width(8.dp))
-                Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
-            }
-        }
+    UrbanCard(Modifier.fillMaxWidth()) {
+        Text("Tu última visita · ${UrbanFormat.dateShort(visit.fecha)}", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
+        Spacer(Modifier.height(12.dp))
+        UrbanVisitSummary(
+            service = visit.service?.nombre ?: "Servicio",
+            barber = visit.barber?.user?.name ?: "Barbero por confirmar",
+            photo = rememberBarberPhoto(visit.barber),
+            amount = visit.service?.precio?.let(UrbanFormat::money)
+        )
         Spacer(Modifier.height(14.dp))
         UrbanOutlineButton(
             text = "Reservar de nuevo",
@@ -322,7 +297,7 @@ private fun EmptyAgendaCard(onBook: () -> Unit) {
                 Text("¿Te toca corte?", style = MaterialTheme.typography.headlineSmall, color = UrbanColors.Ink)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Elige servicio, barbero y horario real en menos de un minuto.",
+                    "Elige tu servicio, tu barbero y uno de los horarios disponibles.",
                     style = MaterialTheme.typography.bodySmall,
                     color = UrbanColors.Muted
                 )

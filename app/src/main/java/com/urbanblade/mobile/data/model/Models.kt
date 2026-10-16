@@ -144,6 +144,7 @@ data class BarberItem(
     val descripcion: String? = null,
     val foto: String? = null,
     val especialidades: String? = null,
+    @SerializedName("es_favorito") val esFavorito: Boolean = false,
     @SerializedName("avg_rating") val avgRating: Double? = null,
     @SerializedName("total_reviews") val totalReviews: Int = 0
 )

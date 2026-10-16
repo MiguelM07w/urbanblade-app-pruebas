@@ -46,6 +46,17 @@ jobs:
       - name: Pruebas unitarias
         run: gradle :app:testDebugUnitTest --console=plain
 
+      - name: Verificar que no haya pruebas omitidas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          reports = list(Path('app/build/test-results/testDebugUnitTest').glob('TEST-*.xml'))
+          assert reports, 'No se generaron resultados de pruebas'
+          skipped = sum(int(ET.parse(p).getroot().get('skipped', 0)) for p in reports)
+          assert skipped == 0, f'Hay {skipped} pruebas omitidas'
+          PY
+
       - name: Build de debug
         run: gradle :app:assembleDebug --console=plain
 

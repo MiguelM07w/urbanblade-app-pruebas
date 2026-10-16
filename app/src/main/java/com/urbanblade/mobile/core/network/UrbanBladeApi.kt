@@ -7,6 +7,18 @@ import okhttp3.RequestBody
 import retrofit2.http.*
 
 interface UrbanBladeApi {
+    @PUT("profile/favorite-barber")
+    suspend fun favoriteBarber(@Body body: FavoriteBarberRequest): FavoriteBarberResponse
+
+    @Streaming
+    @GET("dashboard/membership/card")
+    suspend fun membershipCard(): okhttp3.ResponseBody
+
+    @POST("packages/stripe-intent")
+    suspend fun packageStripeIntent(@Body body: PackagePurchaseRequest): StripeIntentResponse
+
+    @POST("gift-cards/stripe-intent")
+    suspend fun giftCardStripeIntent(@Body body: CashGiftCardRequest): StripeIntentResponse
     @POST("auth/login") suspend fun login(@Body body: LoginRequest): LoginResponse
     @POST("auth/register") suspend fun register(@Body body: RegisterRequest): LoginResponse
     @POST("auth/forgot-password") suspend fun forgotPassword(@Body body: ForgotPasswordRequest): MessageResponse
@@ -157,7 +169,7 @@ interface UrbanBladeApi {
     @POST("notifications/{id}/read") suspend fun markNotificationRead(@Path("id") id: String): MessageResponse
     @DELETE("notifications/{id}") suspend fun deleteNotification(@Path("id") id: String): MessageResponse
 
-    @GET("social/feed") suspend fun socialFeed(): SocialFeedResponse
+    @GET("social/feed") suspend fun socialFeed(@Query("page") page: Int = 1): SocialFeedResponse
     @POST("social/work/{id}/react") suspend fun reactWork(@Path("id") id: String): SocialActionResponse
     @POST("social/work/{id}/save") suspend fun saveWork(@Path("id") id: String): SocialActionResponse
     @POST("social/work/{id}/comment") suspend fun commentWork(@Path("id") id: String, @Body body: PostCommentRequest): PostCommentResponse
@@ -183,7 +195,7 @@ interface UrbanBladeApi {
     @PUT("barber/schedule") suspend fun updateBarberSchedule(@Body body: UpdateBarberScheduleRequest): BarberScheduleResponse
 
     @GET("clients") suspend fun clients(): JsonObject
-    @GET("inventory/products") suspend fun inventoryProducts(): InventoryResponse
+    @GET("inventory/products") suspend fun inventoryProducts(@Query("page") page: Int = 1): InventoryResponse
     // Multipart siempre (no solo cuando hay imagen): Laravel valida los
     // campos de texto igual venga el request como JSON o multipart/form-data,
     // así que no hace falta duplicar el endpoint -- un solo camino para

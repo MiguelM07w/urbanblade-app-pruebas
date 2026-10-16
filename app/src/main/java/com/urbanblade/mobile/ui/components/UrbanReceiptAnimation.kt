@@ -115,7 +115,7 @@ fun UrbanReceiptAnimation(
                 Text(
                     text = "${UrbanFormat.moneyShort(total)}",
                     style = MaterialTheme.typography.displaySmall,
-                    color = UrbanColors.Gold,
+                    color = UrbanColors.GoldText,
                     fontWeight = FontWeight.Bold
                 )
             }

@@ -13,10 +13,10 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLPeerUnverifiedException
 
 /**
@@ -97,16 +97,17 @@ class CertificatePinsTest {
         }
     }
 
-    // Prueba contra el servidor real. Solo corre con UB_LIVE_PIN_TEST=1 (necesita internet).
+    // Comprobación obligatoria del certificado público de producción, sin token ni datos de usuario.
     @Test
     fun `en vivo - la API real coincide con los pins y un pin falso se rechaza`() {
-        assumeTrue(System.getenv("UB_LIVE_PIN_TEST") == "1")
         val request = Request.Builder().url("https://${CertificatePins.API_HOST}/").build()
 
-        val good = OkHttpClient.Builder().certificatePinner(CertificatePins.forApiHost(CertificatePins.API_HOST)!!).build()
+        val good = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS)
+            .certificatePinner(CertificatePins.forApiHost(CertificatePins.API_HOST)!!).build()
         good.newCall(request).execute().use { assertTrue(it.code < 600) }
 
         val bad = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS)
             .certificatePinner(CertificatePins.build(CertificatePins.API_HOST, listOf("sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")))
             .build()
         try {

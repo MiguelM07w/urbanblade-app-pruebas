@@ -52,6 +52,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -93,7 +94,7 @@ fun LoginScreen(
     onForgot: () -> Unit,
     onBack: (() -> Unit)? = null
 ) {
-    var email by remember { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var emailTouched by remember { mutableStateOf(false) }
     val busy by authViewModel.busy.collectAsState()
@@ -134,7 +135,8 @@ fun LoginScreen(
         StaggerIn(1) {
             GoogleSignInButton(
                 text = "Continuar con Google",
-                loading = googleBusy,
+                loading = googleBusy || busy,
+                enabled = !busy,
                 onClick = {
                     scope.launch {
                         googleBusy = true
@@ -178,7 +180,7 @@ fun LoginScreen(
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onForgot, modifier = Modifier.heightIn(min = 48.dp)) {
-                        Text("¿Olvidaste tu contraseña?", color = UrbanColors.Gold, fontWeight = FontWeight.SemiBold)
+                        Text("¿Olvidaste tu contraseña?", color = UrbanColors.GoldText, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -195,8 +197,8 @@ fun RegisterScreen(
     onBack: () -> Unit,
     onLogin: (() -> Unit)? = null
 ) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
     var emailTouched by remember { mutableStateOf(false) }
@@ -206,7 +208,7 @@ fun RegisterScreen(
     val scope = rememberCoroutineScope()
     var googleBusy by remember { mutableStateOf(false) }
     // Consentimiento obligatorio (igual que la web): Términos, Aviso de Privacidad y mayoría de edad.
-    var acceptedLegal by remember { mutableStateOf(false) }
+    var acceptedLegal by rememberSaveable { mutableStateOf(false) }
     // Dos pasos (auditoría del 24-sep): la pantalla era demasiado larga y densa de una vez.
     var step by rememberSaveable { mutableStateOf(0) }
 
@@ -225,6 +227,7 @@ fun RegisterScreen(
     }
     // La flecha de la barra vuelve al paso anterior, no fuera de la pantalla.
     val backAction: () -> Unit = if (step == 1) ({ step = 0 }) else onBack
+    androidx.activity.compose.BackHandler(enabled = step == 1, onBack = backAction)
 
     AuthScaffold(
         eyebrow = "NUEVA CUENTA",
@@ -262,7 +265,7 @@ fun RegisterScreen(
         }
     ) {
         StaggerIn(0) {
-            Text("Paso ${step + 1} de 2", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+            Text("Paso ${step + 1} de 2", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
         }
         if (step == 0) {
             StaggerIn(1) {
@@ -271,8 +274,8 @@ fun RegisterScreen(
             StaggerIn(1) {
                 GoogleSignInButton(
                     text = "Registrarme con Google",
-                    loading = googleBusy,
-                    enabled = acceptedLegal,
+                    loading = googleBusy || busy,
+                    enabled = acceptedLegal && !busy,
                     onClick = {
                         scope.launch {
                             googleBusy = true
@@ -337,19 +340,19 @@ fun RegisterScreen(
                     error = if (passwordsMismatch) "Las contraseñas no coinciden." else null
                 )
             }
-            AnimatedVisibility(visible = error != null) {
-                error?.let { UrbanErrorBanner(it) }
-            }
             StaggerIn(4) {
                 SwitchAuthRow(prompt = "¿Algo mal en tus datos?", action = "Volver", onClick = { step = 0 })
             }
+        }
+        AnimatedVisibility(visible = error != null) {
+            error?.let { UrbanErrorBanner(it) }
         }
     }
 }
 
 @Composable
 fun ForgotPasswordScreen(authViewModel: AuthViewModel, onBack: () -> Unit) {
-    var email by remember { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
     var emailTouched by remember { mutableStateOf(false) }
     val busy by authViewModel.busy.collectAsState()
@@ -445,6 +448,16 @@ fun ForgotPasswordScreen(authViewModel: AuthViewModel, onBack: () -> Unit) {
 
 @Composable
 private fun SwitchAuthRow(prompt: String, action: String, onClick: () -> Unit) {
+    if (LocalDensity.current.fontScale > 1.15f) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(prompt, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Muted,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(action, color = UrbanColors.GoldText, fontWeight = FontWeight.Bold)
+            }
+        }
+        return
+    }
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -452,7 +465,7 @@ private fun SwitchAuthRow(prompt: String, action: String, onClick: () -> Unit) {
     ) {
         Text(prompt, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Muted)
         TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp)) {
-            Text(action, color = UrbanColors.Gold, fontWeight = FontWeight.Bold)
+            Text(action, color = UrbanColors.GoldText, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -571,7 +584,7 @@ private fun AuthScaffold(
             StaggerIn(0) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(eyebrow, style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+                        Text(eyebrow, style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
                         Spacer(Modifier.height(4.dp))
                         Text(
                             title,

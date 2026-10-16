@@ -65,9 +65,7 @@ fun UrbanDashboardChart(
     format: (Double) -> String = { String.format(java.util.Locale("es", "MX"), "%,.0f", it) }
 ) {
     if (!series.hasData) return
-    UrbanCard(modifier.fillMaxWidth()) {
-        UrbanSectionTitle(title, subtitle)
-        Spacer(Modifier.height(12.dp))
+    UrbanAnalyticsCard(title = title, subtitle = subtitle, eyebrow = if (categories) "DISTRIBUCIÓN" else "EVOLUCIÓN", modifier = modifier) {
         if (categories) {
             val sorted = series.labels.zip(series.values).sortedByDescending { it.second }.take(6)
             UrbanHBars(sorted.map { it.first }, sorted.map { it.second }, format = format)

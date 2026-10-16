@@ -3,6 +3,7 @@ package com.urbanblade.mobile.ui.viewmodel
 import com.urbanblade.mobile.data.model.MembershipInvoiceRow
 import com.urbanblade.mobile.data.model.MembershipInvoicesMeta
 import com.urbanblade.mobile.data.model.MembershipInvoicesResponse
+import com.urbanblade.mobile.data.model.OrderMeta
 import com.urbanblade.mobile.data.model.OrderRow
 import com.urbanblade.mobile.data.model.OrdersResponse
 import com.urbanblade.mobile.data.model.PaymentRow
@@ -25,6 +26,8 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -148,4 +151,63 @@ class InvoicesViewModelTest {
         assertEquals(299.0, vm.state.value.membershipPaid, 0.0)
         assertEquals(275.0, vm.state.value.totalPaid, 0.0)
     }
+    @Test
+    fun `consulta parcial conserva compras y membresia hasta un reintento correcto`() = runTest(dispatcher) {
+        whenever(repo.membershipInvoices()).thenReturn(
+            MembershipInvoicesResponse(listOf(MembershipInvoiceRow(id = "m1", monto = 299.0)), MembershipInvoicesMeta(299.0))
+        )
+        val vm = InvoicesViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        whenever(repo.orders(any(), anyOrNull(), anyOrNull())).thenThrow(RuntimeException("sin red"))
+        whenever(repo.membershipInvoices()).thenThrow(RuntimeException("sin red"))
+        vm.load()
+        advanceUntilIdle()
+        assertEquals(180.0, vm.state.value.productsPaid, 0.0)
+        assertEquals(299.0, vm.state.value.membershipPaid, 0.0)
+        assertNotNull(vm.state.value.partialError)
+        doReturn(OrdersResponse()).whenever(repo).orders(any(), anyOrNull(), anyOrNull())
+        doReturn(MembershipInvoicesResponse()).whenever(repo).membershipInvoices()
+        vm.load()
+        advanceUntilIdle()
+        assertEquals(0.0, vm.state.value.productsPaid, 0.0)
+        assertEquals(0.0, vm.state.value.membershipPaid, 0.0)
+        assertNull(vm.state.value.partialError)
+    }
+
+    @Test
+    fun `incluye compras de paginas siguientes sin duplicar el total`() = runTest(dispatcher) {
+        val first = OrderRow(id = "o1", estado = "entregado", total = 180.0)
+        val second = OrderRow(id = "o2", estado = "entregado", total = 90.0)
+        whenever(repo.orders(eq(1), anyOrNull(), anyOrNull())).thenReturn(
+            OrdersResponse(listOf(first), OrderMeta(1, 2, 2))
+        )
+        whenever(repo.orders(eq(2), anyOrNull(), anyOrNull())).thenReturn(
+            OrdersResponse(listOf(first, second), OrderMeta(2, 2, 2))
+        )
+        val vm = InvoicesViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        assertEquals(listOf("o1", "o2"), vm.state.value.delivered.map { it.id })
+        assertEquals(270.0, vm.state.value.productsPaid, 0.0)
+    }
+
+    @Test
+    fun `fallo de pagos conserva comprobantes y permite recuperar la consulta`() = runTest(dispatcher) {
+        val vm = InvoicesViewModel(repo)
+        vm.load()
+        advanceUntilIdle()
+        whenever(repo.payments()).thenThrow(RuntimeException("sin red"))
+        vm.load()
+        advanceUntilIdle()
+        assertEquals(275.0, vm.state.value.totalPaid, 0.0)
+        assertNotNull(vm.state.value.error)
+        doReturn(PaymentsResponse(listOf(PaymentRow(id = "p2", monto = 100.0))))
+            .whenever(repo).payments()
+        vm.load()
+        advanceUntilIdle()
+        assertEquals(100.0, vm.state.value.totalPaid, 0.0)
+        assertNull(vm.state.value.error)
+    }
+
 }

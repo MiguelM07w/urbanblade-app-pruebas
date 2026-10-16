@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,6 +68,16 @@ fun UrbanBladeRoot(authViewModel: AuthViewModel = viewModel()) {
             }
         }
         AuthState.Guest -> GuestNav(authViewModel)
+        AuthState.Unavailable -> UrbanBladeBackground {
+            Box(Modifier.fillMaxSize().systemBarsPadding().padding(18.dp), contentAlignment = Alignment.Center) {
+                com.urbanblade.mobile.ui.components.UrbanMascotState(
+                    com.urbanblade.mobile.ui.components.UrbanStateKind.ERROR,
+                    "No pudimos confirmar tu sesión",
+                    "Tu acceso sigue guardado. Revisa tu conexión y vuelve a intentar.",
+                    "Reintentar"
+                ) { authViewModel.bootstrap() }
+            }
+        }
         is AuthState.Authenticated -> {
             PushRegistrationEffect(state.user.id)
             // key: si cambia la cuenta, toda la navegación y sus pantallas se crean de cero.
@@ -92,8 +101,16 @@ private fun GuestNav(authViewModel: AuthViewModel) {
             com.urbanblade.mobile.ui.screens.WelcomeScreen(
                 onRegister = { nav.navigate("register") },
                 onLogin = { nav.navigate("login") },
-                sessionExpired = sessionExpired
+                sessionExpired = sessionExpired,
+                onExplore = { nav.navigate("catalog") }
             )
+        }
+        composable("catalog") {
+            CatalogScreen(isGuest = true, canFavorite = false,
+                onBook = { service, barber ->
+                    PendingBooking.set(service, barber)
+                    nav.navigate("login")
+                }, onLogin = { nav.navigate("login") })
         }
         composable("login") {
             LoginScreen(
@@ -123,15 +140,13 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
     val scope = rememberCoroutineScope()
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
-    val isClient = user.roles.contains("cliente")
-    val clientOnly = isClient && user.roles.none { it in listOf("administrador", "recepcionista", "barbero", "ingeniero") }
-    val engineerOnly = user.roles.contains("ingeniero") &&
-        user.roles.none { it in listOf("administrador", "recepcionista", "barbero", "cliente") }
+    val clientOnly = com.urbanblade.mobile.core.access.UserExperience.isClient(user.roles)
+    val engineerOnly = com.urbanblade.mobile.core.access.UserExperience.isEngineer(user.roles)
 
     // Nav por rol. Cliente (propuesta A, 25-sep): cuatro pestañas con un solo verbo para
     // reservar; Beneficios, pagos y pedidos viven en Cuenta y en el Inicio, ya no en la barra.
     // Cada pestaña se llama igual que el título de su pantalla.
-    val items = if (isClient) {
+    val items = if (clientOnly) {
         listOf(
             NavItem("home", "Inicio", Icons.Default.Home),
             NavItem("catalog", "Reservar", Icons.Default.ContentCut),
@@ -148,7 +163,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
     }
     val rootRoutes = items.map { it.route }
 
-    // Selección hecha como invitado en el catálogo (ver GuestNav): se
+    // Selección hecha como invitado en el catálogo: se
     // consume UNA sola vez, al montar la sesión autenticada, y redirige
     // directo al wizard de reserva con esa preselección.
     LaunchedEffect(Unit) {
@@ -171,25 +186,12 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
         }
     }
 
-    var bubbleShown by remember { mutableStateOf(true) }
     LaunchedEffect(current) {
-        bubbleShown = true
         // Vista de pantalla para Analytics: la ruta con sus parámetros como plantilla ({slug}), sin IDs.
         current?.let { com.urbanblade.mobile.core.analytics.UrbanAnalytics.screen(it) }
     }
     // Remote Config: la burbuja se puede apagar desde la consola de Firebase sin publicar otro APK.
     val bubbleEnabled by com.urbanblade.mobile.core.config.UrbanRemoteConfig.bladebotBubble.collectAsState()
-    val bubbleScroll = remember {
-        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-            override fun onPreScroll(
-                available: androidx.compose.ui.geometry.Offset,
-                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource
-            ): androidx.compose.ui.geometry.Offset {
-                if (available.y < -6f) bubbleShown = false else if (available.y > 6f) bubbleShown = true
-                return androidx.compose.ui.geometry.Offset.Zero
-            }
-        }
-    }
 
     Scaffold(
         containerColor = UrbanColors.Background,
@@ -199,49 +201,51 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
             val offline by authViewModel.offline.collectAsState()
             if (offline) OfflineBanner(onRetry = { authViewModel.bootstrap() })
         },
-        // Bladebot como en la web: una burbuja en las pantallas principales que abre el chat.
-        // Se esconde al bajar (para no tapar lo que se está leyendo) y vuelve al subir o al cambiar de pantalla.
-        floatingActionButton = {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = current in rootRoutes && bubbleShown && bubbleEnabled,
-                enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut()
-            ) {
-                com.urbanblade.mobile.ui.components.BladebotBubble(onOpen = {
-                    com.urbanblade.mobile.core.analytics.UrbanAnalytics.log("bladebot_abierto", "origen" to current)
-                    nav.navigate("chatbot")
-                })
-            }
-        },
         bottomBar = {
             if (current in rootRoutes) {
-                Surface(
-                    color = UrbanColors.Surface,
-                    shadowElevation = 18.dp,
-                    tonalElevation = 0.dp,
-                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                ) {
-                    NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
-                        items.forEach { item ->
-                            NavigationBarItem(
-                                selected = current == item.route,
+                Column {
+                    // El acceso ocupa su propia fila: nunca se superpone a tarjetas o acciones.
+                    if (current !in listOf("profile", "catalog", "appointments") && bubbleEnabled) {
+                        Surface(color = UrbanColors.Surface) {
+                            TextButton(
                                 onClick = {
-                                    nav.navigate(item.route) {
-                                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    com.urbanblade.mobile.core.analytics.UrbanAnalytics.log("bladebot_abierto", "origen" to current)
+                                    nav.navigate("chatbot")
                                 },
-                                icon = { Icon(item.icon, item.label) },
-                                label = { Text(item.label, style = MaterialTheme.typography.labelMedium) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = UrbanColors.OnGold,
-                                    selectedTextColor = UrbanColors.Gold,
-                                    indicatorColor = UrbanColors.Gold,
-                                    unselectedIconColor = UrbanColors.Muted,
-                                    unselectedTextColor = UrbanColors.Muted
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                            ) {
+                                Text("Abrir Bladebot", color = UrbanColors.GoldText)
+                            }
+                        }
+                    }
+                    Surface(
+                        color = UrbanColors.Surface,
+                        shadowElevation = 18.dp,
+                        tonalElevation = 0.dp,
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    ) {
+                        NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
+                            items.forEach { item ->
+                                NavigationBarItem(
+                                    selected = current == item.route,
+                                    onClick = {
+                                        nav.navigate(item.route) {
+                                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    icon = { Icon(item.icon, item.label) },
+                                    label = { Text(item.label, style = MaterialTheme.typography.labelMedium) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = UrbanColors.OnGold,
+                                        selectedTextColor = UrbanColors.GoldText,
+                                        indicatorColor = UrbanColors.Gold,
+                                        unselectedIconColor = UrbanColors.Muted,
+                                        unselectedTextColor = UrbanColors.Muted
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }
@@ -251,7 +255,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
         // consumeWindowInsets: el Scaffold externo ya reservó barra de estado y barra inferior; sin
         // marcarlos como consumidos, cada pantalla con su propio Scaffold/TopAppBar los sumaba otra vez
         // (hueco vacío sobre el título en todas las pantallas secundarias).
-        UrbanBladeBackground(Modifier.padding(padding).consumeWindowInsets(padding).nestedScroll(bubbleScroll)) {
+        UrbanBladeBackground(Modifier.padding(padding).consumeWindowInsets(padding)) {
             NavHost(navController = nav, startDestination = "home", modifier = Modifier.fillMaxSize()) {
                 composable("home") {
                     DashboardScreen(
@@ -292,6 +296,8 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 }
                 composable("catalog") {
                     CatalogScreen(
+                        canFavorite = clientOnly,
+                        canBook = com.urbanblade.mobile.core.access.UserExperience.canBook(user.roles),
                         onBook = { serviceId, barberId -> nav.openBooking(bookingRoute(serviceId, barberId)) },
                         onOpenStore = { nav.navigate("store") },
                         onOpenInspiration = { nav.navigate("social") },
@@ -304,7 +310,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 ) { entry ->
                     BarberProfileScreen(
                         slug = entry.arguments?.getString("slug").orEmpty(),
-                        canBook = isClient,
+                        canBook = clientOnly,
                         onBack = { nav.popBackStack() },
                         onBook = { barberId -> nav.openBooking(bookingRoute(null, barberId)) }
                     )
@@ -312,7 +318,7 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 composable("wallet") {
                     WalletScreen(onBack = { nav.popBackStack() }, onBook = { nav.openBooking("booking") })
                 }
-                composable("store") { StoreScreen(user = user, onOrders = { nav.navigate("orders") }) }
+                composable("store") { StoreScreen(user = user, onOrders = { nav.navigate("orders") }, onBack = { nav.popBackStack() }) }
                 composable("orders") { OrdersScreen(user = user, onBack = { nav.popBackStack() }) }
                 composable("payments") { PaymentsScreen(user = user, onBack = { nav.popBackStack() }) }
                 composable("notifications") {
@@ -343,8 +349,9 @@ private fun AuthenticatedNav(user: AuthUser, authViewModel: AuthViewModel) {
                 composable("social") {
                     SocialFeedScreen(
                         onBack = { nav.popBackStack() },
+                        onOpenBarber = { slug -> nav.navigate("barber_profile/${android.net.Uri.encode(slug)}") },
                         // Solo el cliente reserva desde el muro; el personal lo ve como galería.
-                        onBookBarber = if (isClient) { barberId -> nav.openBooking(bookingRoute(null, barberId)) } else null
+                        onBookBarber = if (clientOnly) { barberId -> nav.openBooking(bookingRoute(null, barberId)) } else null
                     )
                 }
                 composable("clients") {
@@ -415,7 +422,7 @@ private fun OfflineBanner(onRetry: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         TextButton(onClick = onRetry) {
-            Text("Reintentar", color = UrbanColors.Gold, fontWeight = FontWeight.SemiBold)
+            Text("Reintentar", color = UrbanColors.GoldText, fontWeight = FontWeight.SemiBold)
         }
     }
 }

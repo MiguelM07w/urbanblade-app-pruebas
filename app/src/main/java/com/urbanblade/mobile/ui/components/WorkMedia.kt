@@ -15,6 +15,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import com.urbanblade.mobile.ui.theme.UrbanColors
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,9 +54,12 @@ fun WorkMediaThumb(
     isVideo: Boolean,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    playIconSize: Dp = 48.dp
+    playIconSize: Dp = 48.dp,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
     val context = LocalContext.current
+    var failed by remember(url, isVideo) { mutableStateOf(false) }
+    var loading by remember(url, isVideo) { mutableStateOf(!url.isNullOrBlank()) }
     Box(modifier, contentAlignment = Alignment.Center) {
         AsyncImage(
             model = remember(url, isVideo) {
@@ -58,10 +71,20 @@ fun WorkMediaThumb(
                 }.crossfade(true).build()
             },
             contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
+            onLoading = { loading = true },
+            onError = { failed = true; loading = false },
+            onSuccess = { failed = false; loading = false },
             modifier = Modifier.fillMaxSize()
         )
-        if (isVideo) {
+        if (loading) {
+            CircularProgressIndicator(Modifier.size(24.dp), color = UrbanColors.Gold, strokeWidth = 2.dp)
+        } else if (failed || url.isNullOrBlank()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.BrokenImage, null, tint = UrbanColors.Muted)
+                Text(if (isVideo) "Vista previa no disponible" else "Imagen no disponible", color = UrbanColors.Muted, style = MaterialTheme.typography.labelSmall)
+            }
+        } else if (isVideo) {
             Icon(
                 Icons.Default.PlayCircle,
                 "Reproducir video",

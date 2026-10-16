@@ -7,5 +7,7 @@
 /captures
 .externalNativeBuild
 .cxx
+.kotlin/
+__pycache__/
 app/build
 /app/google-services.json

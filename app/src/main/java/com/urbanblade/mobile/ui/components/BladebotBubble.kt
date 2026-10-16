@@ -32,7 +32,7 @@ import kotlinx.coroutines.delay
  * dorado late despacio y se queda quieto si el sistema pide reducir animaciones.
  */
 @Composable
-fun BladebotBubble(onOpen: () -> Unit, modifier: Modifier = Modifier) {
+fun BladebotBubble(onOpen: () -> Unit, modifier: Modifier = Modifier, hint: String = "¿Te ayudo a reservar?") {
     val reduceMotion = rememberReducedMotion()
     var showHint by remember { mutableStateOf(false) }
     // El saludo sale una sola vez por sesión: la burbuja se esconde y reaparece al desplazarse.
@@ -65,7 +65,7 @@ fun BladebotBubble(onOpen: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(end = 10.dp).border(1.dp, UrbanColors.Line, MaterialTheme.shapes.medium)
             ) {
                 Text(
-                    "¿Te ayudo a reservar?",
+                    hint,
                     Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.labelLarge,
                     color = UrbanColors.Ink

@@ -73,7 +73,7 @@ fun ReviewsScreen(onBack: () -> Unit, vm: ReviewsViewModel = viewModel()) {
                 UrbanCard(Modifier.fillMaxWidth()) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(review.barber?.name ?: "Barbero", style = MaterialTheme.typography.titleMedium)
-                        Text("${review.rating}★", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                        Text("${review.rating}★", style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
                     }
                     Text(review.client?.name ?: "Cliente anónimo", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
                     review.comment?.takeIf { it.isNotBlank() }?.let {

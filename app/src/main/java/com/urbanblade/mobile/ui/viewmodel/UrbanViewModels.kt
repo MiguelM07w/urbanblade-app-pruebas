@@ -9,6 +9,9 @@ import com.urbanblade.mobile.data.model.*
 import com.urbanblade.mobile.data.repository.UrbanRepository
 import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,14 +57,30 @@ class AppointmentsViewModel @JvmOverloads constructor(
     // Adeudo por inasistencia del cliente (mientras sea > 0 no puede reservar) y ticket del servicio terminado.
     private val _debt = MutableStateFlow(0.0)
     val debt = _debt.asStateFlow()
+    private val _debtError = MutableStateFlow<String?>(null)
+    val debtError = _debtError.asStateFlow()
+    private var debtRequest: Job? = null
     private val _ticket = MutableStateFlow<ServiceTicket?>(null)
     val ticket = _ticket.asStateFlow()
     private val _ticketBusy = MutableStateFlow<String?>(null)
     val ticketBusy = _ticketBusy.asStateFlow()
 
-    /** Consulta lo que el cliente debe por inasistencias; un fallo no molesta: solo no se muestra el aviso. */
-    fun loadDebt() = viewModelScope.launch {
-        try { _debt.value = repo.noShowFees().adeudoTotal ?: 0.0 } catch (_: Exception) { _debt.value = 0.0 }
+    /** Un error de consulta nunca convierte el último adeudo confirmado en cero. */
+    fun loadDebt() {
+        debtRequest?.cancel()
+        debtRequest = viewModelScope.launch {
+            _debtError.value = null
+            try {
+                val total = repo.noShowFees().adeudoTotal
+                coroutineContext.ensureActive()
+                if (total != null) _debt.value = total
+                else _debtError.value = "No pudimos comprobar tu adeudo. Actualiza para volver a consultar."
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _debtError.value = "No pudimos comprobar tu adeudo. Actualiza para volver a consultar."
+            }
+        }
     }
 
     fun openTicket(code: String) = viewModelScope.launch {
@@ -207,6 +226,8 @@ class AppointmentsViewModel @JvmOverloads constructor(
     private val _loadingMore = MutableStateFlow(false)
     val loadingMore = _loadingMore.asStateFlow()
     private var page = 1
+    private var listRequest: Job? = null
+    private var pageRequest: Job? = null
 
     private val _month = MutableStateFlow<List<AppointmentRow>>(emptyList())
     /** Citas del mes que muestra el calendario. */
@@ -215,33 +236,46 @@ class AppointmentsViewModel @JvmOverloads constructor(
     val monthLoading = _monthLoading.asStateFlow()
     private var currentMonth: java.time.YearMonth? = null
 
-    fun load() = viewModelScope.launch {
-        _loading.value = true; _error.value = null
-        try {
-            val response = repo.appointments(page = 1, perPage = PAGE_SIZE)
-            page = 1
-            _data.value = response
-            // Un servidor sin paginación no manda `meta`: se trata como lista completa.
-            _hasMore.value = response.meta?.hasMore == true
+    fun load() {
+        pageRequest?.cancel()
+        _loadingMore.value = false
+        listRequest?.cancel()
+        listRequest = viewModelScope.launch {
+            _loading.value = true; _error.value = null
+            try {
+                val response = repo.appointments(page = 1, perPage = PAGE_SIZE)
+                coroutineContext.ensureActive()
+                page = 1
+                _data.value = response
+                // Un servidor sin paginación no manda `meta`: se trata como lista completa.
+                _hasMore.value = response.meta?.hasMore == true
+            }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar las citas.") }
+            finally { _loading.value = false }
+            currentMonth?.let { loadMonth(it) }
         }
-        catch (e: Exception) { _error.value = e.toFriendlyMessage("No se pudieron cargar las citas.") }
-        finally { _loading.value = false }
-        currentMonth?.let { loadMonth(it) }
     }
 
     /** Trae la página siguiente (citas más antiguas) y la agrega al final de la lista. */
-    fun loadMore() = viewModelScope.launch {
-        if (_loadingMore.value || !_hasMore.value) return@launch
-        _loadingMore.value = true
-        try {
-            val response = repo.appointments(page = page + 1, perPage = PAGE_SIZE)
-            page += 1
-            val known = _data.value.data.map { it.id }.toSet()
-            _data.value = _data.value.copy(data = _data.value.data + response.data.filter { it.id !in known })
-            _hasMore.value = response.meta?.hasMore == true
-        } catch (e: Exception) {
-            _error.value = e.toFriendlyMessage("No se pudieron cargar más citas.")
-        } finally { _loadingMore.value = false }
+    fun loadMore() {
+        if (_loading.value || listRequest?.isActive == true || pageRequest?.isActive == true || !_hasMore.value) return
+        pageRequest = viewModelScope.launch {
+            _loadingMore.value = true
+            _error.value = null
+            try {
+                val response = repo.appointments(page = page + 1, perPage = PAGE_SIZE)
+                coroutineContext.ensureActive()
+                page += 1
+                val known = _data.value.data.map { it.id }.toSet()
+                _data.value = _data.value.copy(data = _data.value.data + response.data.filter { it.id !in known })
+                _hasMore.value = response.meta?.hasMore == true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _error.value = e.toFriendlyMessage("No se pudieron cargar más citas.")
+            } finally { _loadingMore.value = false }
+        }
     }
 
     /** Carga todas las citas de un mes para el calendario (varias páginas si hace falta). */
@@ -396,6 +430,17 @@ class BookingViewModel @JvmOverloads constructor(
     val barbers = _barbers.asStateFlow()
     private val _slots = MutableStateFlow<List<SlotItem>>(emptyList())
     val slots = _slots.asStateFlow()
+    private val _slotsLoading = MutableStateFlow(false)
+    val slotsLoading = _slotsLoading.asStateFlow()
+    private val _slotsError = MutableStateFlow<String?>(null)
+    val slotsError = _slotsError.asStateFlow()
+    private val _slotsFor = MutableStateFlow<String?>(null)
+    val slotsFor = _slotsFor.asStateFlow()
+    private var slotsRequest: kotlinx.coroutines.Job? = null
+    private val _catalogLoading = MutableStateFlow(false)
+    val catalogLoading = _catalogLoading.asStateFlow()
+    private val _catalogError = MutableStateFlow<String?>(null)
+    val catalogError = _catalogError.asStateFlow()
     /** Productos con existencias para el paso "Extras" (mismo catálogo que la tienda). */
     private val _products = MutableStateFlow<List<ProductItem>>(emptyList())
     val products = _products.asStateFlow()
@@ -439,20 +484,41 @@ class BookingViewModel @JvmOverloads constructor(
     }
 
     fun loadCatalog() = viewModelScope.launch {
+        if (_catalogLoading.value) return@launch
+        _catalogLoading.value = true
+        _catalogError.value = null
         // Los productos son opcionales: si fallan, la reserva sigue sin el paso de extras con productos.
         launch { _products.value = runCatching { repo.products() }.getOrDefault(emptyList()).filter { it.stockActual > 0 } }
         try {
-            _services.value = repo.services()
-            _barbers.value = repo.barbers()
+            val services = repo.services()
+            val barbers = repo.barbers()
+            _services.value = services
+            _barbers.value = barbers
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
-            _error.value = e.toFriendlyMessage("No se pudo cargar el catálogo.")
+            _catalogError.value = e.toFriendlyMessage("No se pudo cargar el catálogo.")
+        } finally {
+            _catalogLoading.value = false
         }
     }
 
-    fun loadSlots(barberId: String, serviceId: String, date: String) = viewModelScope.launch {
-        if (barberId.isBlank() || serviceId.isBlank() || date.isBlank()) return@launch
-        try { _slots.value = repo.slots(barberId, serviceId, date) }
-        catch (_: Exception) { _slots.value = emptyList() }
+    fun loadSlots(barberId: String, serviceId: String, date: String) {
+        slotsRequest?.cancel()
+        _slotsFor.value = null
+        _slots.value = emptyList()
+        slotsRequest = viewModelScope.launch {
+            _slots.value = emptyList(); _slotsError.value = null
+            if (barberId.isBlank() || serviceId.isBlank() || date.isBlank()) return@launch
+            _slotsLoading.value = true
+            try {
+                _slots.value = repo.slots(barberId, serviceId, date)
+                _slotsFor.value = "$barberId|$serviceId|$date"
+            }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { _slotsError.value = e.toFriendlyMessage("No pudimos consultar los horarios.") }
+            finally { _slotsLoading.value = false }
+        }
     }
 
     fun create(barberId: String, serviceId: String, date: String, time: String, notes: String, onDone: (String?) -> Unit) {
@@ -587,8 +653,9 @@ class BookingViewModel @JvmOverloads constructor(
     }
 }
 
-class CatalogViewModel : ViewModel() {
-    private val repo = AppContainer.urbanRepository
+class CatalogViewModel @JvmOverloads constructor(
+    private val repo: UrbanRepository = AppContainer.urbanRepository
+) : ViewModel() {
     private val _services = MutableStateFlow<List<ServiceItem>>(emptyList())
     val services = _services.asStateFlow()
     private val _barbers = MutableStateFlow<List<BarberItem>>(emptyList())
@@ -597,6 +664,23 @@ class CatalogViewModel : ViewModel() {
     val loading = _loading.asStateFlow()
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
+    private val _favoriteBusy = MutableStateFlow(false)
+    val favoriteBusy = _favoriteBusy.asStateFlow()
+
+    fun favorite(barber: BarberItem) {
+        if (_favoriteBusy.value) return
+        _favoriteBusy.value = true
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                val saved = repo.favoriteBarber(if (barber.esFavorito) null else barber.id)
+                _barbers.value = _barbers.value.map { it.copy(esFavorito = it.id == saved.barberId) }
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { _error.value = e.toFriendlyMessage("No pudimos guardar tu barbero favorito.") }
+            finally { _favoriteBusy.value = false }
+        }
+    }
 
     fun load() = viewModelScope.launch {
         _loading.value = true; _error.value = null
@@ -655,17 +739,15 @@ data class WalletData(
     /** Planes para contratar desde la app (solo se muestran si no tiene membresía). */
     val plans: List<MembershipPlan> = emptyList(),
     val savedCards: List<SavedCard> = emptyList()
-)
+) {
+    val hasContent: Boolean get() = loyalty != null || membership != null || packages.isNotEmpty() ||
+        giftCards.isNotEmpty() || referrals != null || plans.isNotEmpty()
+}
 
 /** Primer cobro de la membresía por confirmar con Stripe: tarjeta guardada o la que escribió. */
 data class MembershipCheckout(val clientSecret: String, val savedCardId: String?)
 
-/**
- * Solo lectura esta ronda: carga las cinco fuentes de autoservicio en
- * paralelo (memberships/mine, packages, gift-cards/mine, referrals/mine,
- * más lealtad embebida en dashboard). Comprar paquetes/membresías/gift
- * cards y suscribirse queda para la ronda de checkout con Stripe.
- */
+/** Beneficios y membresía. Conserva datos previos al fallar una fuente; compras en BenefitPurchaseViewModel. */
 class WalletViewModel @JvmOverloads constructor(
     private val repo: UrbanRepository = AppContainer.urbanRepository
 ) : ViewModel() {
@@ -681,19 +763,28 @@ class WalletViewModel @JvmOverloads constructor(
     val error = _error.asStateFlow()
 
     fun load() = viewModelScope.launch {
+        if (_loading.value) return@launch
         _loading.value = true; _error.value = null
+        val previous = _data.value
+        var failures = 0
+        suspend fun <T> source(fallback: T, read: suspend () -> T): T = try { read() }
+        catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Exception) {
+            failures++
+            if (_error.value == null) _error.value = e.toFriendlyMessage("No pudimos actualizar todos tus beneficios. Intenta de nuevo.")
+            fallback
+        }
         try {
             _data.value = WalletData(
-                loyalty = runCatching { repo.clientLoyalty() }.getOrNull(),
-                membership = runCatching { repo.myMembership() }.getOrNull(),
-                packages = runCatching { repo.myPackages() }.getOrDefault(emptyList()),
-                giftCards = runCatching { repo.myGiftCards() }.getOrDefault(emptyList()),
-                referrals = runCatching { repo.myReferrals() }.getOrNull(),
-                plans = runCatching { repo.membershipPlans() }.getOrNull().orEmpty(),
-                savedCards = runCatching { repo.savedCards() }.getOrNull().orEmpty()
+                loyalty = source(previous.loyalty) { repo.clientLoyalty() },
+                membership = source(previous.membership) { repo.myMembership() },
+                packages = source(previous.packages) { repo.myPackages() },
+                giftCards = source(previous.giftCards) { repo.myGiftCards() },
+                referrals = source(previous.referrals) { repo.myReferrals() },
+                plans = source(previous.plans) { repo.membershipPlans().orEmpty() },
+                savedCards = source(previous.savedCards) { repo.savedCards().orEmpty() }
             )
-        } catch (e: Exception) {
-            _error.value = e.toFriendlyMessage("No se pudo cargar tu wallet.")
+            if (failures > 0 && failures < 7) _error.value = "Algunos beneficios no se pudieron actualizar. Lo anterior se conserva; vuelve a intentar."
         } finally { _loading.value = false }
     }
 

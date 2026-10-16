@@ -33,6 +33,14 @@
         </activity>
 
         <!-- Botones de la notificación «tu servicio termina en 5 min»: terminar ya / +10 / +15 min. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.documents"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/document_paths" />
+        </provider>
+
         <receiver
             android:name=".core.push.ServiceActionReceiver"
             android:exported="false" />

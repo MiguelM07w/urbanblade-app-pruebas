@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,6 +51,7 @@ import com.urbanblade.mobile.ui.components.UrbanHeroStat
 import com.urbanblade.mobile.ui.components.UrbanInfoBanner
 import com.urbanblade.mobile.ui.components.UrbanMascotState
 import com.urbanblade.mobile.ui.components.UrbanModuleScreen
+import com.urbanblade.mobile.ui.components.UrbanOutlineButton
 import com.urbanblade.mobile.ui.components.UrbanPillTabs
 import com.urbanblade.mobile.ui.components.UrbanSectionTitle
 import com.urbanblade.mobile.ui.components.UrbanSkeletonList
@@ -108,14 +110,18 @@ fun InvoicesScreen(onBack: () -> Unit, vm: InvoicesViewModel = viewModel()) {
         refreshing = state.loading
     ) {
         when {
-            state.loading && state.payments.isEmpty() && state.orders.isEmpty() -> item { UrbanSkeletonList(3) }
-            state.error != null && state.payments.isEmpty() -> item {
+            state.loading && state.payments.isEmpty() && state.orders.isEmpty() && state.memberships.isEmpty() -> item { UrbanSkeletonList(3) }
+            state.error != null && state.payments.isEmpty() && state.orders.isEmpty() && state.memberships.isEmpty() -> item {
                 UrbanMascotState(UrbanStateKind.ERROR, "No pudimos cargar tus facturas", state.error, "Reintentar") { vm.load() }
             }
             else -> {
+                (state.error ?: state.partialError)?.let { message ->
+                    item { UrbanErrorBanner(message) }
+                    item { UrbanOutlineButton("Reintentar consulta", { vm.load() }, enabled = !state.loading, modifier = Modifier.fillMaxWidth()) }
+                }
                 item {
                     UrbanHeroCard {
-                        UrbanHeroLabel("Total pagado")
+                        UrbanHeroLabel(if (state.partialError != null || state.error != null) "Total disponible · consulta incompleta" else "Total pagado")
                         Spacer(Modifier.height(6.dp))
                         Text(money(state.totalPaid + state.productsPaid + state.membershipPaid), style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
                         Spacer(Modifier.height(14.dp))
@@ -263,7 +269,7 @@ private fun OrderInvoice(order: OrderRow, opening: Boolean, onReceipt: (() -> Un
                     color = UrbanColors.Muted
                 )
             }
-            Text(money(order.total), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+            Text(money(order.total), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
         }
         onReceipt?.let { ReceiptButton(opening, it) }
     }
@@ -281,7 +287,7 @@ private fun MembershipInvoice(invoice: MembershipInvoiceRow, opening: Boolean, o
                     color = UrbanColors.Muted
                 )
             }
-            Text(money(invoice.monto), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+            Text(money(invoice.monto), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
         }
         ReceiptButton(opening, onReceipt)
     }
@@ -291,13 +297,13 @@ private fun MembershipInvoice(invoice: MembershipInvoiceRow, opening: Boolean, o
 private fun ReceiptButton(opening: Boolean, onClick: () -> Unit) {
     Spacer(Modifier.height(4.dp))
     // Sin el margen interno del botón para que el ícono quede alineado con el texto de la tarjeta.
-    TextButton(onClick = onClick, enabled = !opening, contentPadding = PaddingValues(vertical = 4.dp)) {
+    TextButton(onClick = onClick, enabled = !opening, modifier = Modifier.heightIn(min = 48.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
         if (opening) {
             CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = UrbanColors.Gold)
         } else {
             Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp), tint = UrbanColors.Gold)
         }
         Spacer(Modifier.width(6.dp))
-        Text(if (opening) "Descargando…" else "Descargar comprobante", color = UrbanColors.Gold)
+        Text(if (opening) "Descargando…" else "Descargar comprobante", color = UrbanColors.GoldText)
     }
 }

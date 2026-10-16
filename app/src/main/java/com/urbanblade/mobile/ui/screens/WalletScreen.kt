@@ -38,7 +38,7 @@ import com.urbanblade.mobile.ui.viewmodel.WalletViewModel
 /**
  * Beneficios del cliente: puntos/nivel, membresía, paquetes, gift cards y referidos (endpoints
  * de autoservicio de barber). La membresía se contrata aquí con tarjeta (Stripe confirma el
- * primer cobro y el webhook la activa); paquetes y gift cards siguen siendo de recepción.
+ * primer cobro y el webhook la activa); BenefitShop ofrece paquetes, tarjetas regalo y tarjeta PDF.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,12 +98,13 @@ fun WalletScreen(onBack: () -> Unit, onBook: () -> Unit, vm: WalletViewModel = v
             )
         }
         message?.let { item { UrbanInfoBanner(it, Icons.Default.CheckCircle) } }
+        item { BenefitShop(onRefresh = { vm.load() }) }
 
         when {
-            error != null && data.loyalty == null && !loading -> item {
+            error != null && !data.hasContent && !loading -> item {
                 UrbanMascotState(UrbanStateKind.ERROR, "No pudimos cargar tus beneficios", error, "Reintentar") { vm.load() }
             }
-            loading && data.loyalty == null -> item { UrbanSkeletonList(2) }
+            loading && !data.hasContent -> item { UrbanSkeletonList(2) }
             else -> {
                 error?.let { item { UrbanErrorBanner(it) } }
                 data.loyalty?.let { loyalty ->
@@ -152,7 +153,7 @@ fun WalletScreen(onBack: () -> Unit, onBook: () -> Unit, vm: WalletViewModel = v
                         UrbanAttentionRow(
                             Icons.Default.Redeem,
                             "Aún no tienes paquetes ni tarjetas regalo",
-                            "Pregunta en recepción por los paquetes de servicios y las tarjetas regalo.",
+                            "Consulta los paquetes o compra una tarjeta regalo desde las opciones de arriba.",
                             UrbanColors.Gold
                         )
                     }
@@ -243,7 +244,7 @@ private fun LoyaltyCard(loyalty: ClientLoyalty) {
                         "${loyalty.discountPct.toInt()}% de descuento",
                         Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelLarge,
-                        color = UrbanColors.Gold
+                        color = UrbanColors.GoldText
                     )
                 }
             }
@@ -254,7 +255,7 @@ private fun LoyaltyCard(loyalty: ClientLoyalty) {
             UrbanFormat.count(loyalty.puntos, "punto", "puntos") +
                 if (loyalty.puntos > 0 && loyalty.maxRedeemPct != null) " · valen \$${loyalty.puntos} al pagar" else "",
             style = MaterialTheme.typography.titleMedium,
-            color = UrbanColors.Gold
+            color = UrbanColors.GoldText
         )
         if (loyalty.nextNivelLabel != null) {
             Spacer(Modifier.height(16.dp))
@@ -328,7 +329,7 @@ private fun PointsCard(loyalty: ClientLoyalty, onBook: () -> Unit) {
                 Text(
                     "Canjéalos al pagar: cada punto vale \$1, hasta el $it % de tu cita.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = UrbanColors.Gold
+                    color = UrbanColors.GoldText
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -371,7 +372,7 @@ private fun MembershipPlanCard(plan: MembershipPlan, busy: Boolean, onSubscribe:
                 Text(
                     "${plan.descuentoPct.toInt()}% de descuento en cada servicio",
                     style = MaterialTheme.typography.bodySmall,
-                    color = UrbanColors.Gold
+                    color = UrbanColors.GoldText
                 )
             }
             Text("${UrbanFormat.moneyShort(plan.precioMensual)}/mes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -416,7 +417,7 @@ private fun MembershipCheckoutSheet(
             Spacer(Modifier.height(6.dp))
             Text(plan.nombre, style = MaterialTheme.typography.headlineMedium, color = UrbanColors.Ink)
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("${UrbanFormat.moneyShort(plan.precioMensual)}", style = MaterialTheme.typography.displaySmall, color = UrbanColors.Gold)
+                Text("${UrbanFormat.moneyShort(plan.precioMensual)}", style = MaterialTheme.typography.displaySmall, color = UrbanColors.GoldText)
                 Text(" /mes", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Muted, modifier = Modifier.padding(bottom = 6.dp))
             }
             Spacer(Modifier.height(10.dp))
@@ -424,7 +425,7 @@ private fun MembershipCheckoutSheet(
                 Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Sell, null, tint = UrbanColors.Gold, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("$pct% de descuento en cada servicio", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                    Text("$pct% de descuento en cada servicio", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                 }
             }
         }
@@ -559,7 +560,7 @@ private fun ReferralCard(referrals: ReferralInfo, copied: Boolean, onCopyCode: (
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Tu código", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-                Text(referrals.codigoReferido ?: "—", style = MaterialTheme.typography.headlineSmall, color = UrbanColors.Gold, fontWeight = FontWeight.Bold)
+                Text(referrals.codigoReferido ?: "—", style = MaterialTheme.typography.headlineSmall, color = UrbanColors.GoldText, fontWeight = FontWeight.Bold)
             }
             IconButton(onClick = { referrals.codigoReferido?.let(onCopyCode) }) {
                 Icon(

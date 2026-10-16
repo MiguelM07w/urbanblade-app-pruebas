@@ -97,6 +97,8 @@ fun UrbanBrandMark(compact: Boolean = false) {
             Text(
                 "URBANBLADE",
                 style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Black,
                 color = UrbanColors.Ink
             )
@@ -104,7 +106,7 @@ fun UrbanBrandMark(compact: Boolean = false) {
                 Text(
                     "SASTRERÍA NOCTURNA",
                     style = MaterialTheme.typography.labelMedium,
-                    color = UrbanColors.Gold,
+                    color = UrbanColors.GoldText,
                 )
             }
         }
@@ -130,7 +132,7 @@ fun UrbanPageHeader(
                 Text(
                     it.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = UrbanColors.Gold
+                    color = UrbanColors.GoldText
                 )
                 Spacer(Modifier.height(5.dp))
             }
@@ -322,7 +324,7 @@ fun UrbanRolePill(role: String) {
             role.replace('_', ' ').replaceFirstChar { it.uppercase() },
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
             style = MaterialTheme.typography.labelMedium,
-            color = UrbanColors.Gold
+            color = UrbanColors.GoldText
         )
     }
 }
@@ -338,7 +340,7 @@ fun UrbanAvatar(name: String, modifier: Modifier = Modifier, imageUrl: String? =
             .border(1.dp, UrbanColors.Gold.copy(alpha = 0.33f), CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        Text(initials.ifBlank { "UB" }, style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+        Text(initials.ifBlank { "UB" }, style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
         // La foto va encima de las iniciales: mientras carga (o si falla) se siguen viendo las iniciales.
         if (!imageUrl.isNullOrBlank()) {
             coil.compose.AsyncImage(
@@ -391,10 +393,12 @@ fun UrbanOutlineButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    enabled: Boolean = true
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = 50.dp),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, UrbanColors.Line)
@@ -487,9 +491,18 @@ fun UrbanFieldLabel(text: String) {
 
 @Composable
 fun UrbanKeyValue(label: String, value: String, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
-        Spacer(Modifier.width(12.dp))
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        if (maxWidth < 300.dp || androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                Text(value, style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink)
+            }
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                Text(value, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End)
+            }
+        }
     }
 }

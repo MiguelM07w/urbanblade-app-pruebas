@@ -296,7 +296,7 @@ private fun PerformanceCard(performance: BarberPerformance?, loading: Boolean) {
         Text("Rendimiento", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = UrbanColors.Ink)
         Spacer(Modifier.height(8.dp))
         when {
-            loading -> LinearProgressIndicator(Modifier.fillMaxWidth(), color = UrbanColors.Gold)
+            loading -> LinearProgressIndicator(Modifier.fillMaxWidth(), color = UrbanColors.GoldText)
             performance == null -> Text("No se pudo cargar el rendimiento.", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Muted)
             else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 UrbanKeyValue("Citas este mes", performance.appointmentsThisMonth.toString())

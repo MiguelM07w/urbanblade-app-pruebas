@@ -3,12 +3,14 @@ package com.urbanblade.mobile.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -47,6 +50,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urbanblade.mobile.data.model.AppointmentRow
 import com.urbanblade.mobile.ui.components.UrbanAttentionRow
 import com.urbanblade.mobile.ui.components.UrbanAvatar
+import com.urbanblade.mobile.ui.components.UrbanAppointmentHeading
+import com.urbanblade.mobile.ui.components.UrbanPremiumCard
 import com.urbanblade.mobile.ui.components.UrbanCard
 import com.urbanblade.mobile.ui.components.UrbanErrorBanner
 import com.urbanblade.mobile.ui.components.UrbanFormat
@@ -89,6 +94,7 @@ fun ClientAppointmentsScreen(
     val loadingMore by vm.loadingMore.collectAsState()
     val waitlist by vm.waitlistEntries.collectAsState()
     val debt by vm.debt.collectAsState()
+    val debtError by vm.debtError.collectAsState()
     val ticket by vm.ticket.collectAsState()
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -102,8 +108,7 @@ fun ClientAppointmentsScreen(
         vm.loadDebt()
     }
 
-    val today = remember { LocalDate.now().toString() }
-    val todayDate = remember { LocalDate.now() }
+    val todayDate = LocalDate.now()
     
     val upcoming = response.data
         .filter { 
@@ -138,11 +143,18 @@ fun ClientAppointmentsScreen(
             UrbanPageHeader(
                 title = "Mis citas",
                 subtitle = "Lo que viene y lo que ya viviste.",
-                eyebrow = "Agenda",
-                trailing = {
-                    UrbanPrimaryButton(text = "Reservar", onClick = onBook, icon = Icons.Default.Add)
-                }
+                eyebrow = "Agenda"
             )
+            Spacer(Modifier.height(12.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                UrbanPrimaryButton(text = "Reservar", onClick = onBook, icon = Icons.Default.Add)
+                UrbanOutlineButton(
+                    text = if (loading) "Actualizando…" else "Actualizar",
+                    onClick = { vm.load(); vm.loadWaitlist(); vm.loadDebt() },
+                    icon = Icons.Default.Refresh,
+                    enabled = !loading && !loadingMore
+                )
+            }
         }
 
         notice?.let { item { UrbanInfoBanner(it, Icons.Default.CheckCircle) } }
@@ -154,6 +166,8 @@ fun ClientAppointmentsScreen(
             }
             else -> {
                 error?.let { item { UrbanErrorBanner(it) } }
+                debtError?.let { item { UrbanInfoBanner(it) } }
+                if (loading) item { UrbanInfoBanner("Actualizando tus citas…") }
                 if (debt > 0) {
                     item {
                         UrbanAttentionRow(
@@ -166,19 +180,23 @@ fun ClientAppointmentsScreen(
                 }
                 item {
                     UrbanPillTabs(
-                        listOf("Próximas (${upcoming.size})" to Icons.Default.Event, "Historial" to Icons.Default.History),
+                        listOf("Próximas" to Icons.Default.Event, "Historial" to Icons.Default.History),
                         tab
                     ) { tab = it }
                 }
 
                 if (tab == 0) {
-                    val next = upcoming.firstOrNull()
+                    val serverNext = response.next?.takeIf {
+                        it.estado in ACTIVE &&
+                            (runCatching { LocalDate.parse(it.fecha.take(10)) }.getOrNull() ?: LocalDate.MIN) >= todayDate
+                    }
+                    val next = serverNext ?: upcoming.firstOrNull()
                     if (next == null) {
                         item {
                             UrbanMascotState(
                                 UrbanStateKind.EMPTY,
-                                "No tienes citas próximas",
-                                "Elige servicio, barbero y un horario real en menos de un minuto.",
+                                if (hasMore) "No hay citas próximas en las páginas cargadas" else "No tienes citas próximas",
+                                if (hasMore) "Carga más citas para completar la revisión de tu agenda." else "Elige servicio, barbero y un horario disponible.",
                                 actionLabel = "Reservar cita",
                                 actionIcon = Icons.Default.Add,
                                 onAction = onBook
@@ -188,6 +206,7 @@ fun ClientAppointmentsScreen(
                         item {
                             NextClientAppointment(
                                 appt = next,
+                                completeList = serverNext != null || !hasMore,
                                 onPay = if (next.isPayable()) { { checkingOut = next } } else null,
                                 onReschedule = if (next.isManageable()) { { rescheduling = next } } else null,
                                 onCancel = if (next.isManageable()) { { confirmCancel = next } } else null
@@ -202,7 +221,7 @@ fun ClientAppointmentsScreen(
                         }
                     }
 
-                    val later = upcoming.drop(1)
+                    val later = upcoming.filter { it.id != next?.id }
                     if (later.isNotEmpty()) {
                         item { UrbanSectionTitle("Después", UrbanFormat.count(later.size, "cita más", "citas más")) }
                         items(later, key = { "later-${it.id}" }) { appt ->
@@ -224,7 +243,7 @@ fun ClientAppointmentsScreen(
                 } else {
                     if (history.isEmpty()) {
                         item {
-                            UrbanMascotState(UrbanStateKind.EMPTY, "Aún no hay historial", "Tus citas pasadas y canceladas aparecerán aquí.")
+                            UrbanMascotState(UrbanStateKind.EMPTY, if (hasMore) "No hay historial en las páginas cargadas" else "Aún no hay historial", "Tus citas pasadas y canceladas aparecerán aquí.")
                         }
                     } else {
                         val completed = history.count { it.estado == "completada" }
@@ -245,15 +264,18 @@ fun ClientAppointmentsScreen(
                             )
                         }
                     }
-                    if (hasMore) {
-                        item {
-                            UrbanOutlineButton(
-                                text = if (loadingMore) "Cargando…" else "Cargar citas anteriores",
-                                onClick = { vm.loadMore() },
-                                icon = Icons.Default.ExpandMore,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                }
+                if (hasMore) {
+                    item {
+                        UrbanInfoBanner("Hay más citas por consultar. Los conteos corresponden a las páginas cargadas.")
+                        Spacer(Modifier.height(8.dp))
+                        UrbanOutlineButton(
+                            text = if (loadingMore) "Cargando…" else "Cargar más citas",
+                            onClick = { vm.loadMore() },
+                            icon = Icons.Default.ExpandMore,
+                            enabled = !loading && !loadingMore,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -285,9 +307,13 @@ fun ClientAppointmentsScreen(
 }
 
 /** Qué sigue en cada estado, en lenguaje claro (el cliente no ve los botones de la agenda del barbero). */
-internal fun clientStateHint(estado: String): String? = when (estado) {
+internal fun clientStateHint(estado: String, paymentResolved: Boolean? = null): String? = when (estado) {
     "pendiente" -> "Esperando que tu barbero apruebe la cita; te avisaremos en cuanto la confirme."
-    "confirmada" -> "Cita aprobada. Antes de que empiece el servicio debe estar pagada: con tarjeta aquí, o en recepción al llegar."
+    "confirmada" -> when (paymentResolved) {
+        true -> "Cita aprobada y pago resuelto. Te esperamos a la hora de tu cita."
+        false -> "Cita aprobada. Resuelve el pago antes del servicio; consulta las opciones aquí o en recepción."
+        null -> "Cita aprobada. Consulta el estado de tu pago en tus comprobantes o en recepción."
+    }
     "en_proceso" -> "Tu servicio está en curso."
     "no_asistio" -> "No registramos tu asistencia. Si hay un cargo pendiente, págalo en la barbería para volver a reservar."
     else -> null
@@ -298,10 +324,10 @@ private fun AppointmentRow.isPayable() = isChargeable && !hasPayment && code != 
 
 /** La siguiente cita, en la tarjeta con foto, con sus acciones a la vista. */
 @Composable
-private fun NextClientAppointment(appt: AppointmentRow, onPay: (() -> Unit)?, onReschedule: (() -> Unit)?, onCancel: (() -> Unit)?) {
+private fun NextClientAppointment(appt: AppointmentRow, completeList: Boolean, onPay: (() -> Unit)?, onReschedule: (() -> Unit)?, onCancel: (() -> Unit)?) {
     UrbanHeroCard {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { UrbanHeroLabel("Tu próxima cita") }
+            Box(Modifier.weight(1f)) { UrbanHeroLabel(if (completeList) "Tu próxima cita" else "Una de tus próximas citas") }
             UrbanStatusPill(appt.estado)
         }
         Spacer(Modifier.height(8.dp))
@@ -315,13 +341,13 @@ private fun NextClientAppointment(appt: AppointmentRow, onPay: (() -> Unit)?, on
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(appt.service?.nombre ?: "Servicio", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
-                Text(appt.barber?.user?.name ?: "Barbero por confirmar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(appt.barber?.user?.name ?: "Barbero por confirmar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
             (appt.precioCobrado ?: appt.service?.precio)?.let {
                 Text("${UrbanFormat.moneyShort(it)}", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Ink)
             }
         }
-        clientStateHint(appt.estado)?.let {
+        clientStateHint(appt.estado, appt.pagoResuelto)?.let {
             Spacer(Modifier.height(10.dp))
             Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
         }
@@ -346,28 +372,17 @@ private fun ClientAppointmentRow(
     onRebook: (() -> Unit)? = null,
     onTicket: (() -> Unit)? = null
 ) {
-    UrbanCard(Modifier.fillMaxWidth()) {
+    UrbanPremiumCard(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppointmentDateRail(appt, emphasized = true)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        appt.service?.nombre ?: "Servicio",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (appt.estado == "cancelada") UrbanColors.Muted else UrbanColors.Ink,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    UrbanStatusPill(appt.estado)
-                }
+                UrbanAppointmentHeading(appt.service?.nombre ?: "Servicio", appt.estado)
                 Text(appt.barber?.user?.name ?: "Barbero por confirmar", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(UrbanFormat.date(appt.fecha), style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
             }
         }
-        clientStateHint(appt.estado)?.let {
+        clientStateHint(appt.estado, appt.pagoResuelto)?.let {
             Spacer(Modifier.height(8.dp))
             Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
         }
@@ -388,16 +403,16 @@ private fun ClientAppointmentRow(
 
 @Composable
 private fun AppointmentActions(onReschedule: (() -> Unit)? = null, onCancel: (() -> Unit)? = null, onRebook: (() -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(start = 2.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-        onRebook?.let { ActionText("Reservar de nuevo", Icons.Default.Replay, UrbanColors.Gold, it) }
-        onReschedule?.let { ActionText("Reagendar", Icons.Default.EditCalendar, UrbanColors.Gold, it) }
+    FlowRow(Modifier.fillMaxWidth().padding(start = 2.dp), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        onRebook?.let { ActionText("Reservar de nuevo", Icons.Default.Replay, UrbanColors.GoldText, it) }
+        onReschedule?.let { ActionText("Reagendar", Icons.Default.EditCalendar, UrbanColors.GoldText, it) }
         onCancel?.let { ActionText("Cancelar", Icons.Default.Close, UrbanColors.Danger, it) }
     }
 }
 
 @Composable
 private fun ActionText(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
-    TextButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 4.dp)) {
+    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = 48.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
         Icon(icon, null, modifier = Modifier.size(17.dp), tint = color)
         Spacer(Modifier.width(5.dp))
         Text(label, color = color)

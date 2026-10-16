@@ -71,14 +71,7 @@ import com.urbanblade.mobile.ui.theme.UrbanColors
 
 /** Etiqueta del rol principal (si alguien tiene varios, gana el de más responsabilidad). */
 fun accountRoleLabel(roles: List<String>): String {
-    val order = listOf(
-        "administrador" to "Administrador",
-        "recepcionista" to "Recepción",
-        "ingeniero" to "Ingeniero",
-        "barbero" to "Barbero",
-        "cliente" to "Cliente"
-    )
-    return order.firstOrNull { (key, _) -> key in roles }?.second ?: "Cuenta"
+    return com.urbanblade.mobile.core.access.UserExperience.label(roles)
 }
 
 /**

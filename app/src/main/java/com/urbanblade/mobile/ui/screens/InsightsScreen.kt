@@ -76,33 +76,20 @@ fun InsightsScreen(onBack: () -> Unit, vm: InsightsViewModel = viewModel()) {
             else -> {
                 error?.let { item { UrbanErrorBanner(it) } }
                 item {
-                    UrbanHeroCard {
-                        UrbanHeroLabel("Resumen")
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            if (attention == 0) "Todo va bien" else UrbanFormat.count(attention, "señal requiere atención", "señales requieren atención"),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = UrbanColors.Ink
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
-                        Spacer(Modifier.height(14.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                            UrbanHeroStat("Analizadas", statuses.size.toString(), Icons.Default.Insights, Modifier.weight(1f))
-                            UrbanHeroStat(
-                                "Por revisar",
-                                attention.toString(),
-                                Icons.Default.Warning,
-                                Modifier.weight(1f),
-                                tone = if (attention > 0) UrbanColors.Warning else UrbanColors.Success
-                            )
-                        }
+                    UrbanAnalyticsCard(
+                        title = "Lectura del negocio",
+                        metric = UrbanFormat.count(statuses.size, "indicador", "indicadores"),
+                        subtitle = if (attention == 0) "Sin alertas en los indicadores disponibles." else UrbanFormat.count(attention, "señal requiere atención", "señales requieren atención"),
+                        eyebrow = "TENDENCIAS RECIENTES",
+                        accent = if (attention > 0) UrbanColors.Warning else UrbanChartColors.at(0)
+                    ) {
+                        UrbanKeyValue("Por revisar", attention.toString())
                     }
                 }
 
                 data.revenue?.let { revenue ->
                     item {
-                        InsightCard("Ingresos", Icons.Default.TrendingUp, revenue.status, revenue.message) {
+                        InsightCard("Ingresos", revenue.status, revenue.message) {
                             revenue.avgDaily?.let { BigNumber("Promedio diario", UrbanFormat.moneyShort(it)) }
                         }
                     }
@@ -110,7 +97,7 @@ fun InsightsScreen(onBack: () -> Unit, vm: InsightsViewModel = viewModel()) {
 
                 data.appointments?.let { appts ->
                     item {
-                        InsightCard("Citas", Icons.Default.CalendarMonth, appts.status, appts.message) {
+                        InsightCard("Citas", appts.status, appts.message) {
                             val avg = appts.avgDaily
                             val recent = appts.trend7d
                             if (avg != null && recent != null) {
@@ -130,16 +117,16 @@ fun InsightsScreen(onBack: () -> Unit, vm: InsightsViewModel = viewModel()) {
 
                 data.serviceConcentration?.let { service ->
                     item {
-                        InsightCard("Concentración de servicios", Icons.Default.PieChart, service.status, service.message) {
+                        InsightCard("Concentración de servicios", service.status, service.message) {
                             val percent = service.percentage
                             if (percent != null) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     UrbanRingGauge(
                                         fraction = (percent / 100.0).toFloat(),
                                         centerText = "%.0f%%".format(percent),
                                         color = statusColor(service.status)
                                     )
-                                    Column(Modifier.weight(1f)) {
+                                    Column {
                                         service.topService?.let { BigNumber("Servicio principal", it) }
                                         Text(
                                             "de los ingresos vienen de un solo servicio",
@@ -163,33 +150,12 @@ fun InsightsScreen(onBack: () -> Unit, vm: InsightsViewModel = viewModel()) {
 @Composable
 private fun InsightCard(
     title: String,
-    icon: ImageVector,
     status: String?,
     message: String?,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val tone = statusColor(status)
-    UrbanCard(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(
-                Modifier.size(40.dp).clip(CircleShape).background(tone.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center
-            ) { Icon(icon, null, tint = tone, modifier = Modifier.size(22.dp)) }
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = UrbanColors.Ink, modifier = Modifier.weight(1f))
-            Surface(shape = RoundedCornerShape(50), color = tone.copy(alpha = 0.14f)) {
-                Text(
-                    statusLabel(status),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = tone,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
-        }
-        message?.takeIf { it.isNotBlank() }?.let {
-            Spacer(Modifier.height(12.dp))
-            Text(it, style = MaterialTheme.typography.bodyLarge, color = UrbanColors.Ink)
-        }
-        Spacer(Modifier.height(14.dp))
+    UrbanAnalyticsCard(title = title, subtitle = message, accent = tone, eyebrow = statusLabel(status)) {
         content()
     }
 }

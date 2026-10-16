@@ -16,6 +16,7 @@ import java.io.IOException
 sealed interface AuthState {
     data object Loading : AuthState
     data object Guest : AuthState
+    data object Unavailable : AuthState
     data class Authenticated(val user: AuthUser) : AuthState
 }
 
@@ -61,10 +62,11 @@ class AuthViewModel @JvmOverloads constructor(
 
     fun bootstrap() {
         viewModelScope.launch {
-            _state.value = AuthState.Loading
+            if (_state.value !is AuthState.Authenticated) _state.value = AuthState.Loading
             val restored = repository.restoreSession()
             _offline.value = restored.fromCache
-            _state.value = restored.user?.let { AuthState.Authenticated(it) } ?: AuthState.Guest
+            _state.value = restored.user?.let { AuthState.Authenticated(it) }
+                ?: if (restored.retryRequired) AuthState.Unavailable else AuthState.Guest
         }
     }
 

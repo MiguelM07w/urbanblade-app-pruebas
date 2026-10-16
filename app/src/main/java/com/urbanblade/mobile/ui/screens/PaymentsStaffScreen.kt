@@ -301,7 +301,7 @@ private fun PendingCard(payment: PendingPaymentRow, deposit: Boolean, busy: Bool
     val check = compareTransfer(payment.monto, price)
     UrbanPremiumCard(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(if (deposit) "ANTICIPO AL RESERVAR" else "TRANSFERENCIA", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+            Text(if (deposit) "ANTICIPO AL RESERVAR" else "TRANSFERENCIA", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
             SimpleStatusPill("por revisar", UrbanColors.Warning)
         }
         Spacer(Modifier.height(4.dp))
@@ -348,7 +348,7 @@ private fun PendingCard(payment: PendingPaymentRow, deposit: Boolean, busy: Bool
 private fun FeeCard(fee: NoShowFeeItem, busy: Boolean, onPay: (String) -> Unit, onWaive: () -> Unit) {
     UrbanPremiumCard(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("CARGO POR INASISTENCIA", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+            Text("CARGO POR INASISTENCIA", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
             SimpleStatusPill("por cobrar", UrbanColors.Warning)
         }
         Spacer(Modifier.height(4.dp))
@@ -429,7 +429,7 @@ private fun PaymentCard(payment: PaymentRow, onReceipt: () -> Unit) {
         tone = UrbanColors.Gold,
         trailing = {
             Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
-                Text(money(payment.monto + payment.propina), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = UrbanColors.Gold)
+                Text(money(payment.monto + payment.propina), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = UrbanColors.GoldText)
                 IconButton(onClick = onReceipt) { Icon(Icons.Default.Receipt, "Ver comprobante", tint = UrbanColors.Muted) }
             }
         }

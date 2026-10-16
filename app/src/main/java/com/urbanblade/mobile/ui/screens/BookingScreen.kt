@@ -1,6 +1,7 @@
 package com.urbanblade.mobile.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clipToBounds
 import com.stripe.android.model.ConfirmPaymentIntentParams
 import com.stripe.android.payments.paymentlauncher.PaymentResult
 import com.stripe.android.payments.paymentlauncher.rememberPaymentLauncher
@@ -10,9 +11,6 @@ import com.urbanblade.mobile.ui.viewmodel.BookingPayMethod
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -79,6 +77,11 @@ fun BookingScreen(
     val services by vm.services.collectAsState()
     val barbers by vm.barbers.collectAsState()
     val slots by vm.slots.collectAsState()
+    val slotsLoading by vm.slotsLoading.collectAsState()
+    val slotsError by vm.slotsError.collectAsState()
+    val slotsFor by vm.slotsFor.collectAsState()
+    val catalogLoading by vm.catalogLoading.collectAsState()
+    val catalogError by vm.catalogError.collectAsState()
     val busy by vm.busy.collectAsState()
     val error by vm.error.collectAsState()
     val waitlistJoined by vm.waitlistJoined.collectAsState()
@@ -93,6 +96,12 @@ fun BookingScreen(
     // en el horario: antes volvía a pedir el servicio y había que tocarlo dos veces.
     val firstStep = if (initialServiceId.isNullOrBlank()) BookingStep.SERVICE else BookingStep.SCHEDULE
     var step by rememberSaveable { mutableStateOf(firstStep) }
+    var firstVisitedStep by rememberSaveable { mutableStateOf(firstStep) }
+    fun previousStep() {
+        if (busy) return
+        step = BookingStep.entries[step.ordinal - 1]
+        if (step.ordinal < firstVisitedStep.ordinal) firstVisitedStep = step
+    }
     // Embudo de reserva en Analytics: de dónde llegó y hasta qué paso avanza (sin datos personales).
     LaunchedEffect(Unit) {
         com.urbanblade.mobile.core.analytics.UrbanAnalytics.log(
@@ -168,6 +177,7 @@ fun BookingScreen(
     val selectedService = services.firstOrNull { it.id == serviceId }
     // Si llega desde el Muro de Inspiración trae el id del usuario del barbero: se traduce al de su perfil.
     LaunchedEffect(barbers) {
+        if (barberId.isBlank()) barbers.firstOrNull { it.esFavorito }?.let { barberId = it.id }
         resolveBarberId(barbers, barberId)?.let { resolved -> if (resolved != barberId) barberId = resolved }
     }
     val selectedBarber = barbers.firstOrNull { it.id == barberId }
@@ -191,15 +201,32 @@ fun BookingScreen(
     }
     val visitTotal = servicePrice + productsTotal + tip
 
-    val canAdvance = when (step) {
-        BookingStep.SERVICE -> serviceId.isNotBlank()
-        BookingStep.SCHEDULE -> barberId.isNotBlank() && time.isNotBlank()
-        BookingStep.EXTRAS -> true
-        BookingStep.PAY -> true
+    val validSlot = selectedService != null && selectedBarber != null &&
+        slotsFor == "$barberId|$serviceId|$date" && !slotsLoading && slotsError == null &&
+        time.isNotBlank() && slots.any { it.time == time }
+    val canAdvance = !catalogLoading && catalogError == null && when (step) {
+        BookingStep.SERVICE -> selectedService != null
+        else -> validSlot
+    }
+    val nextActionHint = when {
+        busy -> "Procesando tu solicitud…"
+        catalogLoading -> "Consultando servicios y barberos…"
+        catalogError != null -> "Reintenta la consulta para continuar."
+        selectedService == null -> "Elige un servicio para ver los horarios."
+        step != BookingStep.SERVICE && selectedBarber == null -> "Elige el barbero de tu visita."
+        step != BookingStep.SERVICE && slotsLoading -> "Consultando horarios disponibles…"
+        step != BookingStep.SERVICE && slotsError != null -> "Reintenta la consulta de horarios."
+        step != BookingStep.SERVICE && !validSlot -> "Elige un horario disponible para continuar."
+        step == BookingStep.PAY && !acceptsNoShowFee -> "Revisa y acepta la política de inasistencia para reservar."
+        step == BookingStep.PAY && !reserveArmed -> "Preparando la confirmación…"
+        step == BookingStep.SERVICE -> "Servicio elegido. Ahora selecciona tu horario."
+        step == BookingStep.SCHEDULE -> "Horario elegido. Los extras del siguiente paso son opcionales."
+        step == BookingStep.EXTRAS -> "Añade productos o una nota si lo necesitas; después revisa tu reserva."
+        else -> "Revisa tu cita y el método de pago antes de reservar."
     }
     // El "atrás" del teléfono regresa un paso; desde el paso en que se entró sale de la reserva.
-    androidx.activity.compose.BackHandler(enabled = !confirmed && step.ordinal > firstStep.ordinal) {
-        step = BookingStep.entries[step.ordinal - 1]
+    androidx.activity.compose.BackHandler(enabled = !confirmed && step.ordinal > firstVisitedStep.ordinal) {
+        previousStep()
     }
 
     // Momento de éxito antes de salir del flujo (antes se saltaba de pantalla sin confirmar nada).
@@ -222,80 +249,125 @@ fun BookingScreen(
 
     Scaffold(
         containerColor = Color.Transparent,
-        topBar = { UrbanTopBar(title = "", onBack = onBack) }
+        topBar = { UrbanTopBar(title = "", onBack = {
+            if (step.ordinal > firstVisitedStep.ordinal) previousStep()
+            else onBack()
+        }) }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            BookingHeader(
-                step = step,
-                // Lo que ya eligió, visible en los pasos siguientes para no perder el hilo. En Pago no
-                // hace falta: la tarjeta "Tu cita" ya lo muestra completo.
-                summary = if (step == BookingStep.PAY) null else listOfNotNull(
-                    selectedService?.takeIf { step != BookingStep.SERVICE }?.nombre,
-                    selectedBarber?.takeIf { step.ordinal > BookingStep.SCHEDULE.ordinal }?.user?.name,
-                    time.takeIf { it.isNotBlank() && step.ordinal > BookingStep.SCHEDULE.ordinal }?.let { "${UrbanFormat.dateShort(date)} · ${UrbanFormat.time(it)}" }
-                ).joinToString("  ·  ").ifBlank { null }
-            )
-            Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
+            key(step) {
+                Column(Modifier.weight(1f).fillMaxWidth().clipToBounds().verticalScroll(rememberScrollState())) {
+                    BookingHeader(
+                        step = step,
+                        // Lo que ya eligió, visible en los pasos siguientes para no perder el hilo. En Pago no
+                        // hace falta: la tarjeta "Tu cita" ya lo muestra completo.
+                        summary = if (step == BookingStep.PAY) null else listOfNotNull(
+                            selectedService?.takeIf { step != BookingStep.SERVICE }?.nombre,
+                            selectedBarber?.takeIf { step.ordinal > BookingStep.SCHEDULE.ordinal }?.user?.name,
+                            time.takeIf { it.isNotBlank() && step.ordinal > BookingStep.SCHEDULE.ordinal }?.let { "${UrbanFormat.dateShort(date)} · ${UrbanFormat.time(it)}" }
+                        ).joinToString("  ·  ").ifBlank { null }
+                    )
+                    Spacer(Modifier.height(8.dp))
 
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp)
-            ) {
-                when (step) {
-                    BookingStep.SERVICE -> Column {
-                        if (initialBarberId != null && selectedBarber != null && barbers.size > 1) {
-                            UrbanInfoBanner(
-                                "Reservando con ${selectedBarber.user?.name ?: "tu barbero"}. Puedes cambiarlo en el paso 2.",
-                                Icons.Default.Person
-                            )
-                            Spacer(Modifier.height(12.dp))
-                        }
-                        ServiceStep(services, serviceId) { serviceId = it }
-                    }
-                    BookingStep.SCHEDULE -> CalendarStep(
-                        header = { BarberPicker(barbers, barberId) { barberId = it } },
-                        date = date,
-                        onDateChange = { date = it },
-                        slots = slots,
-                        time = time,
-                        onTimeChange = { time = it },
-                        showEmptyState = slotsRequested && slots.isEmpty(),
-                        waitlistJoined = waitlistJoined,
-                        onJoinWaitlist = { vm.joinWaitlist(barberId, serviceId, date) }
-                    )
-                    BookingStep.EXTRAS -> ExtrasStep(
-                        products = products,
-                        cart = cart,
-                        onQuantity = { id, qty -> cart = if (qty <= 0) cart - id else cart + (id to qty) },
-                        notes = notes,
-                        onNotesChange = { notes = it }
-                    )
-                    BookingStep.PAY -> ReviewStep(
-                        service = selectedService,
-                        barber = selectedBarber,
-                        date = date,
-                        time = time,
-                        extras = cartLines,
-                        notes = notes
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp)
                     ) {
-                        BookingPaymentSection(
-                            state = pay,
-                            servicePrice = selectedService?.precio ?: 0.0,
-                            transferInfo = transferInfo,
-                            savedCards = savedCards,
-                            cardAvailable = cardAvailable && cardEnabledRemotely,
-                            testMode = BuildConfig.STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_"),
-                            onPickReceipt = pickReceipt
-                        )
+                        Text(nextActionHint, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp))
+                        if (step == BookingStep.SCHEDULE && slotsLoading) {
+                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                            Text("Consultando horarios…", color = UrbanColors.Muted)
+                        }
+                        if (step == BookingStep.SCHEDULE) slotsError?.let {
+                            UrbanErrorBanner(it)
+                            UrbanOutlineButton("Reintentar horarios", { vm.loadSlots(barberId, serviceId, date) },
+                                enabled = !slotsLoading, modifier = Modifier.fillMaxWidth())
+                        }
+                        if (step.ordinal > BookingStep.SCHEDULE.ordinal && !validSlot) {
+                            UrbanInfoBanner(if (slotsLoading) "Volviendo a comprobar tu horario…" else "Revisa el horario antes de continuar.", Icons.Default.Schedule)
+                            UrbanOutlineButton("Revisar horario", { step = BookingStep.SCHEDULE }, modifier = Modifier.fillMaxWidth())
+                        }
+                        when {
+                            catalogLoading && services.isEmpty() -> UrbanSkeletonList(3)
+                            catalogError != null -> UrbanMascotState(
+                                UrbanStateKind.ERROR, "No pudimos cargar los servicios y barberos", catalogError,
+                                "Reintentar", onAction = { vm.loadCatalog() }
+                            )
+                            else -> when (step) {
+                                BookingStep.SERVICE -> Column {
+                                    if (initialBarberId != null && selectedBarber != null && barbers.size > 1) {
+                                        UrbanInfoBanner(
+                                            "Reservando con ${selectedBarber.user?.name ?: "tu barbero"}. Puedes cambiarlo en el paso 2.",
+                                            Icons.Default.Person
+                                        )
+                                        Spacer(Modifier.height(12.dp))
+                                    }
+                                    ServiceStep(services, serviceId) { serviceId = it }
+                                }
+                                BookingStep.SCHEDULE -> CalendarStep(
+                                    header = { BarberPicker(barbers, barberId) { barberId = it } },
+                                    date = date,
+                                    onDateChange = { date = it },
+                                    slots = slots,
+                                    time = time,
+                                    onTimeChange = { time = it },
+                                    showEmptyState = slotsRequested && !slotsLoading && slotsError == null && slots.isEmpty(),
+                                    loading = slotsLoading,
+                                    waitlistJoined = waitlistJoined,
+                                    onJoinWaitlist = { vm.joinWaitlist(barberId, serviceId, date) }
+                                )
+                                BookingStep.EXTRAS -> ExtrasStep(
+                                    products = products,
+                                    cart = cart,
+                                    onQuantity = { id, qty -> cart = if (qty <= 0) cart - id else cart + (id to qty) },
+                                    notes = notes,
+                                    onNotesChange = { notes = it }
+                                )
+                                BookingStep.PAY -> ReviewStep(
+                                    service = selectedService,
+                                    barber = selectedBarber,
+                                    date = date,
+                                    time = time,
+                                    extras = cartLines,
+                                    notes = notes
+                                ) {
+                                    BookingPaymentSection(
+                                        state = pay,
+                                        servicePrice = selectedService?.precio ?: 0.0,
+                                        transferInfo = transferInfo,
+                                        savedCards = savedCards,
+                                        cardAvailable = cardAvailable && cardEnabledRemotely,
+                                        testMode = BuildConfig.STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_"),
+                                        onPickReceipt = pickReceipt
+                                    )
+                                }
+                            }
+                        }
                     }
-                }
-            }
 
-            (localError ?: error)?.let {
-                Box(Modifier.padding(horizontal = 18.dp)) { UrbanErrorBanner(it) }
-                Spacer(Modifier.height(8.dp))
+                    (localError ?: error)?.let {
+                        Box(Modifier.padding(horizontal = 18.dp)) { UrbanErrorBanner(it) }
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    if (step == BookingStep.PAY) {
+                        Row(
+                            Modifier.fillMaxWidth().clickable(enabled = !busy) { acceptsNoShowFee = !acceptsNoShowFee }
+                                .padding(horizontal = 18.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Checkbox(checked = acceptsNoShowFee, onCheckedChange = { acceptsNoShowFee = it }, enabled = !busy)
+                            Text(
+                                "Acepto el cargo por inasistencia: si no llego a mi cita sin cancelar a tiempo, se cobra un porcentaje del servicio a mi tarjeta guardada o queda como adeudo por pagar en la barbería para volver a reservar.",
+                                style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted,
+                                modifier = Modifier.weight(1f).padding(top = 12.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
             }
 
             // Barra fija: el total de la visita se va sumando conforme eliges.
@@ -306,7 +378,7 @@ fun BookingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Total de tu visita", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
+                        Text("Total estimado", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Muted)
                         if (productsTotal > 0 || tip > 0) {
                             Text(
                                 listOfNotNull(
@@ -319,42 +391,30 @@ fun BookingScreen(
                             )
                         }
                     }
-                    Text("${UrbanFormat.moneyShort(visitTotal)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.Gold)
+                    Text("${UrbanFormat.moneyShort(visitTotal)}", style = MaterialTheme.typography.titleLarge, color = UrbanColors.GoldText)
                 }
             }
-            if (step == BookingStep.PAY) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { acceptsNoShowFee = !acceptsNoShowFee }
-                        .padding(horizontal = 18.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(checked = acceptsNoShowFee, onCheckedChange = { acceptsNoShowFee = it })
-                    Text(
-                        "Acepto el cargo por inasistencia: si no llego a mi cita sin cancelar a tiempo, se cobra un porcentaje del servicio a mi tarjeta guardada o queda como adeudo por pagar en la barbería para volver a reservar.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = UrbanColors.Muted
-                    )
-                }
-            }
-            Row(
+            FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxItemsInEachRow = if (androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) 1 else 2
             ) {
                 if (step != BookingStep.SERVICE) {
                     UrbanOutlineButton(
-                        text = "Atrás",
-                        onClick = { step = BookingStep.entries[step.ordinal - 1] },
+                        text = if (step == BookingStep.SCHEDULE) "Cambiar servicio" else "Atrás",
+                        onClick = { previousStep() },
+                        enabled = !busy,
                         icon = Icons.Default.ArrowBack,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 UrbanPrimaryButton(
                     text = when (step) {
-                        BookingStep.PAY -> "Reservar"
-                        BookingStep.EXTRAS -> if (cartLines.isEmpty() && notes.isBlank()) "Omitir" else "Continuar"
-                        else -> "Continuar"
+                        BookingStep.SERVICE -> "Elegir horario"
+                        BookingStep.SCHEDULE -> "Elegir extras"
+                        BookingStep.EXTRAS -> if (cartLines.isEmpty() && notes.isBlank()) "Continuar sin extras" else "Revisar reserva"
+                        BookingStep.PAY -> "Reservar cita"
                     },
                     onClick = {
                         if (step == BookingStep.PAY) {
@@ -407,35 +467,14 @@ private fun BookingHeader(step: BookingStep, summary: String?) {
             eyebrow = "Reserva · paso ${step.ordinal + 1} de ${BookingStep.entries.size}"
         )
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BookingStep.entries.forEach { s ->
-                val active = s.ordinal <= step.ordinal
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(4.dp)
-                        .background(if (active) UrbanColors.Gold else UrbanColors.Line, RoundedCornerShape(2.dp))
-                )
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(Modifier.fillMaxWidth()) {
-            BookingStep.entries.forEach { s ->
-                Text(
-                    s.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (s == step) UrbanColors.Gold else UrbanColors.Muted,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
+        UrbanStepProgress(BookingStep.entries.map { it.label }, step.ordinal)
         summary?.let {
             Spacer(Modifier.height(10.dp))
             Surface(shape = MaterialTheme.shapes.small, color = UrbanColors.Gold.copy(alpha = 0.10f), modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CheckCircle, null, tint = UrbanColors.Gold, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Ink)
                 }
             }
         }
@@ -478,12 +517,8 @@ private fun ServiceStep(services: List<ServiceItem>, selectedId: String, onSelec
                     onAction = { query = ""; filter = null }
                 )
             }
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(1),
-                verticalArrangement = Arrangement.spacedBy(0.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(visible, key = { it.id }) { service ->
+            Column(Modifier.fillMaxWidth()) {
+                visible.forEach { service -> key(service.id) {
                     CompactServiceRow(
                         selected = service.id == selectedId,
                         onClick = { onSelect(service.id) },
@@ -493,6 +528,7 @@ private fun ServiceStep(services: List<ServiceItem>, selectedId: String, onSelec
                         imageUrl = service.imagen,
                         fallbackIcon = serviceIcon(service.nombre)
                     )
+                }
                 }
             }
         }
@@ -593,13 +629,14 @@ private fun CalendarStep(
     time: String,
     onTimeChange: (String) -> Unit,
     showEmptyState: Boolean,
+    loading: Boolean,
     waitlistJoined: Boolean,
     onJoinWaitlist: () -> Unit
 ) {
     val days = remember { (0..29).map { LocalDate.now().plusDays(it.toLong()) } }
     val selectedDate = remember(date) { runCatching { LocalDate.parse(date) }.getOrNull() }
 
-    Column(Modifier.verticalScroll(rememberScrollState())) {
+    Column {
         header()
         UrbanFieldLabel("Día")
         Spacer(Modifier.height(8.dp))
@@ -675,7 +712,8 @@ private fun CalendarStep(
                     UrbanInfoBanner("Ya te anotamos en la lista de espera para este día.", Icons.Default.NotificationsActive)
                 }
             }
-            else -> UrbanSkeletonList(2)
+            loading -> UrbanSkeletonList(2)
+            else -> Unit
         }
     }
 }
@@ -722,7 +760,7 @@ private fun ExtrasStep(
     notes: String,
     onNotesChange: (String) -> Unit
 ) {
-    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (products.isNotEmpty()) {
             UrbanFieldLabel("Productos (opcional)")
             Text("Te los apartamos para tu visita y los pagas en el salón.", style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
@@ -740,13 +778,13 @@ private fun ExtrasStep(
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(p.nombre, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text("${UrbanFormat.moneyShort(p.precioVenta)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
+                            Text("${UrbanFormat.moneyShort(p.precioVenta)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.GoldText)
                         }
                         if (qty == 0) {
                             TextButton(onClick = { onQuantity(p.id, 1) }) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp), tint = UrbanColors.Gold)
                                 Spacer(Modifier.width(4.dp))
-                                Text("Agregar", color = UrbanColors.Gold)
+                                Text("Agregar", color = UrbanColors.GoldText)
                             }
                         } else {
                             IconButton(onClick = { onQuantity(p.id, qty - 1) }) { Icon(Icons.Default.Remove, "Quitar uno", tint = UrbanColors.Gold) }
@@ -809,13 +847,13 @@ private fun ReviewStep(
     notes: String,
     payment: @Composable ColumnScope.() -> Unit
 ) {
-    // Con el pago el paso es más largo que la pantalla: sin scroll la barra inferior tapaba las opciones.
-    Column(Modifier.verticalScroll(rememberScrollState())) {
+    // El contenedor del flujo es el único dueño del desplazamiento vertical.
+    Column {
         UrbanHeroCard {
             UrbanHeroLabel("Tu cita")
             Spacer(Modifier.height(6.dp))
             Text(time.takeIf { it.isNotBlank() }?.let { UrbanFormat.time(it) } ?: "—", style = MaterialTheme.typography.displaySmall, color = UrbanColors.Ink)
-            Text(UrbanFormat.date(date), style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+            Text(UrbanFormat.date(date), style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
             Spacer(Modifier.height(14.dp))
             HorizontalDivider(color = UrbanColors.Ink.copy(alpha = 0.22f))
             Spacer(Modifier.height(12.dp))
@@ -836,14 +874,14 @@ private fun ReviewStep(
                 extras.forEach { (p, qty) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                         Text("${p.nombre}${if (qty > 1) " ×$qty" else ""}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink, modifier = Modifier.weight(1f))
-                        Text("${UrbanFormat.moneyShort(p.precioVenta * qty)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Gold)
+                        Text("${UrbanFormat.moneyShort(p.precioVenta * qty)}", style = MaterialTheme.typography.bodyMedium, color = UrbanColors.GoldText)
                     }
                 }
             }
         }
         Spacer(Modifier.height(28.dp))
         payment()
-        Spacer(Modifier.height(96.dp))
+        Spacer(Modifier.height(16.dp))
     }
 }
 

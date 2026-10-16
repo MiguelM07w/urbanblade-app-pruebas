@@ -532,7 +532,7 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
 
             item {
                 UrbanPremiumCard(Modifier.fillMaxWidth()) {
-                    Text("TOTAL REGISTRADO", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                    Text("TOTAL REGISTRADO", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                     Text(
                         UrbanFormat.money(preview.esperadoTotal),
                         style = MaterialTheme.typography.headlineMedium,
@@ -582,7 +582,7 @@ fun CashCloseScreen(onBack: () -> Unit, vm: CashCloseViewModel = viewModel()) {
             if (cierre != null) {
                 item {
                     UrbanCard(Modifier.fillMaxWidth()) {
-                        Text("Caja ya cerrada hoy", style = MaterialTheme.typography.titleMedium, color = UrbanColors.Gold)
+                        Text("Caja ya cerrada hoy", style = MaterialTheme.typography.titleMedium, color = UrbanColors.GoldText)
                         Spacer(Modifier.height(8.dp))
                         UrbanKeyValue("Efectivo contado", "${UrbanFormat.money(cierre.efectivoContado)}")
                         val diff = cierre.diferencia

@@ -10,13 +10,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.urbanblade.mobile.ui.theme.UrbanColors
@@ -53,11 +61,13 @@ fun UrbanRow(
     status: String? = null,
     value: String? = null,
     valueTone: Color = UrbanColors.Ink,
+    titleMaxLines: Int = 1,
+    subtitleMaxLines: Int = 1,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
-    val clickable = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+    val clickable = if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier
     Row(
         modifier
             .fillMaxWidth()
@@ -71,9 +81,9 @@ fun UrbanRow(
             Spacer(Modifier.width(10.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = titleMaxLines, overflow = TextOverflow.Ellipsis)
             subtitle?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = subtitleMaxLines, overflow = TextOverflow.Ellipsis)
             }
             meta?.let {
                 Text(it, style = MaterialTheme.typography.labelSmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -92,6 +102,27 @@ fun UrbanRow(
             it()
         }
     }
+}
+
+/** Acceso a un módulo: misma fila en Cuenta y Más, con espacio para texto grande. */
+@Composable
+fun UrbanActionRow(title: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) {
+    UrbanRow(
+        title = title,
+        subtitle = subtitle,
+        titleMaxLines = 2,
+        subtitleMaxLines = 3,
+        leading = {
+            Box(
+                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(UrbanColors.CardAlt),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = UrbanColors.GoldText, modifier = Modifier.size(22.dp))
+            }
+        },
+        trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = UrbanColors.Muted) },
+        onClick = onClick
+    )
 }
 
 /**

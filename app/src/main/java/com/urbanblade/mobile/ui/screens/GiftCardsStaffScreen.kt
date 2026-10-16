@@ -183,7 +183,7 @@ fun GiftCardsStaffScreen(onBack: () -> Unit, vm: GiftCardsStaffViewModel = viewM
                             money(card.saldo),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = UrbanColors.Gold
+                            color = UrbanColors.GoldText
                         )
                         Text(
                             "de ${money(card.montoInicial)} iniciales" + (card.estado?.let { " · ${it.replaceFirstChar { c -> c.uppercase() }}" } ?: ""),
@@ -225,7 +225,7 @@ private fun SoldCard(code: String, saldo: Double, onNew: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     UrbanPremiumCard(Modifier.fillMaxWidth()) {
-        Text("Tarjeta vendida", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+        Text("Tarjeta vendida", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
         Text(
             code,
             style = MaterialTheme.typography.headlineMedium,

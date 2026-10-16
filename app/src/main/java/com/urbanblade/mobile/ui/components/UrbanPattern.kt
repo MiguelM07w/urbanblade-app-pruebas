@@ -14,8 +14,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -147,7 +150,7 @@ fun UrbanHeroLabel(text: String) {
     Text(
         text.uppercase(),
         style = MaterialTheme.typography.labelMedium,
-        color = UrbanColors.Gold,
+        color = UrbanColors.GoldText,
         modifier = Modifier.semantics { heading() }
     )
 }
@@ -170,7 +173,7 @@ fun UrbanHeroStat(label: String, value: String, icon: ImageVector, modifier: Mod
             Text(value, style = MaterialTheme.typography.titleLarge, color = UrbanColors.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             // La etiqueta sí puede ir en dos líneas: con el tamaño de fuente del sistema al máximo
             // "Cobrado hoy" se cortaba como "Cobrado …" (visto en el S25 el 10-oct-2026).
-            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
         }
     }
 }
@@ -198,7 +201,7 @@ fun UrbanAttentionRow(
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(text, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(text, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
                 subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis) }
             }
             when {
@@ -253,14 +256,25 @@ fun UrbanMascotState(
 @Composable
 fun UrbanStatStrip(stats: List<Triple<String, String, Color>>, onClick: (() -> Unit)? = null) {
     UrbanCard(Modifier.fillMaxWidth(), onClick = onClick) {
-        Row(Modifier.fillMaxWidth()) {
-            stats.forEachIndexed { index, (label, value, tone) ->
-                if (index > 0) {
-                    Box(Modifier.width(1.dp).height(44.dp).background(UrbanColors.Line).align(Alignment.CenterVertically))
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            if (maxWidth < 320.dp || LocalDensity.current.fontScale >= 1.3f) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    stats.forEach { (label, value, tone) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
+                            Text(value, style = MaterialTheme.typography.titleLarge, color = tone)
+                        }
+                    }
                 }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(value, style = MaterialTheme.typography.titleLarge, color = tone, maxLines = 1)
-                    Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            } else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    stats.forEachIndexed { index, (label, value, tone) ->
+                        if (index > 0) Box(Modifier.width(1.dp).height(44.dp).background(UrbanColors.Line).align(Alignment.CenterVertically))
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(value, style = MaterialTheme.typography.titleLarge, color = tone)
+                            Text(label, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, textAlign = TextAlign.Center)
+                        }
+                    }
                 }
             }
         }
@@ -288,21 +302,24 @@ fun UrbanModuleTile(
             Icon(icon, null, tint = UrbanColors.Gold, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.height(10.dp))
-        Text(title, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(title, style = MaterialTheme.typography.titleSmall, color = UrbanColors.Ink)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted)
     }
 }
 
 /** Lista de mosaicos en dos columnas. */
 @Composable
 fun UrbanModuleGrid(tiles: List<Triple<String, String, ImageVector>>, routes: List<String>, onNavigate: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        tiles.zip(routes).chunked(2).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { (tile, route) ->
-                    UrbanModuleTile(tile.first, tile.second, tile.third, { onNavigate(route) }, Modifier.weight(1f))
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val columns = if (maxWidth < 340.dp || LocalDensity.current.fontScale >= 1.3f) 1 else 2
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            tiles.zip(routes).chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { (tile, route) ->
+                        UrbanModuleTile(tile.first, tile.second, tile.third, { onNavigate(route) }, Modifier.weight(1f))
+                    }
+                    if (columns == 2 && row.size == 1) Spacer(Modifier.weight(1f))
                 }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }
@@ -319,32 +336,68 @@ fun urbanFilterChipColors() = androidx.compose.material3.FilterChipDefaults.filt
 /** Pestañas en píldora (2 o 3), con la seleccionada en dorado como el destino activo de la barra inferior. */
 @Composable
 fun UrbanPillTabs(tabs: List<Pair<String, ImageVector>>, selected: Int, onSelect: (Int) -> Unit) {
-    Surface(
-        shape = CircleShape,
-        color = UrbanColors.Card,
-        border = BorderStroke(1.dp, UrbanColors.Line),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(4.dp).selectableGroup()) {
-            tabs.forEachIndexed { index, (label, icon) ->
-                val isSelected = index == selected
-                val background by animateColorAsState(if (isSelected) UrbanColors.Gold else Color.Transparent, label = "tab")
-                val content = if (isSelected) UrbanColors.OnGold else UrbanColors.Muted
-                Row(
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 44.dp)
-                        .clip(CircleShape)
-                        .background(background)
-                        .selectable(selected = isSelected, onClick = { onSelect(index) }, role = Role.Tab),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(icon, null, tint = content, modifier = Modifier.size(17.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1, textAlign = TextAlign.Center, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val stacked = maxWidth < 300.dp || LocalDensity.current.fontScale >= 1.3f || tabs.size > 3
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = UrbanColors.Card,
+            border = BorderStroke(1.dp, UrbanColors.Line),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            FlowRow(Modifier.padding(4.dp).selectableGroup(), maxItemsInEachRow = if (tabs.size > 3) 2 else tabs.size) {
+                tabs.forEachIndexed { index, (label, icon) ->
+                    val isSelected = index == selected
+                    val background by animateColorAsState(if (isSelected) UrbanColors.Gold else Color.Transparent, label = "tab")
+                    val content = if (isSelected) UrbanColors.OnGold else UrbanColors.Muted
+                    Row(
+                        Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(background)
+                            .selectable(selected = isSelected, onClick = { onSelect(index) }, role = Role.Tab)
+                            .padding(horizontal = 6.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (stacked) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(icon, null, tint = content, modifier = Modifier.size(17.dp))
+                                Spacer(Modifier.height(4.dp))
+                                Text(label, style = MaterialTheme.typography.labelLarge, color = content, textAlign = TextAlign.Center)
+                            }
+                        } else {
+                            Icon(icon, null, tint = content, modifier = Modifier.size(17.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(label, style = MaterialTheme.typography.labelLarge, color = content, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+
+/** Cabecera de cita compartida: estado separado del título para conservar nombres largos. */
+@Composable
+fun UrbanAppointmentHeading(
+    title: String,
+    status: String,
+    modifier: Modifier = Modifier,
+    trailing: @Composable () -> Unit = {}
+) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            UrbanStatusPill(status)
+            Spacer(Modifier.weight(1f))
+            trailing()
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            color = UrbanColors.Ink
+        )
     }
 }

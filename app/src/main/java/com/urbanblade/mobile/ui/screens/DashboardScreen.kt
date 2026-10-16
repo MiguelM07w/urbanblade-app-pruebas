@@ -29,33 +29,28 @@ fun DashboardScreen(
     vm: DashboardViewModel = viewModel()
 ) {
     // El administrador y el cliente tienen su propio inicio; el resto de roles conserva el tablero.
-    if (user.roles.contains("administrador")) {
+    val primaryRole = com.urbanblade.mobile.core.access.UserExperience.primaryRole(user.roles)
+    if (primaryRole == "administrador") {
         AdminHomeScreen(user, onNavigate)
         return
     }
     // Recepción: el pulso del día y lo que hay que atender en el mostrador.
-    if (user.roles.contains("recepcionista")) {
+    if (primaryRole == "recepcionista") {
         ReceptionHomeScreen(user, onNavigate)
         return
     }
     // El ingeniero es de solo lectura: su inicio es la salud del servidor y sus módulos de análisis.
-    val engineerOnly = user.roles.contains("ingeniero") &&
-        user.roles.none { it in listOf("recepcionista", "barbero", "cliente") }
-    if (engineerOnly) {
+    if (primaryRole == "ingeniero") {
         EngineerHomeScreen(user, onNavigate)
         return
     }
     // El barbero ve "Mi día": su siguiente cita y lo que falta confirmar, no el tablero del negocio.
-    val barberOnly = user.roles.contains("barbero") &&
-        user.roles.none { it in listOf("recepcionista", "cliente", "ingeniero") }
-    if (barberOnly) {
+    if (primaryRole == "barbero") {
         BarberHomeScreen(user, onNavigate)
         return
     }
     // El cliente tiene su propio inicio (próxima cita y atajos); el personal conserva el tablero.
-    val clientOnly = user.roles.contains("cliente") &&
-        user.roles.none { it in listOf("administrador", "recepcionista", "barbero", "ingeniero") }
-    if (clientOnly) {
+    if (primaryRole == "cliente") {
         ClientHomeScreen(user, onAppointments, onBook, onWallet, onStore, onExplore, onNavigate)
         return
     }
@@ -66,8 +61,7 @@ fun DashboardScreen(
     LaunchedEffect(Unit) { vm.load() }
 
     val firstName = user.name.substringBefore(' ')
-    val primaryRole = dashboard?.role ?: user.roles.firstOrNull().orEmpty()
-    val canBook = user.roles.any { it in listOf("cliente", "administrador", "recepcionista") }
+    val canBook = com.urbanblade.mobile.core.access.UserExperience.canBook(user.roles)
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -87,7 +81,7 @@ fun DashboardScreen(
             UrbanPremiumCard(Modifier.fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(Modifier.weight(1f)) {
-                        Text(UrbanColors.current.label.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+                        Text(UrbanColors.current.label.uppercase(), style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
                         Spacer(Modifier.height(6.dp))
                         Text("Todo el negocio,\nen tu bolsillo.", style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.height(8.dp))

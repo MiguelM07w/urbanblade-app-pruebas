@@ -41,6 +41,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urbanblade.mobile.data.model.ReportChart
 import com.urbanblade.mobile.data.model.ReportData
 import com.urbanblade.mobile.ui.components.UrbanBarChart
+import com.urbanblade.mobile.ui.components.UrbanAnalyticsCard
+import com.urbanblade.mobile.ui.components.UrbanKeyValue
 import com.urbanblade.mobile.ui.components.UrbanHeroCard
 import com.urbanblade.mobile.ui.components.UrbanHeroLabel
 import com.urbanblade.mobile.ui.components.UrbanMascotState
@@ -188,7 +190,7 @@ private fun ReportHeader(report: ReportData, rangeLabel: String) {
             )
         }
         Spacer(Modifier.height(10.dp))
-        Text("Periodo: $rangeLabel", style = MaterialTheme.typography.labelMedium, color = UrbanColors.Gold)
+        Text("Periodo: $rangeLabel", style = MaterialTheme.typography.labelMedium, color = UrbanColors.GoldText)
     }
 }
 
@@ -196,13 +198,11 @@ private fun ReportHeader(report: ReportData, rangeLabel: String) {
 @Composable
 private fun ReportChartCard(chart: ReportChart) {
     val format = { value: Double -> formatChartValue(value, chart.unit) }
-    UrbanCard(Modifier.fillMaxWidth()) {
-        UrbanSectionTitle(chart.title ?: "Resumen")
-        Spacer(Modifier.height(12.dp))
+    UrbanAnalyticsCard(title = chart.title ?: "Resumen", subtitle = if (labelsAreDates(chart.labels)) "Evolución del periodo · toca la gráfica para consultar valores" else "Comparativa por categoría", eyebrow = "REPORTE") {
         if (labelsAreDates(chart.labels)) {
             val labels = chart.labels.map(::shortDateLabel)
             if (chart.values.size > 31) {
-                UrbanLineChart(labels, chart.values)
+                UrbanLineChart(labels, chart.values, format = format)
             } else {
                 UrbanBarChart(labels, chart.values, format = format)
             }
@@ -226,10 +226,7 @@ private fun ReportRowCard(report: ReportData, row: Map<String, JsonElement>) {
         )
         Spacer(Modifier.height(6.dp))
         pairs.drop(1).forEach { (key, heading) ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                Text(heading, style = MaterialTheme.typography.bodySmall, color = UrbanColors.Muted, modifier = Modifier.weight(1f))
-                Text(formatCell(key, row[key]), style = MaterialTheme.typography.bodySmall, color = UrbanColors.Ink)
-            }
+            UrbanKeyValue(heading, formatCell(key, row[key]))
         }
     }
 }

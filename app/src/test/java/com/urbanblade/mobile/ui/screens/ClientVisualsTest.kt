@@ -9,6 +9,12 @@ import org.junit.Test
 
 class ClientVisualsTest {
 
+    @Test fun `la cita confirmada muestra el estado de pago validado por el servidor`() {
+        assertEquals("Cita aprobada y pago resuelto. Te esperamos a la hora de tu cita.", clientStateHint("confirmada", true))
+        assertEquals("Cita aprobada. Resuelve el pago antes del servicio; consulta las opciones aquí o en recepción.", clientStateHint("confirmada", false))
+        assertEquals("Cita aprobada. Consulta el estado de tu pago en tus comprobantes o en recepción.", clientStateHint("confirmada"))
+    }
+
     @Test
     fun `los servicios reales del catalogo se clasifican por su nombre`() {
         assertEquals(ServiceKind.AFEITADO, serviceKind("Afeitado Clásico"))

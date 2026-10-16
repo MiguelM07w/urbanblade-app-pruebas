@@ -11,7 +11,8 @@ plugins {
 // app/google-services.json (se descarga de la consola de Firebase y no se versiona,
 // igual que local.properties). Sin ese archivo la app compila y el push queda apagado.
 // Crashlytics y Performance (26-sep) siguen la misma regla: sin el archivo no se aplican.
-if (file("google-services.json").exists()) {
+// La instalación sintética de auditoría no usa el proyecto Firebase de la app habitual.
+if (file("google-services.json").exists() && providers.gradleProperty("UI_AUDIT").orNull != "true") {
     apply(plugin = "com.google.gms.google-services")
     apply(plugin = "com.google.firebase.crashlytics")
     apply(plugin = "com.google.firebase.firebase-perf")
@@ -110,6 +111,8 @@ android {
         // con el emulador (10.0.2.2, HTTP -- loopback, no es un secreto); release
         // exige HTTPS real, inyectada igual que GOOGLE_CLIENT_ID (nunca hardcodeada).
         debug {
+            // QA aislado: permite instalar junto a la app habitual sin tocar su sesión.
+            if (providers.gradleProperty("UI_AUDIT").orNull == "true") applicationIdSuffix = ".audit"
             buildConfigField("String", "API_BASE_URL", "\"$debugApiBaseUrl\"")
         }
         release {

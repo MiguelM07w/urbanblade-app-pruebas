@@ -1,13 +1,11 @@
 package com.urbanblade.mobile.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -88,14 +86,17 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun AuthBackdrop(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    Box(modifier.fillMaxSize().background(Color(0xFF090A0C))) {
+    Box(modifier.fillMaxSize().background(UrbanColors.Background)) {
         Image(
             painter = painterResource(R.drawable.auth_barbershop_background),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        Box(
+        if (UrbanColors.current.isLight) {
+            // La tinta oscura de Libreta necesita el mismo papel claro también en acceso.
+            Box(Modifier.fillMaxSize().background(UrbanColors.Background))
+        } else Box(
             Modifier
                 .fillMaxSize()
                 .background(
@@ -118,20 +119,14 @@ fun AuthBackdrop(modifier: Modifier = Modifier, content: @Composable BoxScope.()
     }
 }
 
-/** Entrada escalonada: cada bloque aparece con un pequeño retraso según su posición. */
+/** Entrada breve con espacio estable; el tween respeta la escala de animación del sistema. */
 @Composable
 fun StaggerIn(index: Int, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    var visible by remember { mutableStateOf(false) }
+    val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        delay(70L * index)
-        visible = true
+        progress.animateTo(1f, tween(durationMillis = 220, delayMillis = 35 * index.coerceIn(0, 3), easing = EaseOutCubic))
     }
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter = fadeIn(tween(380, easing = EaseOutCubic)) +
-            slideInVertically(tween(380, easing = EaseOutCubic)) { it / 6 }
-    ) {
+    Box(modifier.graphicsLayer { alpha = progress.value }) {
         content()
     }
 }
@@ -157,7 +152,8 @@ fun UrbanTextField(
     isPassword: Boolean = false,
     onBlur: () -> Unit = {},
     /** Más de 1 = campo de varias líneas (p. ej. notas); el teclado conserva la tecla Enter. */
-    minLines: Int = 1
+    minLines: Int = 1,
+    maxLines: Int = Int.MAX_VALUE
 ) {
     var focused by remember { mutableStateOf(false) }
     var reveal by remember { mutableStateOf(false) }
@@ -219,6 +215,7 @@ fun UrbanTextField(
             trailingIcon = trailing,
             singleLine = minLines == 1,
             minLines = minLines,
+            maxLines = maxLines.coerceAtLeast(minLines),
             isError = error != null,
             visualTransformation = if (isPassword && !reveal) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(

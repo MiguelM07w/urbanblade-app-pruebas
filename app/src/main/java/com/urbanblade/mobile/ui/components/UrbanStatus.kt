@@ -24,7 +24,7 @@ fun StatusTone.color(): Color = when (this) {
     StatusTone.WARNING -> UrbanColors.Warning
     StatusTone.SUCCESS -> UrbanColors.Success
     StatusTone.INFO -> UrbanColors.Info
-    StatusTone.DONE -> UrbanColors.Gold
+    StatusTone.DONE -> UrbanColors.GoldText
     StatusTone.DANGER -> UrbanColors.Danger
     StatusTone.NEUTRAL -> UrbanColors.Muted
 }

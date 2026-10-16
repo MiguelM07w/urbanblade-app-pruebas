@@ -142,7 +142,7 @@ fun UsersScreen(onBack: () -> Unit, currentUserId: String? = null, vm: UsersAdmi
             if (state.items.isNotEmpty()) {
                 item {
                     UrbanPremiumCard(Modifier.fillMaxWidth()) {
-                        Text("EQUIPO CON ACCESO", style = MaterialTheme.typography.labelLarge, color = UrbanColors.Gold)
+                        Text("EQUIPO CON ACCESO", style = MaterialTheme.typography.labelLarge, color = UrbanColors.GoldText)
                         Text(
                             UrbanFormat.count(state.total, "cuenta registrada", "cuentas registradas"),
                             style = MaterialTheme.typography.titleLarge,
