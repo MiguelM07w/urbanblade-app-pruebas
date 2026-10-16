@@ -214,7 +214,7 @@ dependencies {
     // 23.x jala transitivos de AndroidX que exigen compileSdk 36 + AGP 9.x; el proyecto ya
     // está en compileSdk 36 / AGP 9.4.1. En 23.x PaymentSheet.Colors dejó de ser data class
     // (sin copy()), por eso UrbanPaymentSheet arma la paleta con el constructor.
-    implementation("com.stripe:stripe-android:23.21.0")
+    implementation("com.stripe:stripe-android:23.23.0")
 
     // Notificaciones push con Firebase Cloud Messaging (T142) -- ver core/push/.
     // Proyecto Firebase barber-c6b3a (26-sep): además del push, Analytics (embudo de reserva,
