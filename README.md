@@ -332,6 +332,10 @@ La URL se encuentra en:
 app/build.gradle.kts
 ```
 
+La evidencia del módulo remoto de campañas (endpoints, validaciones, seguridad,
+pruebas y guion de demostración) está en
+[`docs/INTEGRACION_MODULO_REMOTO.md`](docs/INTEGRACION_MODULO_REMOTO.md).
+
 `API_BASE_URL` ahora se define por variante dentro de `buildTypes` (antes vivía en
 `defaultConfig`, compartido sin querer entre debug y release):
 
