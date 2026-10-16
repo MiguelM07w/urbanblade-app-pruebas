@@ -28,6 +28,18 @@ updates:
     groups:
       gradle-menores:
         update-types: [minor, patch]
+    # Ignoradas hasta subir compileSdk a 37 y Kotlin a 2.4 en un solo PR (oct-2026):
+    # - core-ktx 1.19.x y navigation-compose 2.10.x exigen un compileSdk mayor que 36.
+    # - googleid 1.2.x viene compilada con metadatos de Kotlin 2.4 y el proyecto usa 2.2.10.
+    # - Kotlin y el plugin de Compose se mueven juntos; Gradle 9.8 sin probar con AGP 9.4.1.
+    # Al hacer ese PR, quitar este bloque `ignore`.
+    ignore:
+      - dependency-name: androidx.core:core-ktx
+      - dependency-name: androidx.navigation:navigation-compose
+      - dependency-name: com.google.android.libraries.identity.googleid:googleid
+      - dependency-name: org.jetbrains.kotlin.android
+      - dependency-name: org.jetbrains.kotlin.plugin.compose
+      - dependency-name: gradle-wrapper
 
   - package-ecosystem: github-actions
     directory: /
