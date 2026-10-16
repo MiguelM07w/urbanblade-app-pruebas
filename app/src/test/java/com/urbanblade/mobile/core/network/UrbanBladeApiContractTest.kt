@@ -1,12 +1,14 @@
 package com.urbanblade.mobile.core.network
 
 import com.google.gson.Gson
+import com.urbanblade.mobile.data.model.CreateCampaignRequest
 import com.urbanblade.mobile.data.model.LoginRequest
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import retrofit2.HttpException
@@ -182,5 +184,69 @@ class UrbanBladeApiContractTest {
 
         assertEquals("/api/v1/orders/o1/receipt-link", server.takeRequest().path)
         assertEquals("https://cdn.test/pedido-o1.pdf", response.data?.receiptUrl)
+    }
+
+    @Test
+    fun `campanas GET deserializa segmentos e historial`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "levels":{"vip":"VIP"},
+                  "segment_counts":{"todos":12,"vip":3},
+                  "data":[
+                    {
+                      "id":"c1",
+                      "titulo":"Regreso a clases",
+                      "cuerpo":"20% en cortes",
+                      "segmento":"vip",
+                      "destinatarios":3,
+                      "estado":"enviada",
+                      "open_rate":66.7,
+                      "click_rate":12.5
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+        )
+
+        val response = api.campaigns()
+
+        assertEquals("/api/v1/campaigns", server.takeRequest().path)
+        assertEquals("VIP", response.levels["vip"])
+        assertEquals(12, response.segmentCounts["todos"])
+        assertEquals("Regreso a clases", response.data.single().titulo)
+        assertEquals(66.7, response.data.single().openRate, 0.01)
+    }
+
+    @Test
+    fun `campanas POST envia los campos del formulario y lee la respuesta`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(201).setBody(
+                """{"message":"Campaña enviada a 3 cliente(s)."}"""
+            )
+        )
+
+        val response = api.createCampaign(
+            CreateCampaignRequest(
+                titulo = "Regreso a clases",
+                cuerpo = "20% en cortes",
+                ctaLabel = "Reservar",
+                ctaUrl = "https://urbanblade.com.mx/reservar",
+                segmento = "vip",
+                modo = "ahora",
+                programadaPara = null
+            )
+        )
+
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/api/v1/campaigns", request.path)
+        val body = request.body.readUtf8()
+        assertTrue(body.contains("\"titulo\":\"Regreso a clases\""))
+        assertTrue(body.contains("\"segmento\":\"vip\""))
+        assertTrue(body.contains("\"modo\":\"ahora\""))
+        assertEquals("Campaña enviada a 3 cliente(s).", response.message)
     }
 }
