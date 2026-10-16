@@ -40,7 +40,7 @@ fun rememberStripeReady(): Boolean {
  * sistema): Stripe escoge colorsLight o colorsDark según el sistema, así que ambos llevan la
  * misma paleta de UrbanBlade y la hoja se ve igual que el resto de la app en los cuatro temas.
  */
-private fun urbanStripeColors(base: PaymentSheet.Colors) = base.copy(
+private fun urbanStripeColors() = PaymentSheet.Colors(
     primary = UrbanColors.Gold.toArgb(),
     surface = UrbanColors.Background.toArgb(),
     component = UrbanColors.Card.toArgb(),
@@ -74,8 +74,8 @@ fun rememberUrbanPaymentSheet(
         { clientSecret: String ->
             // Los colores se leen al abrir la hoja: si el cliente cambió de tema, ya salen con el nuevo.
             val appearance = PaymentSheet.Appearance(
-                colorsLight = urbanStripeColors(PaymentSheet.Colors.defaultLight),
-                colorsDark = urbanStripeColors(PaymentSheet.Colors.defaultDark),
+                colorsLight = urbanStripeColors(),
+                colorsDark = urbanStripeColors(),
                 shapes = PaymentSheet.Shapes(cornerRadiusDp = 16f, borderStrokeWidthDp = 1f)
             )
             paymentSheet.presentWithPaymentIntent(

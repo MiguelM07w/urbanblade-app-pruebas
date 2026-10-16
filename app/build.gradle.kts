@@ -208,13 +208,10 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // Checkout con Stripe (PaymentSheet) -- ver core/payment/UrbanPaymentSheet.kt.
-    // Fijado a esta versión (no la más reciente): versiones más nuevas jalan
-    // transitivos de AndroidX que exigen compileSdk 36 + AGP 8.9.1, y este
-    // proyecto está en compileSdk 35 / AGP 8.8.2 -- subir esos dos para una
-    // sola dependencia es un cambio de mayor alcance que no correspondía a
-    // esta ronda. Revisar si conviene actualizar cuando el proyecto suba de
-    // compileSdk por otro motivo.
-    implementation("com.stripe:stripe-android:21.19.0")
+    // 23.x jala transitivos de AndroidX que exigen compileSdk 36 + AGP 9.x; el proyecto ya
+    // está en compileSdk 36 / AGP 9.4.1. En 23.x PaymentSheet.Colors dejó de ser data class
+    // (sin copy()), por eso UrbanPaymentSheet arma la paleta con el constructor.
+    implementation("com.stripe:stripe-android:23.21.0")
 
     // Notificaciones push con Firebase Cloud Messaging (T142) -- ver core/push/.
     // Proyecto Firebase barber-c6b3a (26-sep): además del push, Analytics (embudo de reserva,
