@@ -19,9 +19,9 @@ pegar: son la cara pública de la app.
 | Política de privacidad | `https://urbanblade.com.mx/privacidad` |
 | Paquete (applicationId) | `com.urbanblade.mobile` (no se puede cambiar después de publicar) |
 
-## Aviso de proyecto académico (solo Camino A)
-Si se publica con Stripe en modo de prueba (ver `../PUBLICAR_PLAY_STORE.md`, sección 0.1), poner esta línea **al inicio** de la
-descripción larga para que la ficha diga la verdad:
+## Aviso de proyecto académico (Camino A, el elegido el 2026-10-19)
+Como se publica con Stripe en modo de prueba (ver `../PUBLICAR_PLAY_STORE.md`, sección 0.1), esta línea es **obligatoria** y va
+**al inicio** de la descripción larga para que la ficha diga la verdad:
 
 ```
 UrbanBlade es un proyecto académico del Equipo UrbanBlade. Los pagos con tarjeta funcionan en el modo de prueba de Stripe: no se cobra dinero real.
@@ -77,7 +77,7 @@ Todos están en [`assets/`](assets/) y se generaron con el logo oficial (`urbanb
 | --- | --- | --- | --- |
 | Ícono | `assets/icono-512.png` | 512×512, PNG, hasta 1024 KB | Listo (24 bits, sin transparencia) |
 | Gráfico de funciones | `assets/grafico-funciones-1024x500.png` | 1024×500, PNG o JPEG sin transparencia | Listo |
-| Capturas de teléfono | pendientes | 2 a 8; lado menor ≥320 px; el lado largo ≤2× el corto | **Pendiente**: hace falta el teléfono conectado |
+| Capturas de teléfono | 5 PNG en `Documents\UrbanBlade\_play_store_assets\capturas\` (fuera del repo) | 2 a 8; lado menor ≥320 px; el lado largo ≤2× el corto | **Listas** (1080×2160); ver el aviso sobre la cuenta usada |
 
 ### Plan de capturas (6 recomendadas, en este orden)
 1. **Inicio** — próxima visita y botón "Reservar cita".
@@ -85,9 +85,13 @@ Todos están en [`assets/`](assets/) y se generaron con el logo oficial (`urbanb
 3. **Horario** — paso 2: barbero, día y hora.
 4. **Pago** — paso 4: efectivo, transferencia o tarjeta.
 5. **Mis citas** — próximas, con reagendar y cancelar.
-6. **Muro de Inspiración** — trabajos del equipo.
+6. ~~**Muro de Inspiración**~~ — **no usar**: las publicaciones que hay hoy son videos y fotos de terceros con marca de agua de TikTok
+   (`@juanchostylez`, `@crownagency_`) y textos de prueba. Publicarlas en la ficha es un riesgo de propiedad intelectual. Sustituirla
+   por una publicación **propia** del equipo cuando exista.
 
-Opcionales: Tienda y Cuenta. Tomarlas con una **cuenta demo** (nunca con datos de una persona real). La pantalla del teléfono
+Opcionales: Tienda y Cuenta. Las 5 capturas actuales se tomaron con la cuenta de uso real del equipo (aparece el nombre "Luis" y su
+cita). **Para publicar conviene repetirlas con una cuenta demo** (nunca con datos de una persona real): basta correr de nuevo el
+script con la cuenta demo iniciada. La pantalla del teléfono
 mide 1080×2340 (2.17:1), más alargada de lo que Play acepta, por eso el script quita la barra de estado y la de gestos y
 deja 1080×2160 (2:1):
 

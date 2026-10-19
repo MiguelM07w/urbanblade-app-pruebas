@@ -6,6 +6,7 @@ prueba o real) que cambia varios textos.
 
 | Archivo | Para qué sirve | Dónde se usa en Play Console |
 | --- | --- | --- |
+| [`CREAR_CUENTA.md`](CREAR_CUENTA.md) | Paso a paso para crear la cuenta de Play Console y pagar los $25 USD (lo hace el titular) | Antes de todo |
 | [`FICHA.md`](FICHA.md) | Nombre, descripciones corta y larga, categoría, contacto, URLs y plan de capturas | Presencia en Play Store → Ficha principal |
 | [`SEGURIDAD_DE_LOS_DATOS.md`](SEGURIDAD_DE_LOS_DATOS.md) | Formulario de seguridad de los datos, respondido según el código y el manifiesto final | Contenido de la app → Seguridad de los datos |
 | [`DECLARACIONES.md`](DECLARACIONES.md) | Anuncios, público objetivo, clasificación, acceso para el revisor, contenido de usuarios, eliminación de cuenta | Contenido de la app (resto de declaraciones) |
@@ -17,7 +18,7 @@ Scripts en [`../../scripts/play/`](../../scripts/play/): `crear-keystore.ps1` y 
 ## Qué no está aquí (a propósito)
 - **Credenciales**: ninguna contraseña, llave ni cuenta demo se guarda en el repositorio. El acceso del revisor y las claves
   van solo en Play Console y en `local.properties` (que git ignora).
-- **Capturas de pantalla**: se toman del teléfono y se guardan fuera del repositorio; el plan está en `FICHA.md`.
+- **Capturas de pantalla**: se toman del teléfono y se guardan fuera del repositorio (hay 5 listas); el plan está en `FICHA.md`.
 
 ## Verificado y no verificado
 Los datos técnicos (permisos, SDK, tamaño, arquitecturas) salen de un `bundleRelease` real del 2026-10-19. Los **formularios

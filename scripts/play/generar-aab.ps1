@@ -31,8 +31,13 @@ if (-not $p['RELEASE_API_BASE_URL'] -or $p['RELEASE_API_BASE_URL'] -notmatch '^h
 if (-not $p['GOOGLE_CLIENT_ID'] -or $p['GOOGLE_CLIENT_ID'] -match 'PENDIENTE') {
     $faltan.Add('GOOGLE_CLIENT_ID (Web Client ID de produccion)')
 }
-if (-not $p['STRIPE_PUBLISHABLE_KEY'] -or $p['STRIPE_PUBLISHABLE_KEY'] -notmatch '^pk_live_') {
-    $faltan.Add('STRIPE_PUBLISHABLE_KEY debe ser pk_live_. Si esta en pk_test_, lee la seccion 0.1 de docs/PUBLICAR_PLAY_STORE.md: el Camino A todavia necesita un cambio en la guarda de Gradle')
+$stripe = $p['STRIPE_PUBLISHABLE_KEY']
+$pruebaPermitida = ($p['ALLOW_TEST_PAYMENTS'] -eq 'true') -and $stripe -and ($stripe -match '^pk_test_') -and ($stripe -notmatch 'PENDIENTE')
+if (-not $stripe -or ($stripe -notmatch '^pk_live_' -and -not $pruebaPermitida)) {
+    $faltan.Add('STRIPE_PUBLISHABLE_KEY debe ser pk_live_ (Camino B). Para el prototipo academico (Camino A) pon una pk_test_ real y ALLOW_TEST_PAYMENTS=true en local.properties; ver docs/PUBLICAR_PLAY_STORE.md seccion 0.1')
+}
+if ($pruebaPermitida) {
+    Write-Host 'AVISO: este AAB lleva Stripe en MODO DE PRUEBA (Camino A): no cobra dinero real. La ficha de Play debe decirlo.' -ForegroundColor Yellow
 }
 foreach ($k in 'UPLOAD_STORE_FILE', 'UPLOAD_STORE_PASSWORD', 'UPLOAD_KEY_ALIAS', 'UPLOAD_KEY_PASSWORD') {
     if (-not $p[$k]) { $faltan.Add("$k (ejecuta .\scripts\play\crear-keystore.ps1)") }

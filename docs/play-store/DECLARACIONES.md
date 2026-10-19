@@ -98,6 +98,15 @@ Estado hoy: no encontré ningún botón de reportar ni bloquear en la app, ni en
 Es trabajo real (backend + app + web + pruebas). **Conviene cerrarlo antes de pedir producción**; para la prueba cerrada no
 bloquea, pero la revisión de producción sí puede rechazar la app por esto.
 
+## 6.1 Contenido de terceros en el muro — propiedad intelectual
+Las publicaciones del muro que hay hoy (comprobado en el teléfono el 2026-10-19) son videos y fotos que **no son del equipo**:
+llevan marca de agua de TikTok de otros creadores (`@juanchostylez`, `@crownagency_`). La política de propiedad intelectual de
+Google prohíbe distribuir contenido protegido sin permiso, y los revisores pueden verlo al abrir la app.
+
+- Antes de producción: sustituir esas publicaciones por **trabajos propios** del equipo (o con permiso por escrito del autor).
+- No usarlas en las capturas de la ficha (ya se descartó la captura del muro).
+- Es contenido de demostración cargado por el propio equipo, no por clientes; el riesgo es de la **app**, no del usuario final.
+
 ## 7. Otras comprobaciones
 - Enlaces profundos: `urbanblade://open` (esquema propio): sin verificación de App Links.
 - Inicio de sesión con Google: tras subir el primer AAB, registrar la SHA-1 de "Firma de la app" en Firebase y Google Cloud

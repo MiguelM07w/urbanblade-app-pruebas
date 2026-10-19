@@ -4,7 +4,8 @@
 
 .DESCRIPTION
   La pantalla del telefono (1080x2340, 2.17:1) es mas alargada de lo que Play acepta (el lado largo no puede pasar de
-  2 veces el corto). El script quita la barra de estado (arriba) y la de gestos (abajo) y deja 1080x2160.
+  2 veces el corto). El script quita la barra de estado y un margen (arriba) y un poco de la zona de gestos (abajo) y deja
+  1080x2160, sin cortar el menu inferior de la app.
   Guarda fuera del repositorio. Usar una cuenta demo: las capturas se publican.
 
 .EXAMPLE
@@ -40,7 +41,10 @@ try {
     $h = $img.Height
     $exceso = $h - (2 * $w)
     if ($exceso -gt 0) {
-        $arriba = [Math]::Min($exceso, [int][Math]::Round($h * 0.034))   # barra de estado (80 px en 2340)
+        # Abajo se quita lo minimo (60 px en 2340) para no cortar las etiquetas del menu; el resto sale de arriba
+        # (barra de estado de 80 px mas un poco de margen).
+        $abajo = [Math]::Min($exceso, [int][Math]::Round($h * 0.026))
+        $arriba = $exceso - $abajo
         $alto = 2 * $w
     } else {
         $arriba = 0

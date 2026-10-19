@@ -35,6 +35,12 @@ val releaseApiBaseUrl = providers.gradleProperty("RELEASE_API_BASE_URL").orNull
     ?: localProperties.getProperty("RELEASE_API_BASE_URL")
     ?: "https://PENDIENTE_CONFIGURAR.example/api/v1/"
 
+// Prototipo académico (Camino A de docs/PUBLICAR_PLAY_STORE.md): permite que el AAB de Play lleve una clave de
+// Stripe en modo de PRUEBA (pk_test_). Solo se activa de forma explícita con ALLOW_TEST_PAYMENTS=true
+// (local.properties o -P); sin esa bandera la guarda de bundleRelease sigue exigiendo pk_live_.
+val allowTestPayments = (providers.gradleProperty("ALLOW_TEST_PAYMENTS").orNull
+    ?: localProperties.getProperty("ALLOW_TEST_PAYMENTS")) == "true"
+
 // Firma de release (Play App Signing: esta es la *upload key*). El keystore vive FUERA del repo;
 // se declara en local.properties (o -P) con UPLOAD_STORE_FILE, UPLOAD_STORE_PASSWORD,
 // UPLOAD_KEY_ALIAS y UPLOAD_KEY_PASSWORD. Sin ellos el release sale sin firmar y falla la guarda.
@@ -151,7 +157,15 @@ gradle.taskGraph.whenReady {
         val problemas = buildList {
             if (releaseApiBaseUrl.contains("PENDIENTE") || !releaseApiBaseUrl.startsWith("https://")) add("RELEASE_API_BASE_URL (debe ser https real)")
             if (googleClientId.contains("PENDIENTE")) add("GOOGLE_CLIENT_ID")
-            if (!stripePublishableKey.startsWith("pk_live_")) add("STRIPE_PUBLISHABLE_KEY (debe ser pk_live_)")
+            val stripeEnPrueba = allowTestPayments && stripePublishableKey.startsWith("pk_test_") &&
+                !stripePublishableKey.contains("PENDIENTE")
+            if (!stripePublishableKey.startsWith("pk_live_") && !stripeEnPrueba) {
+                add("STRIPE_PUBLISHABLE_KEY (debe ser pk_live_; para el prototipo académico, una pk_test_ real y ALLOW_TEST_PAYMENTS=true)")
+            }
+            if (stripeEnPrueba) {
+                logger.warn("AVISO: este AAB lleva Stripe en MODO DE PRUEBA (ALLOW_TEST_PAYMENTS=true): no cobra dinero real. " +
+                    "Solo para prueba cerrada o prototipo académico; la ficha de Play debe decirlo.")
+            }
             if (uploadStoreFile == null) add("UPLOAD_STORE_FILE / contraseñas del keystore de subida")
             if (!file("google-services.json").exists()) add("app/google-services.json")
         }

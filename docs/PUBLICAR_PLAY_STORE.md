@@ -24,10 +24,16 @@ Google exige que la ficha y la app digan la verdad sobre lo que hacen. Hay dos c
 | Ficha | Dice explícitamente "proyecto académico, pagos simulados" | Sin esa advertencia |
 | Aviso de privacidad y términos | Ya son coherentes | Hay que reescribirlos (quitar "académico / no cobra dinero real") |
 | Backend | Staging en AWS | Producción (hoy solo existe staging; ver T063) |
-| Cambio de código | Un interruptor explícito para permitir `pk_test_` en el AAB (**no existe todavía**; la guarda lo bloquea a propósito) | Ninguno |
+| Cambio de código | Interruptor explícito `ALLOW_TEST_PAYMENTS=true` (**ya implementado**, ver abajo) | Ninguno |
 
-**Recomendación:** A para empezar. La prueba cerrada exige **12 testers durante 14 días** (cuenta personal), así que el
-reloj corre aunque B todavía no esté decidido. Elegir A o B es del equipo; no lo decide el código.
+**Decisión del 2026-10-19: Camino A** ("lo más recomendado"). La prueba cerrada exige **12 testers durante 14 días**
+(cuenta personal), así que el reloj corre aunque B se decida después. Si el equipo cambia de idea, basta con poner una
+`pk_live_` y quitar la bandera.
+
+**Interruptor implementado** (`app/build.gradle.kts`): la guarda de `bundleRelease` sigue exigiendo `pk_live_` salvo que
+`local.properties` (o `-P`) tenga a la vez `ALLOW_TEST_PAYMENTS=true` y una `pk_test_` real. Con la bandera, el build muestra
+el aviso "este AAB lleva Stripe en MODO DE PRUEBA". Verificado el 2026-10-19: sin bandera una `pk_test_` se bloquea con un
+mensaje que explica el camino; con bandera el AAB se genera.
 
 ### 0.2 Tipo de cuenta de desarrollador
 No hay empresa constituida, así que corresponde una cuenta **personal**: verificación de identidad con documento oficial,
@@ -70,7 +76,8 @@ Agregar a `local.properties` (no se versiona) lo que falte:
 ```
 RELEASE_API_BASE_URL=https://api.urbanblade.com.mx/api/v1/
 GOOGLE_CLIENT_ID=<Web Client ID de producción>
-STRIPE_PUBLISHABLE_KEY=pk_live_...        # solo Camino B; hoy es pk_test_
+STRIPE_PUBLISHABLE_KEY=pk_test_...        # Camino A (la misma del build de debug); en el Camino B va pk_live_...
+ALLOW_TEST_PAYMENTS=true                  # solo Camino A; en el Camino B se quita
 UPLOAD_STORE_FILE=C:\ruta\fuera\del\repo\urbanblade-upload.jks
 UPLOAD_STORE_PASSWORD=...
 UPLOAD_KEY_ALIAS=upload
@@ -95,8 +102,8 @@ Google Cloud. Sin esto el login con Google falla solo en la versión instalada d
 
 | # | Paso | Quién | Nota |
 | --- | --- | --- | --- |
-| 1 | Crear cuenta de Play Console y pagar $25; verificar identidad | Titular de la cuenta | **Empezar hoy**: la verificación puede tardar varios días. |
-| 2 | Decidir Camino A o B (sección 0.1) | Equipo | Define pk_test o pk_live y el texto de la ficha. |
+| 1 | Crear cuenta de Play Console y pagar $25; verificar identidad. Guía paso a paso: [`play-store/CREAR_CUENTA.md`](play-store/CREAR_CUENTA.md) | Titular de la cuenta | **Empezar hoy**: la verificación puede tardar varios días. |
+| 2 | ~~Decidir Camino A o B~~ — **hecho: Camino A** (sección 0.1) | Equipo | Define `pk_test` y el aviso en la ficha. |
 | 3 | `crear-keystore.ps1` y respaldar el `.jks` | Titular | Sin esto no hay AAB firmado. |
 | 4 | `generar-aab.ps1` | Titular (o la IA, sin ver contraseñas) | |
 | 5 | Crear la app en Play Console y llenar la ficha | Titular | Textos listos en `play-store/FICHA.md`. |
