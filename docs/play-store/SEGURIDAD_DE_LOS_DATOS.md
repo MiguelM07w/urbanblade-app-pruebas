@@ -61,10 +61,11 @@ La app usa el **selector de fotos del sistema**: no pide permisos de galería ni
 cuenta) a Wikipedia. Es un envío a un tercero que no es un proveedor de servicio. Decidir con el equipo si se declara como
 *compartido* (lo prudente) y confirmar que el Aviso de Privacidad lo siga diciendo.
 
-⚠️ **Proveedor de IA:** el Aviso de Privacidad afirma que el modelo "corre en nuestros propios servidores" y que los mensajes
-no se envían a empresas externas de IA. En el código el valor por defecto de `CHATBOT_AI_PROVIDER` es `gemini` (el ejemplo de
-`.env` pone `ollama`). **Comprobar que producción use `ollama`.** Si usara `gemini`, el aviso sería falso y habría que
-declarar los mensajes como compartidos con Google.
+✅ **Proveedor de IA (comprobado el 2026-10-19):** el Aviso de Privacidad afirma que el modelo "corre en nuestros propios
+servidores" y que los mensajes no se envían a empresas externas de IA. En el código el valor por defecto de
+`CHATBOT_AI_PROVIDER` es `gemini`, pero el backend al que apunta la app (staging en AWS) tiene `CHATBOT_AI_PROVIDER=ollama`
+y el servicio `uba-stg-ollama` corriendo en el propio clúster. El aviso es verdadero hoy; **si el valor cambiara a `gemini`
+habría que declarar los mensajes como compartidos con Google y corregir el aviso.**
 
 ### Actividad en la app
 | Tipo | Recopilado | Compartido | Opcional | Finalidades | Fuente |
@@ -103,6 +104,6 @@ equipo dónde se escriben esas notas; si es desde la app, declarar **Salud → I
 ## 5. Pendientes del equipo para cerrar este formulario
 - [ ] Confirmar si el teléfono y la fecha de nacimiento son obligatorios u opcionales.
 - [ ] Decidir cómo declarar la consulta a Wikipedia.
-- [ ] Confirmar `CHATBOT_AI_PROVIDER=ollama` en producción.
+- [x] Confirmar `CHATBOT_AI_PROVIDER=ollama` (hecho el 2026-10-19 en el backend que usa la app; repetir si cambia el entorno).
 - [ ] Confirmar dónde se capturan las notas internas (alergias).
 - [ ] Contrastar cada categoría con el formulario vivo de Play Console.

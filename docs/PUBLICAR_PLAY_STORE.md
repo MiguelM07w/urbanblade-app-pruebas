@@ -4,7 +4,11 @@ Costo: **$25 USD**, pago único (cuenta de Play Console). Sin comisión de Googl
 físicos vía Stripe, no Play Billing. Todo el material para la ficha, las declaraciones y los scripts está en
 [`docs/play-store/`](play-store/README.md); aquí está el estado y el orden de los pasos.
 
-> Estado verificado el **2026-10-19** (compilando de verdad un AAB de release con una firma desechable; ese AAB no se subió).
+> **Cuenta de Play Console creada y pagada el 2026-10-19** (cuenta personal). Verificación del dispositivo Android hecha; documentos
+> de identidad enviados y en revisión por Google; falta confirmar el teléfono de contacto. Hasta que Google apruebe la identidad no
+> se puede publicar nada.
+>
+> Estado técnico verificado el **2026-10-19** (compilando de verdad un AAB de release con una firma desechable; ese AAB no se subió).
 
 ## 0. Decisiones que cambian todo lo demás
 
