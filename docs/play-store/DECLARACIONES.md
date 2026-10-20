@@ -78,25 +78,19 @@ URL para la consola: `https://urbanblade.com.mx/privacidad`. La página no tiene
 al inicio del documento. **Mejora pequeña recomendada** (en `frontend-urban`): ponerle `id="derechos"` al título de la sección 6
 y usar `https://urbanblade.com.mx/privacidad#derechos`, o crear una página corta `/eliminar-cuenta` con los pasos.
 
-## 6. Contenido generado por usuarios — brecha a cerrar
-La app permite **comentar publicaciones** del muro (`POST social/work/{work}/comment`) y escribir reseñas. La política de
-Google para contenido de usuarios pide, como mínimo:
+## 6. Contenido generado por usuarios — implementado (pendiente de merge)
+La app permite **comentar publicaciones** del muro y la política de Google para contenido de usuarios pide: términos que
+prohíban contenido ofensivo, un mecanismo **dentro de la app** para reportar/bloquear, y moderación. Cubierto así:
 
-1. Términos que prohíban contenido ofensivo (el Aviso y los Términos publicados deben decirlo).
-2. Un **mecanismo dentro de la app para reportar** contenido o usuarios.
-3. **Moderación**: poder retirar contenido reportado y actuar sobre el usuario.
+| Requisito | Dónde | PR |
+|---|---|---|
+| Reportar comentario (spam / ofensivo / sexual o violento / otro) y bloquear autor | API `POST social/comment/{id}/report` y `.../block-author` en `barber`; menú "⋮" en la app | barber#31, UrbanBladeMobile#40 |
+| Moderación del administrador (eliminar, eliminar y vetar, descartar) | API `admin/comment-reports` y página web `/admin/moderacion` | barber#31, frontend_Urbanblade#27 |
+| Términos que prohíben contenido ofensivo y explican reportar/bloquear | `terminos.vue`, sección 9 | frontend_Urbanblade#27 |
 
-Estado hoy: no encontré ningún botón de reportar ni bloquear en la app, ni endpoint de reporte en el backend
-(`barber/routes/api.php`). ⚠️ Falta verificar si el administrador ya puede borrar comentarios desde la web.
-
-**Propuesta mínima (no implementada):**
-- Backend: `POST social/comment/{comment}/report` (un reporte por usuario y comentario, con motivo) y una vista para que el
-  administrador vea los reportados y elimine el comentario.
-- App: menú "⋮" en cada comentario ajeno con **Reportar** (motivo + confirmación) y, opcionalmente, **Ocultar**.
-- Términos: una línea que prohíba contenido ofensivo y avise que puede retirarse.
-
-Es trabajo real (backend + app + web + pruebas). **Conviene cerrarlo antes de pedir producción**; para la prueba cerrada no
-bloquea, pero la revisión de producción sí puede rechazar la app por esto.
+Para la declaración en Play Console: marcar que la app **tiene contenido generado por usuarios** y que ofrece reporte,
+bloqueo y moderación. Esto solo es cierto una vez mergeados los tres PR **y desplegado el backend**; la app de la tienda
+apunta a producción. Probar en el teléfono antes de subir: abrir el muro, ⋮ en un comentario ajeno, reportar y bloquear.
 
 ## 6.1 Contenido de terceros en el muro — propiedad intelectual
 Las publicaciones del muro que hay hoy (comprobado en el teléfono el 2026-10-19) son videos y fotos que **no son del equipo**:

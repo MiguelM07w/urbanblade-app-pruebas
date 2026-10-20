@@ -46,8 +46,9 @@ producción.
 
 ### 0.3 Contenido de usuarios (comentarios del muro)
 La app permite comentar publicaciones del muro y la política de Google para contenido generado por usuarios pide un
-mecanismo **dentro de la app** para reportar contenido ofensivo y bloquear o moderar. Hoy la app **no tiene** ese botón ni
-hay un endpoint de reporte en el backend. Detalle y propuesta en [`play-store/DECLARACIONES.md`](play-store/DECLARACIONES.md).
+mecanismo **dentro de la app** para reportar y bloquear, y moderación. **Implementado** (backend barber#31, app
+UrbanBladeMobile#40, web frontend_Urbanblade#27); falta mergear, desplegar el backend y probarlo en el teléfono. Detalle en
+[`play-store/DECLARACIONES.md`](play-store/DECLARACIONES.md) sección 6.
 
 ## 1. Ya resuelto y verificado
 - [x] `compileSdk` y `targetSdk` en **36** (Play lo exige en apps nuevas desde 31-ago-2026). AGP **9.4.1**, Gradle 9.6.0.
