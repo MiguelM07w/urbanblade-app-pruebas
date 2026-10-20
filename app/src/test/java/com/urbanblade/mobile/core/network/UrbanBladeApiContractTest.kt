@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import com.urbanblade.mobile.data.model.ReportCommentRequest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -57,6 +58,31 @@ class UrbanBladeApiContractTest {
         assertEquals("abc123", response.token)
         assertEquals("Ana", response.user.name)
         assertEquals(listOf("cliente"), response.user.roles)
+    }
+
+    @Test
+    fun `reportar comentario envia motivo a la ruta del backend`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(201).setBody("""{"message":"Reporte recibido."}"""))
+
+        val res = api.reportComment("c9", ReportCommentRequest("spam"))
+
+        val req = server.takeRequest()
+        assertEquals("/api/v1/social/comment/c9/report", req.path)
+        assertEquals("POST", req.method)
+        assertEquals("spam", Gson().fromJson(req.body.readUtf8(), Map::class.java)["reason"])
+        assertEquals("Reporte recibido.", res.message)
+    }
+
+    @Test
+    fun `bloquear autor usa la ruta block-author y feed lee is_mine`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(201).setBody("""{"message":"Usuario bloqueado."}"""))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(
+            """{"data":[{"id":"w1","comments":[{"id":"c1","comment":"hola","is_mine":true,"user":{"name":"Ana"}}]}]}"""
+        ))
+
+        api.blockCommentAuthor("c9")
+        assertEquals("/api/v1/social/comment/c9/block-author", server.takeRequest().path)
+        assertTrue(api.socialFeed().data.single().comments.single().isMine)
     }
 
     @Test

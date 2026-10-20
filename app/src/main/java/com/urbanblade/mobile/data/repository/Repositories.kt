@@ -209,6 +209,8 @@ class UrbanRepository(private val api: UrbanBladeApi) {
     suspend fun socialFeed(page: Int = 1) = api.socialFeed(page)
     suspend fun reactWork(id: String) = api.reactWork(id)
     suspend fun saveWork(id: String) = api.saveWork(id)
+    suspend fun reportComment(id: String, reason: String, details: String? = null) = api.reportComment(id, ReportCommentRequest(reason, details?.trim()?.takeIf { it.isNotEmpty() }))
+    suspend fun blockCommentAuthor(id: String) = api.blockCommentAuthor(id)
     suspend fun commentWork(id: String, comment: String) = api.commentWork(id, PostCommentRequest(comment))
     suspend fun chatbot(message: String) = api.chatbot(com.google.gson.JsonObject().apply { addProperty("message", message) })
     suspend fun chatbotHistory() = api.chatbotHistory().history

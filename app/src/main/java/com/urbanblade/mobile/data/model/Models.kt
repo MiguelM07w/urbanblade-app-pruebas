@@ -1068,6 +1068,7 @@ data class SocialComment(
     val id: String? = null,
     val comment: String? = null,
     val user: SocialCommentUser? = null,
+    @SerializedName("is_mine") val isMine: Boolean = false,
     @SerializedName("created_at") val createdAt: String? = null
 )
 data class SocialWork(
@@ -1087,6 +1088,8 @@ data class SocialWork(
 data class SocialFeedResponse(val data: List<SocialWork> = emptyList(), val meta: JsonObject? = null)
 data class SocialActionResponse(val status: String? = null, val count: Int? = null)
 data class PostCommentRequest(val comment: String)
+data class ReportCommentRequest(val reason: String, val details: String? = null)
+data class SocialModerationResponse(val message: String? = null)
 data class PostCommentResponse(val message: String? = null, val data: SocialComment? = null)
 
 // ── Sorteos ──────────────────────────────────────────────────────────────

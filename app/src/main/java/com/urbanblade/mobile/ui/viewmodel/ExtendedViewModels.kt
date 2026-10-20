@@ -509,6 +509,30 @@ class SocialFeedViewModel @JvmOverloads constructor(private val repo: UrbanRepos
             updateWork(id) { it.copy(isSaved = added, savedCount = (it.savedCount + if (added) 1 else -1).coerceAtLeast(0)) }
     }
 
+    private fun hideComment(workId: String, commentId: String, authorName: String? = null) = updateWork(workId) { work ->
+        val kept = work.comments.filterNot { c -> c.id == commentId || (authorName != null && c.user?.name == authorName && !c.isMine) }
+        work.copy(comments = kept, commentsCount = (work.commentsCount - (work.comments.size - kept.size)).coerceAtLeast(0))
+    }
+
+    /** Reporta un comentario ajeno (política de contenido de usuarios de Google Play) y lo oculta de inmediato. */
+    fun reportComment(workId: String, commentId: String, reason: String, details: String? = null, onDone: () -> Unit = {}) =
+        action(workId, "No se pudo enviar el reporte.") {
+            repo.reportComment(commentId, reason, details)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            hideComment(workId, commentId)
+            onDone()
+        }
+
+    /** Bloquea al autor del comentario: sus comentarios dejan de mostrarse a esta cuenta. */
+    fun blockCommentAuthor(workId: String, commentId: String, onDone: () -> Unit = {}) =
+        action(workId, "No se pudo bloquear al usuario.") {
+            val authorName = _feed.value.data.firstOrNull { it.id == workId }?.comments?.firstOrNull { it.id == commentId }?.user?.name
+            repo.blockCommentAuthor(commentId)
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            hideComment(workId, commentId, authorName)
+            onDone()
+        }
+
     fun comment(id: String, text: String, onDone: () -> Unit) {
         val comment = text.trim()
         if (comment.isEmpty() || comment.length > 500) return

@@ -103,4 +103,43 @@ class SocialFeedViewModelTest {
         assertTrue(vm.bookingIds.value.isEmpty())
         verify(repo, times(1)).barbers()
     }
+
+    private fun feedWithComments() = SocialFeedResponse(
+        listOf(SocialWork("a", commentsCount = 2, comments = listOf(
+            SocialComment(id = "c1", comment = "spam", user = SocialCommentUser("Ana")),
+            SocialComment(id = "c2", comment = "hola", user = SocialCommentUser("Beto"))
+        )))
+    )
+
+    @Test fun `reportar un comentario lo oculta y descuenta el contador`() = runTest(dispatcher) {
+        whenever(repo.socialFeed(1)).thenReturn(feedWithComments())
+        whenever(repo.reportComment("c1", "spam", null)).thenReturn(SocialModerationResponse("ok"))
+        val vm = SocialFeedViewModel(repo)
+        vm.load(); advanceUntilIdle()
+        vm.reportComment("a", "c1", "spam"); advanceUntilIdle()
+        val work = vm.feed.value.data.single()
+        assertEquals(listOf("c2"), work.comments.map { it.id })
+        assertEquals(1, work.commentsCount)
+        assertNull(vm.error.value)
+    }
+
+    @Test fun `fallo al reportar conserva el comentario y muestra error`() = runTest(dispatcher) {
+        whenever(repo.socialFeed(1)).thenReturn(feedWithComments())
+        whenever(repo.reportComment("c1", "otro", null)).thenThrow(RuntimeException("sin red"))
+        val vm = SocialFeedViewModel(repo)
+        vm.load(); advanceUntilIdle()
+        vm.reportComment("a", "c1", "otro"); advanceUntilIdle()
+        assertEquals(2, vm.feed.value.data.single().comments.size)
+        assertNotNull(vm.error.value)
+    }
+
+    @Test fun `bloquear al autor oculta sus comentarios del muro`() = runTest(dispatcher) {
+        whenever(repo.socialFeed(1)).thenReturn(feedWithComments())
+        whenever(repo.blockCommentAuthor("c2")).thenReturn(SocialModerationResponse("ok"))
+        val vm = SocialFeedViewModel(repo)
+        vm.load(); advanceUntilIdle()
+        vm.blockCommentAuthor("a", "c2"); advanceUntilIdle()
+        assertEquals(listOf("c1"), vm.feed.value.data.single().comments.map { it.id })
+        verify(repo).blockCommentAuthor("c2")
+    }
 }
