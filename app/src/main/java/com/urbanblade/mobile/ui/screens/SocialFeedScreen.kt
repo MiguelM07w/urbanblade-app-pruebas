@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.urbanblade.mobile.data.model.SocialComment
 import com.urbanblade.mobile.data.model.SocialWork
 import com.urbanblade.mobile.ui.components.*
 import com.urbanblade.mobile.ui.theme.UrbanColors
@@ -68,6 +69,8 @@ fun SocialFeedScreen(
                         onReact = { vm.toggleReaction(work.id) },
                         onSave = { vm.toggleSave(work.id) },
                         onComment = { text, done -> vm.comment(work.id, text, done) },
+                        onReportComment = { commentId, reason -> vm.reportComment(work.id, commentId, reason) },
+                        onBlockAuthor = { commentId -> vm.blockCommentAuthor(work.id, commentId) },
                         onBook = profileId?.takeIf { canBook }?.let { id -> { onBookBarber?.invoke(id) } },
                         onProfile = work.barber?.slug?.takeIf { onOpenBarber != null }?.let { slug -> { onOpenBarber?.invoke(slug) } }
                     )
@@ -90,11 +93,43 @@ private fun WorkPost(
     onReact: () -> Unit,
     onSave: () -> Unit,
     onComment: (String, () -> Unit) -> Unit,
+    onReportComment: (String, String) -> Unit,
+    onBlockAuthor: (String) -> Unit,
     onBook: (() -> Unit)?,
     onProfile: (() -> Unit)?
 ) {
     var commentText by rememberSaveable(work.id) { mutableStateOf("") }
     var commenting by rememberSaveable(work.id) { mutableStateOf(false) }
+    var moderating by remember(work.id) { mutableStateOf<SocialComment?>(null) }
+    var reporting by remember(work.id) { mutableStateOf<SocialComment?>(null) }
+    moderating?.let { target ->
+        AlertDialog(
+            onDismissRequest = { moderating = null },
+            title = { Text("Comentario de ${target.user?.name ?: "Usuario"}") },
+            text = { Text("Puedes reportar el comentario si incumple las reglas, o bloquear al usuario para dejar de ver sus comentarios.") },
+            confirmButton = { TextButton(onClick = { reporting = target; moderating = null }) { Text("Reportar comentario") } },
+            dismissButton = {
+                TextButton(onClick = { target.id?.let(onBlockAuthor); moderating = null }) { Text("Bloquear usuario", color = UrbanColors.Danger) }
+            }
+        )
+    }
+    reporting?.let { target ->
+        AlertDialog(
+            onDismissRequest = { reporting = null },
+            title = { Text("¿Por qué lo reportas?") },
+            text = {
+                Column {
+                    REPORT_REASONS.forEach { (code, label) ->
+                        TextButton(onClick = { target.id?.let { onReportComment(it, code) }; reporting = null }, modifier = Modifier.fillMaxWidth()) {
+                            Text(label, Modifier.fillMaxWidth(), color = UrbanColors.Ink)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { reporting = null }) { Text("Cancelar") } }
+        )
+    }
     val barberName = work.barber?.name ?: "Equipo UrbanBlade"
     if (commenting) ModalBottomSheet(onDismissRequest = { commenting = false }, containerColor = UrbanColors.Surface,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -115,12 +150,17 @@ private fun WorkPost(
                         Text(author, style = MaterialTheme.typography.labelLarge, color = UrbanColors.Ink)
                         Text(comment.comment.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = UrbanColors.Ink)
                     }
+                    if (!comment.isMine && comment.id != null) {
+                        IconButton(onClick = { moderating = comment }, enabled = enabled, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.MoreVert, "Reportar o bloquear a $author", tint = UrbanColors.Muted)
+                        }
+                    }
                 }
             }
             error?.let { item { UrbanErrorBanner(it) } }
             item {
                 UrbanTextField(commentText, { commentText = it }, "Tu comentario", minLines = 2, maxLines = 4,
-                    helper = "${commentText.length}/500 caracteres",
+                    helper = "${commentText.length}/500 caracteres · Sé respetuoso: los comentarios ofensivos se eliminan y pueden suspender tu cuenta.",
                     error = if (commentText.length > 500) "Máximo 500 caracteres." else null)
             }
         }
@@ -172,3 +212,10 @@ private fun WorkPost(
         }
     }
 }
+
+private val REPORT_REASONS = listOf(
+    "spam" to "Spam o publicidad",
+    "ofensivo" to "Ofensivo o acoso",
+    "sexual_violento" to "Contenido sexual o violento",
+    "otro" to "Otro motivo"
+)

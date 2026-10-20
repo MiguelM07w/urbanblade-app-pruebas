@@ -172,6 +172,8 @@ interface UrbanBladeApi {
     @GET("social/feed") suspend fun socialFeed(@Query("page") page: Int = 1): SocialFeedResponse
     @POST("social/work/{id}/react") suspend fun reactWork(@Path("id") id: String): SocialActionResponse
     @POST("social/work/{id}/save") suspend fun saveWork(@Path("id") id: String): SocialActionResponse
+    @POST("social/comment/{id}/report") suspend fun reportComment(@Path("id") id: String, @Body body: ReportCommentRequest): SocialModerationResponse
+    @POST("social/comment/{id}/block-author") suspend fun blockCommentAuthor(@Path("id") id: String): SocialModerationResponse
     @POST("social/work/{id}/comment") suspend fun commentWork(@Path("id") id: String, @Body body: PostCommentRequest): PostCommentResponse
 
     @POST("chatbot/query") suspend fun chatbot(@Body body: JsonObject): JsonObject
