@@ -4,6 +4,15 @@ Requisito de Google para **cuentas personales**: antes de pedir producción, la 
 cerrada con al menos 12 testers que se mantengan suscritos 14 días seguidos**. Verificar las cifras vigentes en la
 consola (*Pruebas → Prueba cerrada*), porque Google puede cambiarlas.
 
+## Estado (2026-10-21)
+- Prueba cerrada **creada, enviada a revisión y aprobada**; enlace de participación:
+  `https://play.google.com/apps/testing/com.urbanblade.mobile`.
+- Países: México. Lista "Testers prueba cerrada" con 21 cuentas (equipo y allegados); los correos viven solo en la consola.
+- Agregar a alguien a la lista **no le manda ningún correo**: cada persona debe abrir el enlace con su cuenta de la lista y
+  pulsar "Convertirme en tester"; luego instala desde Play. Aceptar es lo que cuenta para los 12.
+- Los 14 días corren mientras haya 12 aceptados. Revisar el contador en *Pruebas → Prueba cerrada → Testers* cada 2–3 días
+  y reenviar el recordatorio si va lento.
+
 ## Cómo funciona
 1. En Play Console: *Pruebas → Prueba cerrada → Crear pista* y subir el AAB.
 2. Crear una **lista de testers** por correo de Google (o un Grupo de Google) y copiar el **enlace de participación**.
@@ -29,7 +38,7 @@ consola (*Pruebas → Prueba cerrada*), porque Google puede cambiarlas.
 ## Calendario orientativo
 | Hito | Fecha estimada |
 | --- | --- |
-| Cuenta de Play creada y verificada | hacia el 23 de octubre |
+| Cuenta de Play creada y verificada | 19–20 de octubre (hecho) |
 | AAB subido a prueba cerrada y testers invitados | día 0 |
 | Reloj de 14 días completo | día 14 (≈ 6 de noviembre si el día 0 es el 23 de octubre) |
 | Solicitud de producción y revisión de Google | días 14 a 21 o más |
