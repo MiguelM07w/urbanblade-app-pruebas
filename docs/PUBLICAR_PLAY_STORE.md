@@ -4,11 +4,13 @@ Costo: **$25 USD**, pago único (cuenta de Play Console). Sin comisión de Googl
 físicos vía Stripe, no Play Billing. Todo el material para la ficha, las declaraciones y los scripts está en
 [`docs/play-store/`](play-store/README.md); aquí está el estado y el orden de los pasos.
 
-> **Cuenta de Play Console creada y pagada el 2026-10-19** (cuenta personal). Verificación del dispositivo Android hecha; documentos
-> de identidad enviados y en revisión por Google; falta confirmar el teléfono de contacto. Hasta que Google apruebe la identidad no
-> se puede publicar nada.
+> **Estado al 2026-10-21: la app está en prueba cerrada.** Cuenta personal de Play Console creada el 2026-10-19 y con identidad y
+> teléfono verificados. Hecho en la consola: app creada, AAB `3.0.0` (versionCode 3) en prueba interna, ficha completa con
+> capturas, todas las declaraciones, seguridad de los datos y la prueba cerrada **aprobada y activa** (México, lista de testers
+> en la consola). Probado en un teléfono real instalando desde Play: login con correo y con Google funcionan.
+> **Falta:** que 12 testers acepten y se mantengan 14 días seguidos, y luego solicitar producción (secciones 4 y 5).
 >
-> Estado técnico verificado el **2026-10-19** (compilando de verdad un AAB de release con una firma desechable; ese AAB no se subió).
+> Bitácora de lo que pide la consola y sus trampas: [`play-store/BITACORA_CONSOLA.md`](play-store/BITACORA_CONSOLA.md).
 
 ## 0. Decisiones que cambian todo lo demás
 
@@ -47,7 +49,7 @@ producción.
 ### 0.3 Contenido de usuarios (comentarios del muro)
 La app permite comentar publicaciones del muro y la política de Google para contenido generado por usuarios pide un
 mecanismo **dentro de la app** para reportar y bloquear, y moderación. **Implementado** (backend barber#31, app
-UrbanBladeMobile#40, web frontend_Urbanblade#27); falta mergear, desplegar el backend y probarlo en el teléfono. Detalle en
+UrbanBladeMobile#40, web frontend_Urbanblade#27); mergeado, desplegado en staging y probado en el teléfono (reportar y bloquear funcionan). Detalle en
 [`play-store/DECLARACIONES.md`](play-store/DECLARACIONES.md) sección 6.
 
 ## 1. Ya resuelto y verificado
@@ -68,7 +70,7 @@ UrbanBladeMobile#40, web frontend_Urbanblade#27); falta mergear, desplegar el ba
 - [x] Eliminar cuenta desde la app (Cuenta → Seguridad → Eliminar mi cuenta) y desde la web (Mi perfil → Zona de peligro).
 - [x] Página de privacidad en la web: `https://urbanblade.com.mx/privacidad`.
 
-## 2. Pendiente tuyo antes de generar el AAB
+## 2. Generar el AAB (ya hecho; sirve para versiones nuevas)
 Crear el keystore de subida (respaldarlo en **2 lugares**; sin él no se puede actualizar la app). Hay un script que pide las
 contraseñas sin mostrarlas y escribe `local.properties`:
 
@@ -97,7 +99,9 @@ Generar el AAB (verifica todo antes y muestra ruta, tamaño y huella SHA-256):
 
 Equivale a `gradle :app:bundleRelease` → `app/build/outputs/bundle/release/app-release.aab`.
 
-## 3. Login con Google en producción
+## 3. Login con Google en producción (hecho)
+La SHA-1 de Firma de la app de Play ya está registrada en Firebase y los clientes OAuth existen en Google Cloud; verificado desde la versión instalada de Play. Lo siguiente aplica a cada llave nueva:
+
 Con Play App Signing, Google re-firma la app. Después de subir el primer AAB, copiar la huella **SHA-1 de "Firma de la
 app"** (Play Console → Integridad de la app) y registrarla en Firebase (proyecto `barber-c6b3a`) y en el cliente Android de
 Google Cloud. Sin esto el login con Google falla solo en la versión instalada desde Play. Registrar también la SHA-1 de
@@ -117,12 +121,12 @@ Google Cloud. Sin esto el login con Google falla solo en la versión instalada d
 | 8 | **Prueba cerrada**: 12 testers, 14 días seguidos | Equipo | Plan en `play-store/PRUEBA_CERRADA.md`. |
 | 9 | Solicitar producción y esperar la revisión de Google | Titular | La revisión puede tardar días. |
 
-Con la cuenta verificada hacia el 23 de octubre, la prueba cerrada terminaría hacia el 6 de noviembre y producción, con
-suerte, a mediados de noviembre: antes de la entrega final del 4 de diciembre, pero sin mucho margen si algo se rechaza.
+Estado: pasos 1 a 7 hechos (2026-10-21) y el 8 en curso. Si los 12 testers aceptan pronto, los 14 días terminarían
+hacia el 5 de noviembre y producción, con suerte, a mediados de noviembre: antes de la entrega final del 4 de diciembre, pero sin mucho margen si algo se rechaza.
 
 ## 5. Antes de enviar
 - [ ] Rotar credenciales de `_seguridad/` (`barber/docs/PLAN_ROTACION_CREDENCIALES.md`).
-- [ ] Probar el AAB en un teléfono real contra la API de producción (login, reserva, pago, push).
+- [x] Probar el AAB en un teléfono real (instalado desde Play: login con correo y Google OK). Sigue pendiente revisar pago y push durante la prueba cerrada.
 - [ ] Subir `versionCode` en cada versión nueva (hoy 3; Play rechaza un `versionCode` repetido).
 - [ ] Si el Camino es B: reescribir el Aviso de Privacidad y los Términos.
-- [ ] Resolver la política de contenido de usuarios (sección 0.3).
+- [x] Resolver la política de contenido de usuarios (sección 0.3).
