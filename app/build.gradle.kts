@@ -147,6 +147,13 @@ android {
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
+    // Las pruebas de componente (Compose UI Test sobre Robolectric, en la JVM) necesitan los recursos y el
+    // manifiesto de la app para dibujar las pantallas como en el teléfono.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 // Guarda de publicación: el AAB que se sube a Google Play (bundleRelease) con valores PENDIENTE o clave
@@ -252,4 +259,9 @@ dependencies {
     // disponible en pruebas JVM puras).
     testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    // Pruebas de componente de las pantallas (Compose UI Test) en la JVM, sin emulador: Robolectric.
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("org.robolectric:robolectric:4.17")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

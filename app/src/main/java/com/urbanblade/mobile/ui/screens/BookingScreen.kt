@@ -482,7 +482,7 @@ private fun BookingHeader(step: BookingStep, summary: String?) {
 }
 
 @Composable
-private fun ServiceStep(services: List<ServiceItem>, selectedId: String, onSelect: (String) -> Unit) {
+internal fun ServiceStep(services: List<ServiceItem>, selectedId: String, onSelect: (String) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf<ServiceFilter?>(null) }
     val filters = remember(services) { ServiceFilter.entries.filter { f -> services.any { serviceKind(it.nombre) in f.kinds } } }
@@ -838,7 +838,7 @@ private fun SlotChip(slot: SlotItem, selected: Boolean, onClick: () -> Unit, mod
 }
 
 @Composable
-private fun ReviewStep(
+internal fun ReviewStep(
     service: ServiceItem?,
     barber: BarberItem?,
     date: String,
