@@ -78,6 +78,10 @@ android {
         versionCode = 3
         versionName = "3.0.0"
 
+        // Pruebas instrumentadas (T145, app/src/androidTest): el runner propio apunta la app a la API falsa
+        // del emulador antes de que arranque. Se corren con ./gradlew :app:connectedDebugAndroidTest.
+        testInstrumentationRunner = "com.urbanblade.mobile.UrbanTestRunner"
+
         // Credential Manager solicita un ID token para el mismo Web Client ID
         // que Laravel verifica. Se inyecta desde local.properties (ignorado por
         // Git) o -PGOOGLE_CLIENT_ID para CI; nunca se deja en código versionado.
@@ -264,4 +268,18 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("org.robolectric:robolectric:4.17")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Pruebas instrumentadas (T145): corren en un emulador o teléfono con la app real instalada.
+    // Compose UI Test maneja la pantalla y MockWebServer hace de API falsa dentro del emulador.
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    // Espresso llega por Compose UI Test en 3.5.x y hasta la 3.6.1 falla en Android 16 con
+    // "NoSuchMethodException: InputManager.getInstance" antes de tocar la pantalla; 3.7.0 ya lo corrige.
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    // AndroidX Test 1.7 pide concurrent-futures 1.2.0 y el APK de prueba debe usar las mismas versiones
+    // que la app que prueba (debug traía 1.1.0). Se sube solo en debug; release no cambia.
+    debugImplementation("androidx.concurrent:concurrent-futures:1.2.0")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }

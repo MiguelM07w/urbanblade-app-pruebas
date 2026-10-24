@@ -23,7 +23,16 @@ object AppContainer {
     lateinit var urbanRepository: UrbanRepository
         private set
 
+    /**
+     * Dirección de la API para las pruebas instrumentadas (T145). Solo la fija UrbanTestRunner
+     * (app/src/androidTest), antes de que arranque la app, para apuntarla a la API falsa del emulador;
+     * la app nunca la escribe. En release BuildConfig.DEBUG es false y se ignora siempre.
+     */
+    @Volatile
+    var testApiBaseUrl: String? = null
+
     fun init(context: Context) {
+        val baseUrl = testApiBaseUrl?.takeIf { BuildConfig.DEBUG } ?: BuildConfig.API_BASE_URL
         sessionManager = SessionManager(context.applicationContext)
 
         val authInterceptor = okhttp3.Interceptor { chain ->
@@ -71,7 +80,7 @@ object AppContainer {
         val client = clientBuilder.build()
 
         api = Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
