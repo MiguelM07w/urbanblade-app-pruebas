@@ -1,10 +1,14 @@
 import java.util.Properties
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    // Cobertura (T088). El plugin de Android también lo aplica, pero declararlo aquí permite
+    // configurar el agente de JaCoCo en las pruebas (ver tasks.withType<Test> más abajo).
+    jacoco
 }
 
 // Notificaciones push (T142): el plugin de Google Services solo se aplica si existe
@@ -117,6 +121,11 @@ android {
         // con el emulador (10.0.2.2, HTTP -- loopback, no es un secreto); release
         // exige HTTPS real, inyectada igual que GOOGLE_CLIENT_ID (nunca hardcodeada).
         debug {
+            // Cobertura de las pruebas unitarias con JaCoCo (T088): crea la tarea
+            // createDebugUnitTestCoverageReport, que corre testDebugUnitTest y deja el reporte
+            // en app/build/reports/coverage/test/debug/ (index.html y report.xml). Solo mide las
+            // pruebas de la JVM; no cambia el APK. JaCoCo ya viene con el plugin de Android.
+            enableUnitTestCoverage = true
             // QA aislado: permite instalar junto a la app habitual sin tocar su sesión.
             if (providers.gradleProperty("UI_AUDIT").orNull == "true") applicationIdSuffix = ".audit"
             buildConfigField("String", "API_BASE_URL", "\"$debugApiBaseUrl\"")
@@ -187,6 +196,17 @@ gradle.taskGraph.whenReady {
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
+// Cobertura de las pruebas de pantallas (T088). Robolectric carga las clases de la app con su
+// propio class loader y sin ubicación de archivo; JaCoCo ignora esas clases por defecto, así que
+// las pantallas probadas con Compose UI Test (p. ej. BookingScreen, T091) salían con 0 %.
+// jdk.internal.* se excluye porque JaCoCo no puede instrumentar esas clases del JDK.
+tasks.withType<Test>().configureEach {
+    extensions.configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
     }
 }
 

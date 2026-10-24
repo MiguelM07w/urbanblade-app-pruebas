@@ -1,7 +1,7 @@
 # CI de la app Android (T141, HU-38): en cada push y pull request a main corre lint,
-# las pruebas unitarias y el build de debug. Sin app/google-services.json ni local.properties
-# (no se versionan) la app compila igual: Firebase queda apagado y las claves usan sus
-# valores de relleno, así que el CI no necesita ningún secreto.
+# las pruebas unitarias con su cobertura (JaCoCo, T088) y el build de debug. Sin
+# app/google-services.json ni local.properties (no se versionan) la app compila igual: Firebase
+# queda apagado y las claves usan sus valores de relleno, así que el CI no necesita ningún secreto.
 name: Android CI
 
 on:
@@ -57,6 +57,17 @@ jobs:
           assert skipped == 0, f'Hay {skipped} pruebas omitidas'
           PY
 
+      # Cobertura de las pruebas unitarias con JaCoCo (T088). Gradle reutiliza la corrida del paso
+      # "Pruebas unitarias" (testDebugUnitTest queda UP-TO-DATE) y solo genera el reporte HTML y XML
+      # en app/build/reports/coverage/test/debug/.
+      - name: Cobertura (JaCoCo)
+        run: gradle :app:createDebugUnitTestCoverageReport --console=plain
+
+      # Escribe la tabla de cobertura (total y por capa) en la pestaña Summary del run. Solo informa:
+      # no exige un mínimo, para no dejar en rojo los PR mientras la cobertura sube.
+      - name: Resumen de cobertura
+        run: python3 scripts/ci/resumen_cobertura.py app/build/reports/coverage/test/debug/report.xml >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build de debug
         run: gradle :app:assembleDebug --console=plain
 
@@ -65,7 +76,8 @@ jobs:
       - name: Build de release (R8)
         run: gradle :app:assembleRelease -PRELEASE_API_BASE_URL=https://api.urbanblade.com.mx/api/v1/ --console=plain
 
-      - name: Reportes de lint y pruebas
+      # Se descarga como reportes-android.zip; la cobertura queda en coverage/test/debug/index.html.
+      - name: Reportes de lint, pruebas y cobertura
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -73,5 +85,6 @@ jobs:
           path: |
             app/build/reports/lint-results-debug.html
             app/build/reports/tests/testDebugUnitTest/
+            app/build/reports/coverage/test/debug/
           if-no-files-found: ignore
           retention-days: 14
